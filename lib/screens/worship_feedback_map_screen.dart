@@ -81,9 +81,7 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
                   children: [
                     GestureDetector(
                       onTapDown: (details) {
-                        final RenderBox box = context.findRenderObject() as RenderBox;
-                        final localPosition = box.globalToLocal(details.globalPosition);
-                        ref.read(selectedLocationProvider.notifier).state = localPosition;
+                        ref.read(selectedLocationProvider.notifier).state = details.localPosition;
                       },
                       child: Container(
                         width: double.infinity,

@@ -143,39 +143,20 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     scale: _scaleAnimation.value,
                     child: FadeTransition(
                       opacity: _fadeAnimation,
-                      child: Container(
-                        width: 200,
-                        height: 200,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(30),
-                          border: Border.all(
-                            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
-                            width: 1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              spreadRadius: 2,
-                              blurRadius: 20,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Image.asset(
-                            'assets/images/logo.png',
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) {
-                              // Fallback to icon if image fails to load
-                              return Icon(
-                                Icons.church,
-                                size: 80,
-                                color: Theme.of(context).colorScheme.onPrimary,
-                              );
-                            },
-                          ),
+                      child: SizedBox(
+                        width: 280,
+                        height: 280,
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            // Fallback to icon if image fails to load
+                            return Icon(
+                              Icons.church,
+                              size: 120,
+                              color: Theme.of(context).colorScheme.onPrimary,
+                            );
+                          },
                         ),
                       ),
                     ),

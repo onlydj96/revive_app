@@ -14,7 +14,9 @@
       "Bash(dart run:*)",
       "Bash(rm:*)",
       "Bash(move:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(dart:*)",
+      "Bash(del \"C:\\Users\\onlyd\\workspace\\app\\ezer\\test_teams_integration.dart\")"
     ],
     "deny": []
   },

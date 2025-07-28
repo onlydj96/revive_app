@@ -61,4 +61,38 @@ class Team {
       requirements: requirements ?? this.requirements,
     );
   }
+
+  factory Team.fromJson(Map<String, dynamic> json) {
+    return Team(
+      id: json['id'],
+      name: json['name'],
+      description: json['description'],
+      type: json['type'] == 'connectGroup' ? TeamType.connectGroup : TeamType.hangout,
+      imageUrl: json['image_url'],
+      leader: json['leader'],
+      meetingTime: json['meeting_time'] != null ? DateTime.parse(json['meeting_time']) : null,
+      meetingLocation: json['meeting_location'],
+      requiresApplication: json['requires_application'] ?? false,
+      maxMembers: json['max_members'],
+      currentMembers: json['current_members'] ?? 0,
+      requirements: json['requirements'] != null ? List<String>.from(json['requirements']) : [],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'type': type == TeamType.connectGroup ? 'connectGroup' : 'hangout',
+      'image_url': imageUrl,
+      'leader': leader,
+      'meeting_time': meetingTime?.toIso8601String(),
+      'meeting_location': meetingLocation,
+      'requires_application': requiresApplication,
+      'max_members': maxMembers,
+      'current_members': currentMembers,
+      'requirements': requirements,
+    };
+  }
 }

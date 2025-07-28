@@ -20,6 +20,7 @@ import '../screens/media_detail_screen.dart';
 import '../screens/update_detail_screen.dart';
 import '../screens/sermon_detail_screen.dart';
 import '../screens/settings_screen.dart';
+import '../screens/create_team_screen.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -138,6 +139,10 @@ final appRouter = GoRouter(
         final teamId = state.pathParameters['id']!;
         return TeamDetailScreen(teamId: teamId);
       },
+    ),
+    GoRoute(
+      path: '/create-team',
+      builder: (context, state) => const CreateTeamScreen(),
     ),
     GoRoute(
       path: '/event/:id',

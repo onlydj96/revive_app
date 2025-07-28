@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../providers/teams_provider.dart';
+import '../providers/permissions_provider.dart';
 import '../models/team.dart';
 
 class TeamsScreen extends ConsumerWidget {
@@ -12,6 +13,7 @@ class TeamsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final connectGroups = ref.watch(connectGroupsProvider);
     final hangouts = ref.watch(hangoutsProvider);
+    final permissions = ref.watch(permissionsProvider);
 
     return DefaultTabController(
       length: 2,
@@ -34,6 +36,13 @@ class TeamsScreen extends ConsumerWidget {
             HangoutsTab(teams: hangouts),
           ],
         ),
+        floatingActionButton: permissions.isAdmin
+            ? FloatingActionButton.extended(
+                onPressed: () => context.push('/create-team'),
+                icon: const Icon(Icons.add),
+                label: const Text('Create Team'),
+              )
+            : null,
       ),
     );
   }
