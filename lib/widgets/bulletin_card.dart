@@ -32,14 +32,8 @@ class BulletinCard extends StatelessWidget {
                 child: Stack(
                   children: [
                     Positioned.fill(
-                      child: Image.network(
-                        bulletin.bannerImageUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: Theme.of(context).primaryColor,
-                          );
-                        },
+                      child: Container(
+                        color: Theme.of(context).primaryColor,
                       ),
                     ),
                     Container(

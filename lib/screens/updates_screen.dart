@@ -3,109 +3,174 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../providers/updates_provider.dart';
+import '../providers/permissions_provider.dart';
 import '../models/update.dart';
+import '../widgets/create_update_dialog.dart';
 
 class UpdatesScreen extends ConsumerWidget {
   const UpdatesScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final pinnedUpdates = ref.watch(pinnedUpdatesProvider);
-    final recentUpdates = ref.watch(recentUpdatesProvider);
+    final updatesAsyncValue = ref.watch(updatesProvider);
+    final permissions = ref.watch(permissionsProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Updates'),
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          ref.invalidate(updatesProvider);
-        },
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (pinnedUpdates.isNotEmpty) ...[
-                Row(
-                  children: [
-                    Icon(
-                      Icons.push_pin,
-                      color: Theme.of(context).primaryColor,
-                      size: 20,
+      floatingActionButton: permissions.canCreateContent
+          ? FloatingActionButton(
+              onPressed: () {
+                _showCreateUpdateDialog(context, ref);
+              },
+              child: const Icon(Icons.add),
+            )
+          : null,
+      body: updatesAsyncValue.when(
+        data: (updates) {
+          final pinnedUpdates = updates.where((update) => update.isPinned).toList();
+          final recentUpdates = updates.where((update) => !update.isPinned).toList();
+          
+          return RefreshIndicator(
+            onRefresh: () async {
+              await ref.read(updatesProvider.notifier).refresh();
+            },
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (pinnedUpdates.isNotEmpty) ...[
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.push_pin,
+                          color: Theme.of(context).primaryColor,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Pinned Updates',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(height: 12),
+                    
+                    ...pinnedUpdates.map((update) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: UpdateCard(update: update, isPinned: true),
+                    )),
+                    
+                    const SizedBox(height: 24),
+                  ],
+                  
+                  if (recentUpdates.isNotEmpty) ...[
                     Text(
-                      'Pinned Updates',
+                      'Recent Updates',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    
+                    ...recentUpdates.map((update) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: UpdateCard(update: update, isPinned: false),
+                    )),
                   ],
-                ),
-                const SizedBox(height: 12),
-                
-                ...pinnedUpdates.map((update) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: UpdateCard(update: update, isPinned: true),
-                )),
-                
-                const SizedBox(height: 24),
-              ],
-              
-              if (recentUpdates.isNotEmpty) ...[
-                Text(
-                  'Recent Updates',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                
-                ...recentUpdates.map((update) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: UpdateCard(update: update, isPinned: false),
-                )),
-              ],
-              
-              if (pinnedUpdates.isEmpty && recentUpdates.isEmpty)
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(64),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.notifications_none,
-                          size: 64,
-                          color: Colors.grey[400],
+                  
+                  if (pinnedUpdates.isEmpty && recentUpdates.isEmpty)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(64),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.notifications_none,
+                              size: 64,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No Updates',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            Text(
+                              'Check back later for church news and announcements',
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Colors.grey[500],
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No Updates',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        Text(
-                          'Check back later for church news and announcements',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[500],
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
+                ],
+              ),
+            ),
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              Text('Error loading updates: $error'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => ref.read(updatesProvider.notifier).refresh(),
+                child: const Text('Retry'),
+              ),
             ],
           ),
         ),
       ),
     );
   }
+
+  void _showCreateUpdateDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => CreateUpdateDialog(
+        onCreateUpdate: (title, content, type, imageUrl, isPinned, tags) async {
+          try {
+            await ref.read(updatesProvider.notifier).createUpdate(
+              title: title,
+              content: content,
+              type: type,
+              imageUrl: imageUrl,
+              isPinned: isPinned,
+              tags: tags,
+            );
+            
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Update created successfully!')),
+              );
+            }
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Failed to create update: $e')),
+              );
+            }
+          }
+        },
+      ),
+    );
+  }
 }
 
-class UpdateCard extends StatelessWidget {
+class UpdateCard extends ConsumerWidget {
   final Update update;
   final bool isPinned;
 
@@ -116,7 +181,8 @@ class UpdateCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final permissions = ref.watch(permissionsProvider);
     return Card(
       elevation: isPinned ? 4 : 2,
       child: InkWell(
@@ -220,7 +286,42 @@ class UpdateCard extends StatelessWidget {
                             ],
                           ),
                         ),
-                        const Icon(Icons.chevron_right, color: Colors.grey),
+                        if (permissions.canEditContent || permissions.canDeleteContent) ...[
+                          PopupMenuButton<String>(
+                            onSelected: (value) {
+                              if (value == 'edit') {
+                                _showEditDialog(context, update);
+                              } else if (value == 'delete') {
+                                _showDeleteDialog(context, update);
+                              }
+                            },
+                            itemBuilder: (context) => [
+                              if (permissions.canEditContent)
+                                const PopupMenuItem(
+                                  value: 'edit',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.edit, size: 18),
+                                      SizedBox(width: 8),
+                                      Text('Edit'),
+                                    ],
+                                  ),
+                                ),
+                              if (permissions.canDeleteContent)
+                                const PopupMenuItem(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.delete, size: 18),
+                                      SizedBox(width: 8),
+                                      Text('Delete'),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ] else
+                          const Icon(Icons.chevron_right, color: Colors.grey),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -315,5 +416,56 @@ class UpdateCard extends StatelessWidget {
       case UpdateType.urgent:
         return 'URGENT';
     }
+  }
+
+  void _showEditDialog(BuildContext context, Update update) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Update'),
+        content: Text('Edit functionality for "${update.title}" would be implemented here.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Edit feature coming soon!')),
+              );
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteDialog(BuildContext context, Update update) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Update'),
+        content: Text('Are you sure you want to delete "${update.title}"? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Deleted "${update.title}"')),
+              );
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
   }
 }

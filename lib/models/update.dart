@@ -3,7 +3,24 @@ enum UpdateType {
   news,
   prayer,
   celebration,
-  urgent,
+  urgent;
+
+  static UpdateType fromString(String value) {
+    switch (value) {
+      case 'announcement':
+        return UpdateType.announcement;
+      case 'news':
+        return UpdateType.news;
+      case 'prayer':
+        return UpdateType.prayer;
+      case 'celebration':
+        return UpdateType.celebration;
+      case 'urgent':
+        return UpdateType.urgent;
+      default:
+        return UpdateType.announcement;
+    }
+  }
 }
 
 class Update {
@@ -28,6 +45,34 @@ class Update {
     this.imageUrl,
     this.tags = const [],
   });
+
+  factory Update.fromJson(Map<String, dynamic> json) {
+    return Update(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      content: json['content'] as String,
+      type: UpdateType.fromString(json['type'] as String),
+      createdAt: DateTime.parse(json['created_at'] as String),
+      author: json['author_name'] as String,
+      isPinned: json['is_pinned'] as bool? ?? false,
+      imageUrl: json['image_url'] as String?,
+      tags: json['tags'] != null ? List<String>.from(json['tags']) : [],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'content': content,
+      'type': type.name,
+      'created_at': createdAt.toIso8601String(),
+      'author_name': author,
+      'is_pinned': isPinned,
+      'image_url': imageUrl,
+      'tags': tags,
+    };
+  }
 
   Update copyWith({
     String? id,

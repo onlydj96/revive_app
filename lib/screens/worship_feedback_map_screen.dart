@@ -13,8 +13,8 @@ enum EnvironmentFeedback {
 final selectedLocationProvider = StateProvider<Offset?>((ref) => null);
 final environmentFeedbackProvider = StateProvider<EnvironmentFeedback?>((ref) => null);
 
-class SanctuaryMapScreen extends ConsumerWidget {
-  const SanctuaryMapScreen({super.key});
+class WorshipFeedbackMapScreen extends ConsumerWidget {
+  const WorshipFeedbackMapScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -23,7 +23,7 @@ class SanctuaryMapScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sanctuary Map'),
+        title: const Text('Worship Feedback Map'),
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
       ),
@@ -225,7 +225,7 @@ class SanctuaryMapScreen extends ConsumerWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Tap anywhere on the sanctuary map to indicate your location',
+                        'Tap anywhere on the worship area map to indicate your location',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Colors.grey[600],
                         ),

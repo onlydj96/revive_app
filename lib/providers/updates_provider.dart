@@ -1,103 +1,160 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/update.dart';
+import '../services/database_service.dart';
 
-final updatesProvider = StateNotifierProvider<UpdatesNotifier, List<Update>>((ref) {
+final updatesProvider = StateNotifierProvider<UpdatesNotifier, AsyncValue<List<Update>>>((ref) {
   return UpdatesNotifier();
 });
 
 final pinnedUpdatesProvider = Provider<List<Update>>((ref) {
-  final updates = ref.watch(updatesProvider);
-  return updates.where((update) => update.isPinned).toList();
+  final updatesAsyncValue = ref.watch(updatesProvider);
+  return updatesAsyncValue.when(
+    data: (updates) => updates.where((update) => update.isPinned).toList(),
+    loading: () => [],
+    error: (_, __) => [],
+  );
 });
 
 final recentUpdatesProvider = Provider<List<Update>>((ref) {
-  final updates = ref.watch(updatesProvider);
-  final now = DateTime.now();
-  return updates
-      .where((update) => !update.isPinned)
-      .where((update) => update.createdAt.isAfter(now.subtract(const Duration(days: 30))))
-      .toList()
-    ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  final updatesAsyncValue = ref.watch(updatesProvider);
+  return updatesAsyncValue.when(
+    data: (updates) {
+      final now = DateTime.now();
+      return updates
+          .where((update) => !update.isPinned)
+          .where((update) => update.createdAt.isAfter(now.subtract(const Duration(days: 30))))
+          .toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    },
+    loading: () => [],
+    error: (_, __) => [],
+  );
 });
 
-class UpdatesNotifier extends StateNotifier<List<Update>> {
-  UpdatesNotifier() : super([]) {
-    _loadMockUpdates();
+class UpdatesNotifier extends StateNotifier<AsyncValue<List<Update>>> {
+  UpdatesNotifier() : super(const AsyncValue.loading()) {
+    _loadUpdates();
+    _setupRealtimeSubscription();
   }
 
-  void _loadMockUpdates() {
-    final now = DateTime.now();
-    state = [
-      Update(
-        id: '1',
-        title: 'Easter Service Times',
-        content: 'Join us for our special Easter services on April 7th at 9:00 AM and 11:00 AM. Come celebrate the resurrection of our Lord!',
-        type: UpdateType.announcement,
-        createdAt: now.subtract(const Duration(hours: 2)),
-        author: 'Pastor Mike',
-        isPinned: true,
-        tags: ['easter', 'service'],
-      ),
-      Update(
-        id: '2',
-        title: 'Prayer Request: Johnson Family',
-        content: 'Please keep the Johnson family in your prayers as they navigate through this difficult time.',
-        type: UpdateType.prayer,
-        createdAt: now.subtract(const Duration(hours: 6)),
-        author: 'Sarah Wilson',
-        tags: ['prayer', 'family'],
-      ),
-      Update(
-        id: '3',
-        title: 'New Members Class',
-        content: 'Our next new members class will be held on March 25th at 2:00 PM in Room 203. Registration is now open.',
-        type: UpdateType.announcement,
-        createdAt: now.subtract(const Duration(days: 1)),
-        author: 'Admin Team',
-        tags: ['membership', 'class'],
-      ),
-      Update(
-        id: '4',
-        title: 'Youth Group Fundraiser Success!',
-        content: 'Amazing news! Our youth group raised \$2,500 for their mission trip. Thank you to everyone who supported!',
-        type: UpdateType.celebration,
-        createdAt: now.subtract(const Duration(days: 2)),
-        author: 'Youth Pastor Dave',
-        tags: ['youth', 'fundraiser', 'mission'],
-      ),
-      Update(
-        id: '5',
-        title: 'Building Maintenance Notice',
-        content: 'The main parking lot will be closed for maintenance this Saturday from 8 AM to 4 PM. Please use the side entrance.',
-        type: UpdateType.announcement,
-        createdAt: now.subtract(const Duration(days: 3)),
-        author: 'Facilities Team',
-        isPinned: true,
-        tags: ['maintenance', 'parking'],
-      ),
-    ];
+  RealtimeChannel? _channel;
+
+  Future<void> _loadUpdates() async {
+    try {
+      state = const AsyncValue.loading();
+      final data = await DatabaseService.getUpdates(limit: 50);
+      final updates = data.map((item) => Update.fromJson(item)).toList();
+      state = AsyncValue.data(updates);
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+    }
   }
 
-  void addUpdate(Update update) {
-    state = [update, ...state];
+  void _setupRealtimeSubscription() {
+    _channel = DatabaseService.subscribeToTable(
+      'updates',
+      (newRecord) {
+        // Handle insert
+        final newUpdate = Update.fromJson(newRecord);
+        state.whenData((updates) {
+          state = AsyncValue.data([newUpdate, ...updates]);
+        });
+      },
+      (updatedRecord) {
+        // Handle update
+        final updatedUpdate = Update.fromJson(updatedRecord);
+        state.whenData((updates) {
+          final updatedList = updates.map((update) {
+            return update.id == updatedUpdate.id ? updatedUpdate : update;
+          }).toList();
+          state = AsyncValue.data(updatedList);
+        });
+      },
+      (deletedRecord) {
+        // Handle delete
+        final deletedId = deletedRecord['id'] as String;
+        state.whenData((updates) {
+          final filteredList = updates.where((update) => update.id != deletedId).toList();
+          state = AsyncValue.data(filteredList);
+        });
+      },
+    );
   }
 
-  void updateUpdate(Update updatedUpdate) {
-    state = state.map((update) {
-      return update.id == updatedUpdate.id ? updatedUpdate : update;
-    }).toList();
+  Future<void> createUpdate({
+    required String title,
+    required String content,
+    required UpdateType type,
+    String? imageUrl,
+    bool isPinned = false,
+    List<String> tags = const [],
+  }) async {
+    try {
+      final data = {
+        'title': title,
+        'content': content,
+        'type': type.name,
+        'image_url': imageUrl,
+        'is_pinned': isPinned,
+        'tags': tags,
+      };
+
+      await DatabaseService.createUpdate(data);
+      // The real-time subscription will handle updating the state
+    } catch (error) {
+      // Handle error appropriately
+      rethrow;
+    }
   }
 
-  void deleteUpdate(String updateId) {
-    state = state.where((update) => update.id != updateId).toList();
+  Future<void> updateUpdate(String id, {
+    String? title,
+    String? content,
+    UpdateType? type,
+    String? imageUrl,
+    bool? isPinned,
+    List<String>? tags,
+  }) async {
+    try {
+      final data = <String, dynamic>{};
+      if (title != null) data['title'] = title;
+      if (content != null) data['content'] = content;
+      if (type != null) data['type'] = type.name;
+      if (imageUrl != null) data['image_url'] = imageUrl;
+      if (isPinned != null) data['is_pinned'] = isPinned;
+      if (tags != null) data['tags'] = tags;
+
+      await DatabaseService.update('updates', id, data);
+      // The real-time subscription will handle updating the state
+    } catch (error) {
+      rethrow;
+    }
   }
 
-  void togglePin(String updateId) {
-    state = state.map((update) {
-      if (update.id == updateId) {
-        return update.copyWith(isPinned: !update.isPinned);
-      }
-      return update;
-    }).toList();
+  Future<void> deleteUpdate(String id) async {
+    try {
+      await DatabaseService.delete('updates', id);
+      // The real-time subscription will handle updating the state
+    } catch (error) {
+      rethrow;
+    }
+  }
+
+  Future<void> togglePin(String id) async {
+    state.whenData((updates) async {
+      final update = updates.firstWhere((u) => u.id == id);
+      await updateUpdate(id, isPinned: !update.isPinned);
+    });
+  }
+
+  Future<void> refresh() async {
+    await _loadUpdates();
+  }
+
+  @override
+  void dispose() {
+    _channel?.unsubscribe();
+    super.dispose();
   }
 }

@@ -5,6 +5,11 @@ final eventsProvider = StateNotifierProvider<EventsNotifier, List<Event>>((ref) 
   return EventsNotifier();
 });
 
+// Provider to track which events the current user has signed up for
+final userSignedUpEventsProvider = StateNotifierProvider<UserSignedUpEventsNotifier, Set<String>>((ref) {
+  return UserSignedUpEventsNotifier();
+});
+
 final upcomingEventsProvider = Provider<List<Event>>((ref) {
   final events = ref.watch(eventsProvider);
   final now = DateTime.now();
@@ -71,12 +76,27 @@ class EventsNotifier extends StateNotifier<List<Event>> {
     ];
   }
 
-  void signUpForEvent(String eventId) {
+  void toggleEventSignUp(String eventId, WidgetRef ref) {
+    final userSignedUpEvents = ref.read(userSignedUpEventsProvider);
+    final isSignedUp = userSignedUpEvents.contains(eventId);
+    
     state = state.map((event) {
       if (event.id == eventId && event.requiresSignup) {
-        return event.copyWith(
-          currentParticipants: event.currentParticipants + 1,
-        );
+        if (isSignedUp) {
+          // Cancel sign-up
+          ref.read(userSignedUpEventsProvider.notifier).removeEvent(eventId);
+          return event.copyWith(
+            currentParticipants: event.currentParticipants - 1,
+          );
+        } else {
+          // Sign up
+          if (event.maxParticipants == null || event.currentParticipants < event.maxParticipants!) {
+            ref.read(userSignedUpEventsProvider.notifier).addEvent(eventId);
+            return event.copyWith(
+              currentParticipants: event.currentParticipants + 1,
+            );
+          }
+        }
       }
       return event;
     }).toList();
@@ -94,5 +114,21 @@ class EventsNotifier extends StateNotifier<List<Event>> {
 
   void deleteEvent(String eventId) {
     state = state.where((event) => event.id != eventId).toList();
+  }
+}
+
+class UserSignedUpEventsNotifier extends StateNotifier<Set<String>> {
+  UserSignedUpEventsNotifier() : super(<String>{});
+
+  void addEvent(String eventId) {
+    state = {...state, eventId};
+  }
+
+  void removeEvent(String eventId) {
+    state = Set.from(state)..remove(eventId);
+  }
+
+  bool isSignedUp(String eventId) {
+    return state.contains(eventId);
   }
 }

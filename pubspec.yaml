@@ -45,6 +45,11 @@ dependencies:
   table_calendar: ^3.0.9
   cached_network_image: ^3.3.1
   
+  # Image/File handling
+  image_picker: ^1.1.2
+  permission_handler: ^11.3.1
+  device_info_plus: ^10.1.0
+  
   # Database & Authentication
   supabase_flutter: ^2.5.6
   

@@ -280,21 +280,39 @@ class EventBannerCard extends ConsumerWidget {
                     ),
                     if (event.requiresSignup) ...[
                       const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: () {
-                          ref.read(eventsProvider.notifier).signUpForEvent(event.id);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Signed up for ${event.title}!'),
-                              backgroundColor: Colors.green,
+                      Consumer(
+                        builder: (context, ref, child) {
+                          final isSignedUp = ref.watch(userSignedUpEventsProvider).contains(event.id);
+                          final isFull = event.maxParticipants != null && 
+                              event.currentParticipants >= event.maxParticipants!;
+                          
+                          return ElevatedButton(
+                            onPressed: (isFull && !isSignedUp) ? null : () {
+                              ref.read(eventsProvider.notifier).toggleEventSignUp(event.id, ref);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    isSignedUp 
+                                      ? 'Cancelled registration for ${event.title}'
+                                      : 'Signed up for ${event.title}!'
+                                  ),
+                                  backgroundColor: isSignedUp ? Colors.orange : Colors.green,
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isSignedUp ? Colors.orange : Colors.white,
+                              foregroundColor: isSignedUp ? Colors.white : Theme.of(context).primaryColor,
+                            ),
+                            child: Text(
+                              isFull && !isSignedUp 
+                                ? 'Full'
+                                : isSignedUp 
+                                  ? 'Cancel'
+                                  : 'Sign Up Now'
                             ),
                           );
                         },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Theme.of(context).primaryColor,
-                        ),
-                        child: const Text('Sign Up Now'),
                       ),
                     ],
                   ],
@@ -422,25 +440,39 @@ class EventListItem extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    ElevatedButton(
-                      onPressed: event.maxParticipants != null && 
-                          event.currentParticipants >= event.maxParticipants!
-                          ? null
-                          : () {
-                              ref.read(eventsProvider.notifier).signUpForEvent(event.id);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Signed up for ${event.title}!'),
-                                  backgroundColor: Colors.green,
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final isSignedUp = ref.watch(userSignedUpEventsProvider).contains(event.id);
+                        final isFull = event.maxParticipants != null && 
+                            event.currentParticipants >= event.maxParticipants!;
+                        
+                        return ElevatedButton(
+                          onPressed: (isFull && !isSignedUp) ? null : () {
+                            ref.read(eventsProvider.notifier).toggleEventSignUp(event.id, ref);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  isSignedUp 
+                                    ? 'Cancelled registration for ${event.title}'
+                                    : 'Signed up for ${event.title}!'
                                 ),
-                              );
-                            },
-                      child: Text(
-                        event.maxParticipants != null && 
-                            event.currentParticipants >= event.maxParticipants!
-                            ? 'Full'
-                            : 'Sign Up',
-                      ),
+                                backgroundColor: isSignedUp ? Colors.orange : Colors.green,
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isSignedUp ? Colors.orange : null,
+                            foregroundColor: isSignedUp ? Colors.white : null,
+                          ),
+                          child: Text(
+                            isFull && !isSignedUp 
+                              ? 'Full'
+                              : isSignedUp 
+                                ? 'Cancel'
+                                : 'Sign Up'
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),

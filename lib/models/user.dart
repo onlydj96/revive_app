@@ -1,3 +1,5 @@
+import 'user_role.dart';
+
 class User {
   final String id;
   final String name;
@@ -14,6 +16,15 @@ class User {
     required this.role,
     required this.joinDate,
   });
+
+  UserRole get userRole => UserRole.fromString(role);
+
+  bool get isAdmin => userRole == UserRole.admin;
+  bool get canCreateContent => userRole.canCreateContent;
+  bool get canEditContent => userRole.canEditContent;
+  bool get canDeleteContent => userRole.canDeleteContent;
+  bool get canManageUsers => userRole.canManageUsers;
+  bool get canViewContent => userRole.canViewContent;
 
   User copyWith({
     String? id,

@@ -28,19 +28,13 @@ class SermonCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Colors.grey[300],
                       ),
-                      child: Image.network(
-                        sermon.thumbnailUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: Theme.of(context).primaryColor.withOpacity(0.1),
-                            child: Icon(
-                              Icons.play_circle_outline,
-                              size: 48,
-                              color: Theme.of(context).primaryColor,
-                            ),
-                          );
-                        },
+                      child: Container(
+                        color: Theme.of(context).primaryColor.withOpacity(0.1),
+                        child: Icon(
+                          Icons.play_circle_outline,
+                          size: 48,
+                          color: Theme.of(context).primaryColor,
+                        ),
                       ),
                     ),
                     Positioned(

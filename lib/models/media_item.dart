@@ -1,7 +1,20 @@
 enum MediaType {
   photo,
   video,
-  audio,
+  audio;
+
+  static MediaType fromString(String value) {
+    switch (value) {
+      case 'photo':
+        return MediaType.photo;
+      case 'video':
+        return MediaType.video;
+      case 'audio':
+        return MediaType.audio;
+      default:
+        return MediaType.photo;
+    }
+  }
 }
 
 enum MediaCategory {
@@ -11,7 +24,28 @@ enum MediaCategory {
   outreach,
   youth,
   children,
-  general,
+  general;
+
+  static MediaCategory fromString(String value) {
+    switch (value) {
+      case 'worship':
+        return MediaCategory.worship;
+      case 'sermon':
+        return MediaCategory.sermon;
+      case 'fellowship':
+        return MediaCategory.fellowship;
+      case 'outreach':
+        return MediaCategory.outreach;
+      case 'youth':
+        return MediaCategory.youth;
+      case 'children':
+        return MediaCategory.children;
+      case 'general':
+        return MediaCategory.general;
+      default:
+        return MediaCategory.general;
+    }
+  }
 }
 
 class MediaItem {
@@ -40,6 +74,37 @@ class MediaItem {
     this.tags = const [],
     this.isCollected = false,
   });
+
+  factory MediaItem.fromJson(Map<String, dynamic> json, {bool isCollected = false}) {
+    return MediaItem(
+      id: json['id'] as String,
+      title: json['title'] as String? ?? '',
+      description: json['description'] as String?,
+      type: MediaType.fromString(json['type'] as String? ?? 'photo'),
+      category: MediaCategory.fromString(json['category'] as String? ?? 'general'),
+      url: json['url'] as String? ?? json['file_url'] as String? ?? '',
+      thumbnailUrl: json['thumbnail_url'] as String?,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      photographer: json['photographer'] as String?,
+      tags: json['tags'] != null ? List<String>.from(json['tags']) : [],
+      isCollected: isCollected,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'type': type.name,
+      'category': category.name,
+      'file_url': url,
+      'thumbnail_url': thumbnailUrl,
+      'created_at': createdAt.toIso8601String(),
+      'photographer': photographer,
+      'tags': tags,
+    };
+  }
 
   MediaItem copyWith({
     String? id,

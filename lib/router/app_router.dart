@@ -13,7 +13,7 @@ import '../screens/schedule_screen.dart';
 import '../screens/teams_screen.dart';
 import '../screens/updates_screen.dart';
 import '../screens/profile_screen.dart';
-import '../screens/sanctuary_map_screen.dart';
+import '../screens/worship_feedback_map_screen.dart';
 import '../screens/team_detail_screen.dart';
 import '../screens/event_detail_screen.dart';
 import '../screens/media_detail_screen.dart';
@@ -129,8 +129,8 @@ final appRouter = GoRouter(
       builder: (context, state) => const SettingsScreen(),
     ),
     GoRoute(
-      path: '/sanctuary-map',
-      builder: (context, state) => const SanctuaryMapScreen(),
+      path: '/worship-feedback-map',
+      builder: (context, state) => const WorshipFeedbackMapScreen(),
     ),
     GoRoute(
       path: '/team/:id',

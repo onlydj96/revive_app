@@ -12,7 +12,7 @@ import '../widgets/bulletin_card.dart';
 import '../widgets/sermon_card.dart';
 import '../widgets/updates_preview.dart';
 import '../widgets/upcoming_events_list.dart';
-import '../widgets/sanctuary_map_card.dart';
+import '../widgets/worship_feedback_map_card.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -52,7 +52,7 @@ class HomeScreen extends ConsumerWidget {
                 const SizedBox(height: 16),
               ],
               
-              SanctuaryMapCard(),
+              WorshipFeedbackMapCard(),
               const SizedBox(height: 16),
               
               if (bulletin != null) ...[

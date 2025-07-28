@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-class SanctuaryMapCard extends StatelessWidget {
-  const SanctuaryMapCard({super.key});
+class WorshipFeedbackMapCard extends StatelessWidget {
+  const WorshipFeedbackMapCard({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Card(
       child: InkWell(
-        onTap: () => context.push('/sanctuary-map'),
+        onTap: () => context.push('/worship-feedback-map'),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -35,7 +35,7 @@ class SanctuaryMapCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Sanctuary Map',
+                          'Worship Feedback Map',
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
