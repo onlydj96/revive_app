@@ -43,3 +43,61 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Sensitive configuration files & API keys
+*.env
+*.env.*
+.env.local
+.env.production
+.env.development
+lib/config/supabase_config.dart
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+android/key.properties
+ios/Runner/Info.plist
+firebase_options.dart
+
+# Database & authentication keys
+*.pem
+*.key
+*.p12
+*.keystore
+*.jks
+service-account-key.json
+
+# User data & logs
+user_data/
+logs/
+*.log
+crash_reports/
+analytics/
+
+# IDE & Editor specific files
+.vscode/settings.json
+.vscode/launch.json
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/shelf/
+
+# Platform specific sensitive files
+macos/Runner/Release.entitlements
+linux/flutter/ephemeral/
+windows/flutter/ephemeral/
+
+# Cache and temporary files
+.flutter-plugins-dependencies
+.packages
+.metadata
+.dart_tool/
+pubspec.lock
+
+# Large media files (if any)
+assets/videos/
+assets/large_images/
+assets/audio/
+
+# Backup files
+*.backup
+*.bak
+*~
