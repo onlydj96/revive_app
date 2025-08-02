@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/notification.dart';
+import '../providers/notification_provider.dart';
 
 enum EnvironmentFeedback {
   tooCold,
@@ -240,6 +242,20 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
   }
 
   void _submitFeedback(BuildContext context, WidgetRef ref, Offset location, EnvironmentFeedback feedback) {
+    final notification = AppNotification(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: 'New Worship Feedback',
+      message: 'Someone reported: ${_getFeedbackDescription(feedback)}',
+      type: NotificationType.feedbackSubmitted,
+      timestamp: DateTime.now(),
+      data: {
+        'feedback': feedback.name,
+        'location': {'x': location.dx, 'y': location.dy},
+      },
+    );
+    
+    ref.read(notificationProvider.notifier).addNotification(notification);
+    
     ref.read(selectedLocationProvider.notifier).state = null;
     ref.read(environmentFeedbackProvider.notifier).state = null;
     
@@ -251,6 +267,23 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
     );
     
     Navigator.of(context).pop();
+  }
+
+  String _getFeedbackDescription(EnvironmentFeedback feedback) {
+    switch (feedback) {
+      case EnvironmentFeedback.tooCold:
+        return 'Too Cold';
+      case EnvironmentFeedback.tooHot:
+        return 'Too Hot';
+      case EnvironmentFeedback.justRight:
+        return 'Just Right';
+      case EnvironmentFeedback.tooLoud:
+        return 'Too Loud';
+      case EnvironmentFeedback.tooQuiet:
+        return 'Too Quiet';
+      case EnvironmentFeedback.lighting:
+        return 'Lighting Issue';
+    }
   }
 }
 

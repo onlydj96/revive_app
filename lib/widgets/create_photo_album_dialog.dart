@@ -10,6 +10,7 @@ class CreatePhotoAlbumDialog extends StatefulWidget {
     String title,
     String? description,
     MediaCategory category,
+    String folderPath,
     List<String> photoFiles,
     String? photographer,
     List<String> tags,
@@ -31,6 +32,7 @@ class _CreatePhotoAlbumDialogState extends State<CreatePhotoAlbumDialog> {
   final _descriptionController = TextEditingController();
   final _photographerController = TextEditingController();
   final _tagsController = TextEditingController();
+  final _folderPathController = TextEditingController();
   
   MediaCategory _selectedCategory = MediaCategory.general;
   List<XFile> _selectedPhotos = [];
@@ -43,6 +45,7 @@ class _CreatePhotoAlbumDialogState extends State<CreatePhotoAlbumDialog> {
     _descriptionController.dispose();
     _photographerController.dispose();
     _tagsController.dispose();
+    _folderPathController.dispose();
     super.dispose();
   }
 
@@ -253,10 +256,23 @@ class _CreatePhotoAlbumDialogState extends State<CreatePhotoAlbumDialog> {
 
       final photoFiles = _selectedPhotos.map((photo) => photo.path).toList();
 
+      // Generate folder path if not provided
+      String folderPath = _folderPathController.text.trim();
+      if (folderPath.isEmpty) {
+        // Auto-generate folder path based on category and title
+        final categoryName = _getCategoryLabel(_selectedCategory);
+        final sanitizedTitle = _titleController.text
+            .replaceAll(RegExp(r'[^a-zA-Z0-9가-힣\s]'), '')
+            .replaceAll(RegExp(r'\s+'), ' ')
+            .trim();
+        folderPath = '$categoryName/$sanitizedTitle';
+      }
+      
       await widget.onCreateAlbum(
         _titleController.text,
         _descriptionController.text.isEmpty ? null : _descriptionController.text,
         _selectedCategory,
+        folderPath,
         photoFiles,
         _photographerController.text.isEmpty ? null : _photographerController.text,
         tags,
@@ -354,6 +370,17 @@ class _CreatePhotoAlbumDialogState extends State<CreatePhotoAlbumDialog> {
                   labelText: '태그 (쉼표로 구분)',
                   border: OutlineInputBorder(),
                   hintText: '예배, 찬양, 기도',
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              TextFormField(
+                controller: _folderPathController,
+                decoration: const InputDecoration(
+                  labelText: '폴더 경로 (선택사항)',
+                  border: OutlineInputBorder(),
+                  hintText: '예: Sunday Worship/July Week 4',
+                  helperText: '비워두면 카테고리와 제목으로 자동 생성됩니다',
                 ),
               ),
               const SizedBox(height: 20),

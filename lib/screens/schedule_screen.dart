@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import '../providers/events_provider.dart';
+import '../providers/permissions_provider.dart';
 import '../models/event.dart';
+import '../widgets/create_event_dialog.dart';
 
 final selectedDateProvider = StateProvider<DateTime>((ref) => DateTime.now());
 
@@ -19,6 +21,34 @@ final eventsForSelectedDateProvider = Provider<List<Event>>((ref) {
 
 class ScheduleScreen extends ConsumerWidget {
   const ScheduleScreen({super.key});
+  
+  void _showCreateEventDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => CreateEventDialog(
+        onEventCreated: (event) async {
+          try {
+            await ref.read(eventsProvider.notifier).addEvent(event);
+            if (context.mounted) {
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Event "${event.title}" created successfully!')),
+              );
+            }
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Failed to create event: $e'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -26,11 +56,25 @@ class ScheduleScreen extends ConsumerWidget {
     final highlightedEvents = ref.watch(highlightedEventsProvider);
     final selectedDate = ref.watch(selectedDateProvider);
     final eventsForDate = ref.watch(eventsForSelectedDateProvider);
+    final permissions = ref.watch(permissionsProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Schedule'),
+        actions: [
+          if (permissions.isAdmin)
+            IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: () => _showCreateEventDialog(context, ref),
+            ),
+        ],
       ),
+      floatingActionButton: permissions.isAdmin
+          ? FloatingActionButton(
+              onPressed: () => _showCreateEventDialog(context, ref),
+              child: const Icon(Icons.event_note),
+            )
+          : null,
       body: Column(
         children: [
           if (highlightedEvents.isNotEmpty) ...[
@@ -287,18 +331,20 @@ class EventBannerCard extends ConsumerWidget {
                               event.currentParticipants >= event.maxParticipants!;
                           
                           return ElevatedButton(
-                            onPressed: (isFull && !isSignedUp) ? null : () {
-                              ref.read(eventsProvider.notifier).toggleEventSignUp(event.id, ref);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    isSignedUp 
-                                      ? 'Cancelled registration for ${event.title}'
-                                      : 'Signed up for ${event.title}!'
+                            onPressed: (isFull && !isSignedUp) ? null : () async {
+                              await ref.read(eventsProvider.notifier).toggleEventSignUp(event.id, ref);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      isSignedUp 
+                                        ? 'Cancelled registration for ${event.title}'
+                                        : 'Signed up for ${event.title}!'
+                                    ),
+                                    backgroundColor: isSignedUp ? Colors.orange : Colors.green,
                                   ),
-                                  backgroundColor: isSignedUp ? Colors.orange : Colors.green,
-                                ),
-                              );
+                                );
+                              }
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: isSignedUp ? Colors.orange : Colors.white,
@@ -447,18 +493,20 @@ class EventListItem extends ConsumerWidget {
                             event.currentParticipants >= event.maxParticipants!;
                         
                         return ElevatedButton(
-                          onPressed: (isFull && !isSignedUp) ? null : () {
-                            ref.read(eventsProvider.notifier).toggleEventSignUp(event.id, ref);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  isSignedUp 
-                                    ? 'Cancelled registration for ${event.title}'
-                                    : 'Signed up for ${event.title}!'
+                          onPressed: (isFull && !isSignedUp) ? null : () async {
+                            await ref.read(eventsProvider.notifier).toggleEventSignUp(event.id, ref);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    isSignedUp 
+                                      ? 'Cancelled registration for ${event.title}'
+                                      : 'Signed up for ${event.title}!'
+                                  ),
+                                  backgroundColor: isSignedUp ? Colors.orange : Colors.green,
                                 ),
-                                backgroundColor: isSignedUp ? Colors.orange : Colors.green,
-                              ),
-                            );
+                              );
+                            }
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: isSignedUp ? Colors.orange : null,

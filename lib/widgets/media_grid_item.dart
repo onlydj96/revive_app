@@ -8,12 +8,14 @@ class MediaGridItem extends ConsumerWidget {
   final MediaItem mediaItem;
   final VoidCallback onTap;
   final VoidCallback onCollect;
+  final VoidCallback? onDelete;
 
   const MediaGridItem({
     super.key,
     required this.mediaItem,
     required this.onTap,
     required this.onCollect,
+    this.onDelete,
   });
 
   @override
@@ -109,14 +111,12 @@ class MediaGridItem extends ConsumerWidget {
                             ),
                           ),
                         ),
-                        if (permissions.canEditContent || permissions.canDeleteContent) ...[
+                        if (permissions.canDeleteMedia(mediaItem.photographer)) ...[
                           const SizedBox(width: 4),
                           PopupMenuButton<String>(
                             onSelected: (value) {
-                              if (value == 'edit') {
-                                _showEditDialog(context, mediaItem);
-                              } else if (value == 'delete') {
-                                _showDeleteDialog(context, mediaItem);
+                              if (value == 'delete') {
+                                _showDeleteDialog(context, mediaItem, onDelete);
                               }
                             },
                             icon: Container(
@@ -132,28 +132,16 @@ class MediaGridItem extends ConsumerWidget {
                               ),
                             ),
                             itemBuilder: (context) => [
-                              if (permissions.canEditContent)
-                                const PopupMenuItem(
-                                  value: 'edit',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.edit, size: 18),
-                                      SizedBox(width: 8),
-                                      Text('Edit'),
-                                    ],
-                                  ),
+                              const PopupMenuItem(
+                                value: 'delete',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.delete, size: 18, color: Colors.red),
+                                    SizedBox(width: 8),
+                                    Text('삭제', style: TextStyle(color: Colors.red)),
+                                  ],
                                 ),
-                              if (permissions.canDeleteContent)
-                                const PopupMenuItem(
-                                  value: 'delete',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.delete, size: 18),
-                                      SizedBox(width: 8),
-                                      Text('Delete'),
-                                    ],
-                                  ),
-                                ),
+                              ),
                             ],
                           ),
                         ],
@@ -250,51 +238,59 @@ class MediaGridItem extends ConsumerWidget {
     }
   }
 
-  void _showEditDialog(BuildContext context, MediaItem mediaItem) {
+  void _showDeleteDialog(BuildContext context, MediaItem mediaItem, VoidCallback? onDelete) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Edit Media'),
-        content: Text('Edit functionality for "${mediaItem.title}" would be implemented here.'),
+        title: const Text('미디어 삭제 확인'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('정말로 "${mediaItem.title}"을(를) 삭제하시겠습니까?'),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.orange[700], size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '이 작업은 되돌릴 수 있습니다. 미디어가 숨겨지지만 완전히 삭제되지는 않습니다.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange[700],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: const Text('취소'),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Edit feature coming soon!')),
-              );
+              if (onDelete != null) {
+                onDelete();
+              }
             },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showDeleteDialog(BuildContext context, MediaItem mediaItem) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Media'),
-        content: Text('Are you sure you want to delete "${mediaItem.title}"? This action cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Deleted "${mediaItem.title}"')),
-              );
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('삭제'),
           ),
         ],
       ),

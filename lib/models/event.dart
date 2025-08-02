@@ -3,7 +3,26 @@ enum EventType {
   connectGroup,
   hangout,
   special,
-  training,
+  training;
+  
+  static EventType fromString(String value) {
+    switch (value) {
+      case 'service':
+        return EventType.service;
+      case 'connectGroup':
+        return EventType.connectGroup;
+      case 'hangout':
+        return EventType.hangout;
+      case 'special':
+        return EventType.special;
+      case 'training':
+        return EventType.training;
+      default:
+        return EventType.service;
+    }
+  }
+  
+  String toJson() => name;
 }
 
 class Event {
@@ -63,5 +82,39 @@ class Event {
       maxParticipants: maxParticipants ?? this.maxParticipants,
       currentParticipants: currentParticipants ?? this.currentParticipants,
     );
+  }
+  
+  factory Event.fromJson(Map<String, dynamic> json) {
+    return Event(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      description: json['description'] as String? ?? '',
+      startTime: DateTime.parse(json['start_time'] as String),
+      endTime: DateTime.parse(json['end_time'] as String),
+      location: json['location'] as String,
+      type: EventType.fromString(json['type'] as String),
+      imageUrl: json['image_url'] as String?,
+      isHighlighted: json['is_highlighted'] as bool? ?? false,
+      requiresSignup: json['requires_signup'] as bool? ?? false,
+      maxParticipants: json['max_participants'] as int?,
+      currentParticipants: json['current_participants'] as int? ?? 0,
+    );
+  }
+  
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'start_time': startTime.toIso8601String(),
+      'end_time': endTime.toIso8601String(),
+      'location': location,
+      'type': type.toJson(),
+      'image_url': imageUrl,
+      'is_highlighted': isHighlighted,
+      'requires_signup': requiresSignup,
+      'max_participants': maxParticipants,
+      'current_participants': currentParticipants,
+    };
   }
 }

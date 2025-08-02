@@ -1,14 +1,68 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../models/notification.dart';
+import '../providers/notification_provider.dart';
+import '../providers/user_provider.dart';
 
-class MainScreen extends StatelessWidget {
+class MainScreen extends ConsumerWidget {
   final Widget child;
 
   const MainScreen({super.key, required this.child});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hasUnreadNotifications = ref.watch(hasUnreadNotificationsProvider);
+    final unreadCount = ref.watch(unreadNotificationCountProvider);
+    final user = ref.watch(userProvider);
+
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Ezer'),
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.white,
+        actions: [
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications),
+                onPressed: user?.isAdmin == true 
+                    ? () => _showNotifications(context, ref)
+                    : null,
+              ),
+              if (hasUnreadNotifications && user?.isAdmin == true)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    child: Text(
+                      unreadCount > 9 ? '9+' : unreadCount.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () => context.push('/profile'),
+          ),
+        ],
+      ),
       body: child,
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
@@ -79,6 +133,158 @@ class MainScreen extends StatelessWidget {
       case 4:
         GoRouter.of(context).go('/updates');
         break;
+    }
+  }
+
+  void _showNotifications(BuildContext context, WidgetRef ref) {
+    final notifications = ref.read(notificationProvider);
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        maxChildSize: 0.9,
+        minChildSize: 0.3,
+        expand: false,
+        builder: (context, scrollController) => Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Notifications',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (notifications.isNotEmpty)
+                    TextButton(
+                      onPressed: () {
+                        ref.read(notificationProvider.notifier).markAllAsRead();
+                      },
+                      child: const Text('Mark all as read'),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: notifications.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.notifications_none,
+                              size: 64,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No notifications',
+                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: scrollController,
+                        itemCount: notifications.length,
+                        itemBuilder: (context, index) {
+                          final notification = notifications[index];
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: notification.isRead 
+                                    ? Colors.grey[300] 
+                                    : Theme.of(context).primaryColor,
+                                child: Icon(
+                                  _getNotificationIcon(notification.type),
+                                  color: notification.isRead 
+                                      ? Colors.grey[600] 
+                                      : Colors.white,
+                                ),
+                              ),
+                              title: Text(
+                                notification.title,
+                                style: TextStyle(
+                                  fontWeight: notification.isRead 
+                                      ? FontWeight.normal 
+                                      : FontWeight.bold,
+                                ),
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(notification.message),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _formatTimestamp(notification.timestamp),
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              onTap: () {
+                                ref.read(notificationProvider.notifier).markAsRead(notification.id);
+                              },
+                              trailing: IconButton(
+                                icon: const Icon(Icons.close, size: 20),
+                                onPressed: () {
+                                  ref.read(notificationProvider.notifier).removeNotification(notification.id);
+                                },
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _getNotificationIcon(NotificationType type) {
+    switch (type) {
+      case NotificationType.feedbackSubmitted:
+        return Icons.feedback;
+      case NotificationType.generalAlert:
+        return Icons.info;
+    }
+  }
+
+  String _formatTimestamp(DateTime timestamp) {
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+    
+    if (difference.inMinutes < 1) {
+      return 'Just now';
+    } else if (difference.inHours < 1) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inDays < 1) {
+      return '${difference.inHours}h ago';
+    } else {
+      return '${difference.inDays}d ago';
     }
   }
 }

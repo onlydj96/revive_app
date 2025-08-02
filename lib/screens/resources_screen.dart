@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/media_provider.dart';
-import '../providers/photo_albums_provider.dart';
+import '../providers/media_folder_provider.dart';
 import '../providers/permissions_provider.dart';
 import '../models/media_item.dart';
-import '../models/photo_album.dart';
+import '../models/media_folder.dart';
 import '../widgets/media_grid_item.dart';
-import '../widgets/create_photo_album_dialog.dart';
-import '../widgets/photo_album_card.dart';
+import '../widgets/create_media_folder_dialog.dart';
+import '../widgets/upload_media_dialog.dart';
 
 class ResourcesScreen extends ConsumerStatefulWidget {
   const ResourcesScreen({super.key});
@@ -19,23 +19,43 @@ class ResourcesScreen extends ConsumerStatefulWidget {
 
 class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
   bool _isGridView = true;
-  bool _showPhotosOnly = false; // Toggle between all media and photos only
-
+  
   @override
   Widget build(BuildContext context) {
-    final mediaAsyncValue = ref.watch(mediaProvider);
-    final photoAlbumsAsyncValue = ref.watch(photoAlbumsProvider);
-    final filteredMedia = ref.watch(filteredMediaProvider);
-    final filteredAlbums = ref.watch(filteredPhotoAlbumsProvider);
-    final searchQuery = ref.watch(mediaSearchProvider);
-    final typeFilter = ref.watch(mediaFilterProvider);
-    final categoryFilter = ref.watch(mediaCategoryFilterProvider);
+    final foldersAsyncValue = ref.watch(mediaFolderProvider);
+    final filteredFolders = ref.watch(filteredMediaFoldersProvider);
+    final currentFolderId = ref.watch(currentFolderProvider);
+    final searchQuery = ref.watch(mediaFolderSearchProvider);
     final permissions = ref.watch(permissionsProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Resources'),
+        title: _buildAppBarTitle(),
+        leading: currentFolderId != null 
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => _navigateUp(),
+              )
+            : null,
         actions: [
+          // Admin toggle for showing deleted items
+          if (permissions.isAdmin) ...[
+            Consumer(
+              builder: (context, ref, child) {
+                final showDeleted = ref.watch(showDeletedFoldersProvider);
+                return IconButton(
+                  icon: Icon(
+                    showDeleted ? Icons.visibility_off : Icons.visibility,
+                    color: showDeleted ? Colors.orange : null,
+                  ),
+                  tooltip: showDeleted ? '삭제된 항목 숨기기' : '삭제된 항목 보기',
+                  onPressed: () {
+                    ref.read(showDeletedFoldersProvider.notifier).state = !showDeleted;
+                  },
+                );
+              },
+            ),
+          ],
           IconButton(
             icon: Icon(_isGridView ? Icons.list : Icons.grid_view),
             onPressed: () {
@@ -54,137 +74,35 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
               child: const Icon(Icons.add),
             )
           : null,
-      body: mediaAsyncValue.when(
-        data: (media) => Column(
+      body: foldersAsyncValue.when(
+        data: (folders) => Column(
           children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Search photos, videos, and audio...',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey[50],
+            // Search bar
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Search folders and media...',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  onChanged: (value) {
-                    ref.read(mediaSearchProvider.notifier).state = value;
-                  },
+                  filled: true,
+                  fillColor: Colors.grey[50],
                 ),
-                const SizedBox(height: 12),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      FilterChip(
-                        label: const Text('All Types'),
-                        selected: typeFilter == null,
-                        onSelected: (selected) {
-                          ref.read(mediaFilterProvider.notifier).state = null;
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      ...MediaType.values.map((type) => Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: FilterChip(
-                          label: Text(_getMediaTypeLabel(type)),
-                          selected: typeFilter == type,
-                          onSelected: (selected) {
-                            ref.read(mediaFilterProvider.notifier).state = 
-                                selected ? type : null;
-                          },
-                        ),
-                      )),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    FilterChip(
-                      label: const Text('전체'),
-                      selected: !_showPhotosOnly,
-                      onSelected: (selected) {
-                        setState(() {
-                          _showPhotosOnly = false;
-                        });
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    FilterChip(
-                      label: const Text('사진 앨범'),
-                      selected: _showPhotosOnly,
-                      onSelected: (selected) {
-                        setState(() {
-                          _showPhotosOnly = true;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      FilterChip(
-                        label: const Text('All Categories'),
-                        selected: categoryFilter == null,
-                        onSelected: (selected) {
-                          ref.read(mediaCategoryFilterProvider.notifier).state = null;
-                          // Also sync with photo album category filter
-                          ref.read(photoAlbumCategoryFilterProvider.notifier).state = null;
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      ...MediaCategory.values.map((category) => Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: FilterChip(
-                          label: Text(_getMediaCategoryLabel(category)),
-                          selected: categoryFilter == category,
-                          onSelected: (selected) {
-                            ref.read(mediaCategoryFilterProvider.notifier).state = 
-                                selected ? category : null;
-                            // Also sync with photo album category filter
-                            ref.read(photoAlbumCategoryFilterProvider.notifier).state = 
-                                selected ? category : null;
-                          },
-                        ),
-                      )),
-                    ],
-                  ),
-                ),
-              ],
+                onChanged: (value) {
+                  ref.read(mediaFolderSearchProvider.notifier).state = value;
+                },
+              ),
             ),
-          ),
-          
-          Expanded(
-            child: _showPhotosOnly
-                ? photoAlbumsAsyncValue.when(
-                    data: (albums) => _buildPhotoAlbumsGrid(filteredAlbums, searchQuery),
-                    loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (error, stack) => Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.error, size: 64, color: Colors.red),
-                          const SizedBox(height: 16),
-                          Text('Error loading albums: $error'),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () => ref.read(photoAlbumsProvider.notifier).refresh(),
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                : _buildAllMediaGrid(filteredMedia, searchQuery),
-          ),
+            
+            // Breadcrumb navigation
+            if (currentFolderId != null) _buildBreadcrumb(),
+            
+            // Content area
+            Expanded(
+              child: _buildFolderContent(filteredFolders, currentFolderId),
+            ),
           ],
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -194,10 +112,10 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
             children: [
               const Icon(Icons.error, size: 64, color: Colors.red),
               const SizedBox(height: 16),
-              Text('Error loading media: $error'),
+              Text('Error loading folders: $error'),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: () => ref.read(mediaProvider.notifier).refresh(),
+                onPressed: () => ref.read(mediaFolderProvider.notifier).refresh(),
                 child: const Text('Retry'),
               ),
             ],
@@ -207,86 +125,112 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     );
   }
 
-  Widget _buildPhotoAlbumsGrid(List<PhotoAlbum> albums, String searchQuery) {
-    if (albums.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.photo_library,
-              size: 64,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              searchQuery.isNotEmpty
-                  ? 'No albums found for "$searchQuery"'
-                  : 'No photo albums available',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Create your first photo album',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[500],
-              ),
-            ),
-          ],
-        ),
-      );
+  Widget _buildAppBarTitle() {
+    final currentFolderId = ref.watch(currentFolderProvider);
+    if (currentFolderId == null) {
+      return const Text('Resources');
     }
-
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.75,
+    
+    final folders = ref.watch(mediaFolderProvider).value ?? [];
+    final currentFolder = folders.firstWhere(
+      (f) => f.id == currentFolderId,
+      orElse: () => MediaFolder(
+        id: '',
+        name: 'Unknown',
+        folderPath: '',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
       ),
-      itemCount: albums.length,
-      itemBuilder: (context, index) {
-        final album = albums[index];
-        return PhotoAlbumCard(
-          album: album,
-          onTap: () => context.push('/album/${album.id}'),
-        );
-      },
+    );
+    
+    return Text(currentFolder.name);
+  }
+
+  void _navigateUp() {
+    final folders = ref.watch(mediaFolderProvider).value ?? [];
+    final currentFolderId = ref.watch(currentFolderProvider);
+    
+    if (currentFolderId != null) {
+      final currentFolder = folders.firstWhere((f) => f.id == currentFolderId);
+      ref.read(currentFolderProvider.notifier).state = currentFolder.parentId;
+    }
+  }
+
+  Widget _buildBreadcrumb() {
+    final breadcrumb = ref.read(mediaFolderProvider.notifier).getFolderBreadcrumb(
+      ref.watch(currentFolderProvider)
+    );
+    
+    return Container(
+      height: 50,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: breadcrumb.length + 1, // +1 for root
+        separatorBuilder: (context, index) => const Icon(
+          Icons.chevron_right,
+          color: Colors.grey,
+        ),
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return InkWell(
+              onTap: () => ref.read(currentFolderProvider.notifier).state = null,
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                child: Text('Home', style: TextStyle(color: Colors.blue)),
+              ),
+            );
+          }
+          
+          final folder = breadcrumb[index - 1];
+          return InkWell(
+            onTap: () => ref.read(currentFolderProvider.notifier).state = folder.id,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+              child: Text(
+                folder.name,
+                style: const TextStyle(color: Colors.blue),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
-  Widget _buildAllMediaGrid(List<MediaItem> media, String searchQuery) {
-    // Filter out photos that belong to albums, show only individual media
-    final individualMedia = media.where((item) => 
-        item.type != MediaType.photo || 
-        (item.type == MediaType.photo && item.url.contains('individual'))
-    ).toList();
-
-    if (individualMedia.isEmpty) {
+  Widget _buildFolderContent(List<MediaFolder> folders, String? currentFolderId) {
+    // Get current folder's subfolders
+    final subfolders = folders.where((f) => f.parentId == currentFolderId).toList();
+    
+    // Get all folders from the provider to access media items
+    final allFolders = ref.watch(mediaFolderProvider).value ?? [];
+    final currentFolder = currentFolderId != null
+        ? allFolders.firstWhere((f) => f.id == currentFolderId, orElse: () => 
+            MediaFolder(id: '', name: '', folderPath: '', createdAt: DateTime.now(), updatedAt: DateTime.now()))
+        : null;
+    
+    final mediaItems = currentFolder?.mediaItems.where((item) => !item.isDeleted).toList() ?? [];
+    
+    if (subfolders.isEmpty && mediaItems.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.search_off,
+              Icons.folder_open,
               size: 64,
               color: Colors.grey[400],
             ),
             const SizedBox(height: 16),
             Text(
-              searchQuery.isNotEmpty
-                  ? 'No media found for "$searchQuery"'
-                  : 'No media available',
+              'This folder is empty',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: Colors.grey[600],
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Try adjusting your filters or search terms',
+              'Add folders or media to get started',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Colors.grey[500],
               ),
@@ -296,41 +240,522 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
       );
     }
 
-    return _isGridView
-        ? GridView.builder(
-            padding: const EdgeInsets.all(16),
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // Show subfolders first
+        if (subfolders.isNotEmpty) ...[
+          const Text(
+            'Folders',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
               childAspectRatio: 0.8,
             ),
-            itemCount: individualMedia.length,
+            itemCount: subfolders.length,
             itemBuilder: (context, index) {
-              final mediaItem = individualMedia[index];
+              final folder = subfolders[index];
+              return _buildFolderCard(folder);
+            },
+          ),
+          const SizedBox(height: 24),
+        ],
+        
+        // Show media items
+        if (mediaItems.isNotEmpty) ...[
+          const Text(
+            'Media',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 0.8,
+            ),
+            itemCount: mediaItems.length,
+            itemBuilder: (context, index) {
+              final mediaItem = mediaItems[index];
               return MediaGridItem(
                 mediaItem: mediaItem,
-                onTap: () => context.push('/media/${mediaItem.id}'),
+                onTap: () => context.push('/media/${mediaItem.id}?folderId=${mediaItem.folderId ?? ''}'),
                 onCollect: () => ref
                     .read(mediaProvider.notifier)
                     .toggleCollection(mediaItem.id),
+                onDelete: () => _deleteMediaSoft(context, mediaItem),
               );
             },
-          )
-        : ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: individualMedia.length,
-            itemBuilder: (context, index) {
-              final mediaItem = individualMedia[index];
-              return MediaListItem(
-                mediaItem: mediaItem,
-                onTap: () => context.push('/media/${mediaItem.id}'),
-                onCollect: () => ref
-                    .read(mediaProvider.notifier)
-                    .toggleCollection(mediaItem.id),
-              );
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildFolderCard(MediaFolder folder) {
+    final thumbnailUrl = folder.effectiveThumbnailUrl;
+    final permissions = ref.watch(permissionsProvider);
+    final isDeleted = folder.isDeleted;
+    
+    return Card(
+      elevation: 2,
+      child: InkWell(
+        onTap: isDeleted ? null : () => ref.read(currentFolderProvider.notifier).state = folder.id,
+        onLongPress: permissions.canDeleteFolder(folder.createdBy) 
+            ? () => _showFolderOptions(context, folder) 
+            : null,
+        borderRadius: BorderRadius.circular(12),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Stack(
+            children: [
+              Opacity(
+                opacity: isDeleted ? 0.5 : 1.0,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Thumbnail image or folder icon
+                    Expanded(
+                      flex: 3,
+                      child: Stack(
+                        children: [
+                          Container(
+                            width: double.infinity,
+                            height: double.infinity,
+                            child: thumbnailUrl != null && thumbnailUrl.isNotEmpty
+                                ? Image.network(
+                                    thumbnailUrl,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        color: isDeleted ? Colors.red[50] : Colors.grey[100],
+                                        child: Icon(
+                                          Icons.folder,
+                                          size: 48,
+                                          color: isDeleted ? Colors.red[300] : Theme.of(context).primaryColor,
+                                        ),
+                                      );
+                                    },
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Container(
+                                        color: Colors.grey[100],
+                                        child: Center(
+                                          child: CircularProgressIndicator(
+                                            value: loadingProgress.expectedTotalBytes != null
+                                                ? loadingProgress.cumulativeBytesLoaded /
+                                                    loadingProgress.expectedTotalBytes!
+                                                : null,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  )
+                                : Container(
+                                    color: isDeleted ? Colors.red[50] : Colors.grey[100],
+                                    child: Icon(
+                                      Icons.folder,
+                                      size: 48,
+                                      color: isDeleted ? Colors.red[300] : Theme.of(context).primaryColor,
+                                    ),
+                                  ),
+                          ),
+                          if (isDeleted)
+                            Positioned.fill(
+                              child: Container(
+                                color: Colors.red.withOpacity(0.2),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.delete_forever,
+                                    size: 32,
+                                    color: Colors.red[700],
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  // Folder info
+                  Expanded(
+                    flex: 2,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            folder.name,
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (folder.description != null) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              folder.description!,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Colors.grey[600],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                          const Spacer(),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.photo_library,
+                                size: 14,
+                                color: Colors.grey[500],
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${folder.totalItemCount}',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Colors.grey[500],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+              // Admin options button
+              if (permissions.canDeleteFolder(folder.createdBy))
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.more_vert,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                      constraints: const BoxConstraints(),
+                      padding: const EdgeInsets.all(8),
+                      onPressed: () => _showFolderOptions(context, folder),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+
+  void _showFolderOptions(BuildContext context, MediaFolder folder) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '폴더 관리',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            if (folder.isDeleted) ...[
+              // Options for deleted folders
+              ListTile(
+                leading: const Icon(Icons.restore, color: Colors.green),
+                title: const Text('폴더 복구'),
+                subtitle: Text('${folder.name} 폴더를 복구합니다'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _restoreFolder(context, folder);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_forever, color: Colors.red),
+                title: const Text('영구 삭제'),
+                subtitle: const Text('폴더를 완전히 삭제합니다 (복구 불가)'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _showPermanentDeleteConfirmation(context, folder);
+                },
+              ),
+            ] else ...[
+              // Options for active folders
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Colors.red),
+                title: const Text('폴더 삭제'),
+                subtitle: Text('${folder.name} 폴더를 삭제합니다'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _showDeleteFolderConfirmation(context, folder);
+                },
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteFolderConfirmation(BuildContext context, MediaFolder folder) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('폴더 삭제 확인'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('정말로 "${folder.name}" 폴더를 삭제하시겠습니까?'),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.orange[700], size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '이 작업은 되돌릴 수 있습니다. 폴더와 내용물이 숨겨지지만 완전히 삭제되지는 않습니다.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange[700],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('취소'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _deleteFolderSoft(context, folder);
             },
-          );
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('삭제'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteFolderSoft(BuildContext context, MediaFolder folder) async {
+    try {
+      print('🖱️ [DEBUG] UI: Delete button clicked for folder: ${folder.name} (ID: ${folder.id})');
+      
+      await ref.read(mediaFolderProvider.notifier).softDeleteFolder(folder.id);
+      
+      print('🖱️ [DEBUG] UI: Soft delete completed');
+      
+      if (context.mounted) {
+        final showDeleted = ref.read(showDeletedFoldersProvider);
+        
+        print('🖱️ [DEBUG] UI: showDeleted toggle state: $showDeleted');
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(showDeleted 
+              ? '${folder.name} 폴더가 삭제되었습니다 (관리자 모드에서는 계속 보입니다)'
+              : '${folder.name} 폴더가 삭제되었습니다'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: '되돌리기',
+              textColor: Colors.white,
+              onPressed: () async {
+                await ref.read(mediaFolderProvider.notifier).restoreFolder(folder.id);
+              },
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      print('🖱️ [ERROR] UI: Delete failed with error: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('폴더 삭제 실패: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteMediaSoft(BuildContext context, MediaItem mediaItem) async {
+    try {
+      await ref.read(mediaProvider.notifier).softDeleteMedia(mediaItem.id);
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${mediaItem.title}이(가) 삭제되었습니다'),
+            backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: '되돌리기',
+              textColor: Colors.white,
+              onPressed: () async {
+                await ref.read(mediaProvider.notifier).restoreMedia(mediaItem.id);
+              },
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('미디어 삭제 실패: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _restoreFolder(BuildContext context, MediaFolder folder) async {
+    try {
+      await ref.read(mediaFolderProvider.notifier).restoreFolder(folder.id);
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${folder.name} 폴더가 복구되었습니다'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('폴더 복구 실패: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showPermanentDeleteConfirmation(BuildContext context, MediaFolder folder) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('영구 삭제 확인'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('정말로 "${folder.name}" 폴더를 영구 삭제하시겠습니까?'),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.warning, color: Colors.red[700], size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '이 작업은 되돌릴 수 없습니다. 폴더와 모든 내용이 완전히 삭제됩니다.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.red[700],
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('취소'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _permanentDeleteFolder(context, folder);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red[700],
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('영구 삭제'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _permanentDeleteFolder(BuildContext context, MediaFolder folder) async {
+    try {
+      await ref.read(mediaFolderProvider.notifier).permanentDeleteFolder(folder.id);
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${folder.name} 폴더가 영구적으로 삭제되었습니다'),
+            backgroundColor: Colors.red[700],
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('영구 삭제 실패: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _showCreateOptions(BuildContext context) {
@@ -342,21 +767,21 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('사진 앨범 만들기'),
-              subtitle: const Text('여러 사진을 모아서 앨범으로 관리'),
+              leading: const Icon(Icons.create_new_folder),
+              title: const Text('폴더 만들기'),
+              subtitle: const Text('새 폴더를 생성하여 미디어를 정리'),
               onTap: () {
                 Navigator.of(context).pop();
-                _showCreatePhotoAlbumDialog(context);
+                _showCreateFolderDialog(context);
               },
             ),
             ListTile(
               leading: const Icon(Icons.upload_file),
-              title: const Text('개별 미디어 업로드'),
-              subtitle: const Text('개별 사진, 영상, 오디오 파일 업로드'),
+              title: const Text('미디어 업로드'),
+              subtitle: const Text('사진이나 동영상을 현재 폴더에 업로드'),
               onTap: () {
                 Navigator.of(context).pop();
-                _showCreateMediaDialog(context);
+                _showUploadMediaDialog(context);
               },
             ),
           ],
@@ -365,31 +790,30 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     );
   }
 
-  void _showCreatePhotoAlbumDialog(BuildContext context) {
+  void _showCreateFolderDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => CreatePhotoAlbumDialog(
-        onCreateAlbum: (title, description, category, photoFiles, photographer, tags, coverPhotoIndex) async {
+      builder: (context) => CreateMediaFolderDialog(
+        parentFolderId: ref.read(currentFolderProvider),
+        onCreateFolder: (name, description, folderPath, thumbnailUrl) async {
           try {
-            await ref.read(photoAlbumsProvider.notifier).createPhotoAlbum(
-              title: title,
+            await ref.read(mediaFolderProvider.notifier).createFolder(
+              name: name,
               description: description,
-              category: category,
-              photoFiles: photoFiles,
-              photographer: photographer,
-              tags: tags,
-              coverPhotoIndex: coverPhotoIndex,
+              parentId: ref.read(currentFolderProvider),
+              folderPath: folderPath,
+              thumbnailUrl: thumbnailUrl,
             );
             
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('사진 앨범이 성공적으로 생성되었습니다!')),
+                const SnackBar(content: Text('폴더가 성공적으로 생성되었습니다!')),
               );
             }
           } catch (e) {
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('앨범 생성 실패: $e')),
+                SnackBar(content: Text('폴더 생성 실패: $e')),
               );
             }
           }
@@ -398,297 +822,57 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     );
   }
 
-  void _showCreateMediaDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Media'),
-        content: const Text('Media upload functionality would be implemented here with support for photos, videos, and audio files.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Media upload feature coming soon!')),
-              );
-            },
-            child: const Text('Upload'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _getMediaTypeLabel(MediaType type) {
-    switch (type) {
-      case MediaType.photo:
-        return 'Photos';
-      case MediaType.video:
-        return 'Videos';
-      case MediaType.audio:
-        return 'Audio';
-    }
-  }
-
-  String _getMediaCategoryLabel(MediaCategory category) {
-    switch (category) {
-      case MediaCategory.worship:
-        return 'Worship';
-      case MediaCategory.sermon:
-        return 'Sermons';
-      case MediaCategory.fellowship:
-        return 'Fellowship';
-      case MediaCategory.outreach:
-        return 'Outreach';
-      case MediaCategory.youth:
-        return 'Youth';
-      case MediaCategory.children:
-        return 'Children';
-      case MediaCategory.general:
-        return 'General';
-    }
-  }
-}
-
-class MediaListItem extends ConsumerWidget {
-  final MediaItem mediaItem;
-  final VoidCallback onTap;
-  final VoidCallback onCollect;
-
-  const MediaListItem({
-    super.key,
-    required this.mediaItem,
-    required this.onTap,
-    required this.onCollect,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final permissions = ref.watch(permissionsProvider);
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: Colors.grey[200],
-                ),
-                child: mediaItem.thumbnailUrl != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          mediaItem.thumbnailUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Icon(
-                              _getMediaTypeIcon(mediaItem.type),
-                              color: Colors.grey[600],
-                            );
-                          },
-                        ),
-                      )
-                    : Icon(
-                        _getMediaTypeIcon(mediaItem.type),
-                        color: Colors.grey[600],
-                      ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      mediaItem.title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (mediaItem.description != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        mediaItem.description!,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).primaryColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            _getMediaCategoryLabel(mediaItem.category),
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).primaryColor,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        if (mediaItem.photographer != null)
-                          Text(
-                            'by ${mediaItem.photographer}',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey[500],
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: Icon(
-                      mediaItem.isCollected ? Icons.bookmark : Icons.bookmark_border,
-                      color: mediaItem.isCollected ? Theme.of(context).primaryColor : null,
-                    ),
-                    onPressed: onCollect,
-                  ),
-                  if (permissions.canEditContent || permissions.canDeleteContent)
-                    PopupMenuButton<String>(
-                      onSelected: (value) {
-                        if (value == 'edit') {
-                          _showEditMediaDialog(context, mediaItem);
-                        } else if (value == 'delete') {
-                          _showDeleteMediaDialog(context, mediaItem);
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        if (permissions.canEditContent)
-                          const PopupMenuItem(
-                            value: 'edit',
-                            child: Row(
-                              children: [
-                                Icon(Icons.edit, size: 18),
-                                SizedBox(width: 8),
-                                Text('Edit'),
-                              ],
-                            ),
-                          ),
-                        if (permissions.canDeleteContent)
-                          const PopupMenuItem(
-                            value: 'delete',
-                            child: Row(
-                              children: [
-                                Icon(Icons.delete, size: 18),
-                                SizedBox(width: 8),
-                                Text('Delete'),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
-                ],
-              ),
-            ],
-          ),
+  void _showUploadMediaDialog(BuildContext context) {
+    final currentFolderId = ref.read(currentFolderProvider);
+    
+    // Get current folder to determine upload path
+    String folderPath = 'root';
+    if (currentFolderId != null) {
+      final folders = ref.read(mediaFolderProvider).value ?? [];
+      final currentFolder = folders.firstWhere(
+        (f) => f.id == currentFolderId,
+        orElse: () => MediaFolder(
+          id: '',
+          name: 'root',
+          folderPath: 'root',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
         ),
-      ),
-    );
-  }
-
-  IconData _getMediaTypeIcon(MediaType type) {
-    switch (type) {
-      case MediaType.photo:
-        return Icons.photo;
-      case MediaType.video:
-        return Icons.videocam;
-      case MediaType.audio:
-        return Icons.audiotrack;
+      );
+      folderPath = currentFolder.folderPath;
     }
-  }
 
-  String _getMediaCategoryLabel(MediaCategory category) {
-    switch (category) {
-      case MediaCategory.worship:
-        return 'Worship';
-      case MediaCategory.sermon:
-        return 'Sermons';
-      case MediaCategory.fellowship:
-        return 'Fellowship';
-      case MediaCategory.outreach:
-        return 'Outreach';
-      case MediaCategory.youth:
-        return 'Youth';
-      case MediaCategory.children:
-        return 'Children';
-      case MediaCategory.general:
-        return 'General';
-    }
-  }
-
-  void _showEditMediaDialog(BuildContext context, MediaItem mediaItem) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Media'),
-        content: Text('Edit functionality for "${mediaItem.title}" would be implemented here.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
+      builder: (context) => UploadMediaDialog(
+        folderId: currentFolderId,
+        folderPath: folderPath,
+        onUploadMedia: (mediaItems) async {
+          try {
+            await ref.read(mediaProvider.notifier).uploadMediaFiles(
+              mediaItems: mediaItems,
+              folderPath: folderPath,
+              folderId: currentFolderId,
+              category: MediaCategory.general,
+              photographer: 'Church Media Team',
+            );
+            
+            // Refresh folder data to show new media
+            await ref.read(mediaFolderProvider.notifier).refresh();
+          } catch (e) {
+            if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Edit feature coming soon!')),
+                SnackBar(
+                  content: Text('업로드 실패: $e'),
+                  backgroundColor: Colors.red,
+                ),
               );
-            },
-            child: const Text('Save'),
-          ),
-        ],
+            }
+            rethrow;
+          }
+        },
       ),
     );
   }
 
-  void _showDeleteMediaDialog(BuildContext context, MediaItem mediaItem) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Media'),
-        content: Text('Are you sure you want to delete "${mediaItem.title}"? This action cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Deleted "${mediaItem.title}"')),
-              );
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-  }
 }

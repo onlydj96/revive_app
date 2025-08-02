@@ -12,6 +12,7 @@ class PhotoAlbum {
   final String? createdBy;
   final List<MediaItem> photos;
   final String? coverPhotoUrl;
+  final String? folderPath; // Storage folder path (e.g., "Sunday Worship/July Week 4")
 
   PhotoAlbum({
     required this.id,
@@ -25,6 +26,7 @@ class PhotoAlbum {
     this.createdBy,
     this.photos = const [],
     this.coverPhotoUrl,
+    this.folderPath,
   });
 
   factory PhotoAlbum.fromJson(Map<String, dynamic> json, {List<MediaItem> photos = const []}) {
@@ -40,6 +42,7 @@ class PhotoAlbum {
       createdBy: json['created_by'] as String?,
       photos: photos,
       coverPhotoUrl: json['cover_photo_url'] as String?,
+      folderPath: json['folder_path'] as String?,
     );
   }
 
@@ -54,6 +57,7 @@ class PhotoAlbum {
       'tags': tags,
       'created_at': createdAt.toIso8601String(),
       'created_by': createdBy,
+      'folder_path': folderPath,
     };
   }
 
@@ -69,6 +73,7 @@ class PhotoAlbum {
     String? createdBy,
     List<MediaItem>? photos,
     String? coverPhotoUrl,
+    String? folderPath,
   }) {
     return PhotoAlbum(
       id: id ?? this.id,
@@ -82,6 +87,7 @@ class PhotoAlbum {
       createdBy: createdBy ?? this.createdBy,
       photos: photos ?? this.photos,
       coverPhotoUrl: coverPhotoUrl ?? this.coverPhotoUrl,
+      folderPath: folderPath ?? this.folderPath,
     );
   }
 

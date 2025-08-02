@@ -155,7 +155,11 @@ final appRouter = GoRouter(
       path: '/media/:id',
       builder: (context, state) {
         final mediaId = state.pathParameters['id']!;
-        return MediaDetailScreen(mediaId: mediaId);
+        final folderId = state.uri.queryParameters['folderId'];
+        return MediaDetailScreen(
+          mediaId: mediaId,
+          folderId: folderId?.isNotEmpty == true ? folderId : null,
+        );
       },
     ),
     GoRoute(

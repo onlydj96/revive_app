@@ -33,6 +33,18 @@ class PermissionsController {
     return _user?.id == authorId;
   }
 
+  bool canDeleteFolder(String? createdBy) {
+    if (!isAuthenticated) return false;
+    if (isAdmin) return true;
+    return _user?.id == createdBy;
+  }
+
+  bool canDeleteMedia(String? createdBy) {
+    if (!isAuthenticated) return false;
+    if (isAdmin) return true;
+    return _user?.id == createdBy;
+  }
+
   UserRole get userRole => _user?.userRole ?? UserRole.member;
   User? get currentUser => _user;
 }

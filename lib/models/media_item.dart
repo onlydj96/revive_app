@@ -60,6 +60,10 @@ class MediaItem {
   final String? photographer;
   final List<String> tags;
   final bool isCollected;
+  final String? albumId;
+  final String? folderId;
+  final DateTime? deletedAt; // Soft delete timestamp
+  final String? deletedBy; // Who deleted this item
 
   MediaItem({
     required this.id,
@@ -73,6 +77,10 @@ class MediaItem {
     this.photographer,
     this.tags = const [],
     this.isCollected = false,
+    this.albumId,
+    this.folderId,
+    this.deletedAt,
+    this.deletedBy,
   });
 
   factory MediaItem.fromJson(Map<String, dynamic> json, {bool isCollected = false}) {
@@ -88,6 +96,10 @@ class MediaItem {
       photographer: json['photographer'] as String?,
       tags: json['tags'] != null ? List<String>.from(json['tags']) : [],
       isCollected: isCollected,
+      albumId: json['album_id'] as String?,
+      folderId: json['folder_id'] as String?,
+      deletedAt: json['deleted_at'] != null ? DateTime.parse(json['deleted_at'] as String) : null,
+      deletedBy: json['deleted_by'] as String?,
     );
   }
 
@@ -103,6 +115,8 @@ class MediaItem {
       'created_at': createdAt.toIso8601String(),
       'photographer': photographer,
       'tags': tags,
+      'album_id': albumId,
+      'folder_id': folderId,
     };
   }
 
@@ -118,6 +132,8 @@ class MediaItem {
     String? photographer,
     List<String>? tags,
     bool? isCollected,
+    String? albumId,
+    String? folderId,
   }) {
     return MediaItem(
       id: id ?? this.id,
@@ -131,6 +147,13 @@ class MediaItem {
       photographer: photographer ?? this.photographer,
       tags: tags ?? this.tags,
       isCollected: isCollected ?? this.isCollected,
+      albumId: albumId ?? this.albumId,
+      folderId: folderId ?? this.folderId,
+      deletedAt: deletedAt ?? this.deletedAt,
+      deletedBy: deletedBy ?? this.deletedBy,
     );
   }
+
+  // Helper methods
+  bool get isDeleted => deletedAt != null;
 }

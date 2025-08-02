@@ -7,6 +7,7 @@ import '../providers/bulletin_provider.dart';
 import '../providers/sermons_provider.dart';
 import '../providers/updates_provider.dart';
 import '../providers/events_provider.dart';
+import '../services/storage_service.dart';
 import '../widgets/profile_summary_card.dart';
 import '../widgets/bulletin_card.dart';
 import '../widgets/sermon_card.dart';
@@ -14,28 +15,41 @@ import '../widgets/updates_preview.dart';
 import '../widgets/upcoming_events_list.dart';
 import '../widgets/worship_feedback_map_card.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Initialize storage buckets after authentication
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeStorage();
+    });
+  }
+
+  Future<void> _initializeStorage() async {
+    try {
+      await StorageService.initializeBuckets();
+    } catch (e) {
+      print('Error initializing storage in HomeScreen: $e');
+      // Don't show error to user, just log it
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final user = ref.watch(userProvider);
     final bulletin = ref.watch(bulletinProvider);
     final latestSermon = ref.watch(latestSermonProvider);
     final recentUpdates = ref.watch(recentUpdatesProvider);
     final upcomingEvents = ref.watch(upcomingEventsProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Ezer'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: () => context.push('/profile'),
-          ),
-        ],
-      ),
-      body: RefreshIndicator(
+    return RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(bulletinProvider);
           ref.invalidate(sermonsProvider);
@@ -83,7 +97,6 @@ class HomeScreen extends ConsumerWidget {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 }

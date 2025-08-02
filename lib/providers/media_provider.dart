@@ -1,7 +1,11 @@
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/media_item.dart';
 import '../services/database_service.dart';
+import '../services/storage_service.dart';
+import '../services/supabase_service.dart';
+import '../widgets/upload_media_dialog.dart';
 
 final mediaProvider = StateNotifierProvider<MediaNotifier, AsyncValue<List<MediaItem>>>((ref) {
   return MediaNotifier();
@@ -114,6 +118,7 @@ class MediaNotifier extends StateNotifier<AsyncValue<List<MediaItem>>> {
     String? thumbnailUrl,
     String? photographer,
     List<String> tags = const [],
+    String? folderId,
   }) async {
     try {
       final data = {
@@ -125,6 +130,7 @@ class MediaNotifier extends StateNotifier<AsyncValue<List<MediaItem>>> {
         'thumbnail_url': thumbnailUrl,
         'photographer': photographer,
         'tags': tags,
+        'folder_id': folderId,
       };
 
       await DatabaseService.createMediaItem(data);
@@ -171,6 +177,40 @@ class MediaNotifier extends StateNotifier<AsyncValue<List<MediaItem>>> {
     }
   }
 
+  Future<void> softDeleteMedia(String id) async {
+    try {
+      // Get current authenticated user ID
+      final currentUser = SupabaseService.currentUser;
+      final currentUserId = currentUser?.id ?? '37494678-2554-4e62-9fd0-c78308e82585'; // Fallback to a valid UUID
+      
+      await DatabaseService.update('media_items', id, {
+        'deleted_at': DateTime.now().toIso8601String(),
+        'deleted_by': currentUserId,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+      
+      // Refresh the media list to reflect the changes
+      await _loadMedia();
+    } catch (error) {
+      rethrow;
+    }
+  }
+
+  Future<void> restoreMedia(String id) async {
+    try {
+      await DatabaseService.update('media_items', id, {
+        'deleted_at': null,
+        'deleted_by': null,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+      
+      // Refresh the media list to reflect the changes
+      await _loadMedia();
+    } catch (error) {
+      rethrow;
+    }
+  }
+
   void toggleCollection(String mediaId) {
     state.whenData((media) {
       final updatedList = media.map((item) {
@@ -181,6 +221,62 @@ class MediaNotifier extends StateNotifier<AsyncValue<List<MediaItem>>> {
       }).toList();
       state = AsyncValue.data(updatedList);
     });
+  }
+
+  Future<void> uploadMediaFiles({
+    required List<UploadMediaItem> mediaItems,
+    required String folderPath,
+    String? folderId,
+    MediaCategory category = MediaCategory.general,
+    String? photographer,
+  }) async {
+    try {
+      // Debug: Check if user is authenticated
+      print('Starting upload with ${mediaItems.length} items');
+      
+      for (int i = 0; i < mediaItems.length; i++) {
+        final mediaItem = mediaItems[i];
+        final file = File(mediaItem.path);
+        
+        print('Uploading item ${i + 1}: ${mediaItem.name}');
+        
+        // Generate unique filename
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final extension = mediaItem.name.split('.').last;
+        final fileName = '${mediaItem.type.name}_${timestamp}_$i.$extension';
+        
+        // Upload to storage
+        print('Uploading to storage: $folderPath/$fileName');
+        final fileUrl = await StorageService.uploadFile(
+          bucketName: StorageService.mediaBucket,
+          folderPath: folderPath,
+          fileName: fileName,
+          file: file,
+        );
+        
+        print('Upload successful, creating database entry...');
+        
+        // Create media item in database
+        await createMediaItem(
+          title: mediaItem.name.split('.').first,
+          type: mediaItem.type,
+          category: category,
+          fileUrl: fileUrl,
+          thumbnailUrl: mediaItem.type == MediaType.photo ? fileUrl : null,
+          photographer: photographer,
+          folderId: folderId,
+        );
+        
+        print('Database entry created successfully');
+      }
+      
+      // Reload media to show new items
+      await _loadMedia();
+      print('Upload process completed successfully');
+    } catch (error) {
+      print('Upload error: $error');
+      rethrow;
+    }
   }
 
   Future<void> refresh() async {

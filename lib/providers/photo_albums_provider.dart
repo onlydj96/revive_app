@@ -1,8 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/services.dart';
 import '../models/photo_album.dart';
 import '../models/media_item.dart';
 import '../services/database_service.dart';
+import '../services/storage_service.dart';
+import 'dart:typed_data';
 
 final photoAlbumsProvider = StateNotifierProvider<PhotoAlbumsNotifier, AsyncValue<List<PhotoAlbum>>>((ref) {
   return PhotoAlbumsNotifier();
@@ -42,11 +45,25 @@ final filteredPhotoAlbumsProvider = Provider<List<PhotoAlbum>>((ref) {
 
 class PhotoAlbumsNotifier extends StateNotifier<AsyncValue<List<PhotoAlbum>>> {
   PhotoAlbumsNotifier() : super(const AsyncValue.loading()) {
-    _loadPhotoAlbums();
-    _setupRealtimeSubscription();
+    // Initialize and load photo albums
+    _initializeAlbums();
+    // _setupRealtimeSubscription();
   }
 
   RealtimeChannel? _channel;
+
+  Future<void> _initializeAlbums() async {
+    try {
+      state = const AsyncValue.loading();
+      
+      // Load all albums
+      await _loadPhotoAlbums();
+    } catch (error, stackTrace) {
+      print('Error initializing albums: $error');
+      state = AsyncValue.error(error, stackTrace);
+    }
+  }
+  
 
   Future<void> _loadPhotoAlbums() async {
     try {
@@ -110,14 +127,50 @@ class PhotoAlbumsNotifier extends StateNotifier<AsyncValue<List<PhotoAlbum>>> {
     );
   }
 
+  // Helper method to upload asset photos to storage
+  Future<List<String>> _uploadAssetPhotos({
+    required String folderPath,
+    required List<String> assetPaths,
+  }) async {
+    final uploadedUrls = <String>[];
+    
+    for (int i = 0; i < assetPaths.length; i++) {
+      final assetPath = assetPaths[i];
+      final fileName = '${assetPath.split('/').last}';
+      
+      try {
+        // Load asset as bytes
+        final ByteData data = await rootBundle.load(assetPath);
+        final Uint8List bytes = data.buffer.asUint8List();
+        
+        // Upload to storage
+        final url = await StorageService.uploadFile(
+          bucketName: StorageService.mediaBucket,
+          folderPath: folderPath,
+          fileName: fileName,
+          file: bytes,
+        );
+        
+        uploadedUrls.add(url);
+        print('Uploaded asset $assetPath to $url');
+      } catch (e) {
+        print('Error uploading asset $assetPath: $e');
+      }
+    }
+    
+    return uploadedUrls;
+  }
+
   Future<String> createPhotoAlbum({
     required String title,
     String? description,
     required MediaCategory category,
-    required List<String> photoFiles, // File paths or URLs
+    required String folderPath, // Folder path in storage
+    required List<String> photoFiles, // File paths, asset paths, or URLs
     String? photographer,
     List<String> tags = const [],
     int? coverPhotoIndex,
+    bool useAssets = false, // Flag to indicate if photoFiles are asset paths
   }) async {
     try {
       // Create album first
@@ -127,50 +180,84 @@ class PhotoAlbumsNotifier extends StateNotifier<AsyncValue<List<PhotoAlbum>>> {
         'category': category.name,
         'photographer': photographer,
         'tags': tags,
+        'folder_path': folderPath,
       };
 
       final albumResult = await DatabaseService.create('photo_albums', albumData);
       final albumId = albumResult!['id'] as String;
 
-      // Upload photos to storage and create media items
-      String? coverPhotoId;
+      List<String> uploadedUrls = [];
       
-      for (int i = 0; i < photoFiles.length; i++) {
-        final filePath = photoFiles[i];
+      if (useAssets) {
+        // Upload asset photos
+        uploadedUrls = await _uploadAssetPhotos(
+          folderPath: folderPath,
+          assetPaths: photoFiles,
+        );
+      } else {
+        // Upload regular file photos
+        for (int i = 0; i < photoFiles.length; i++) {
+          final filePath = photoFiles[i];
+          final fileName = 'photo_${i + 1}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+          
+          try {
+            // Upload file to storage
+            final url = await StorageService.uploadFile(
+              bucketName: StorageService.mediaBucket,
+              folderPath: folderPath,
+              fileName: fileName,
+              file: filePath,
+            );
+            uploadedUrls.add(url);
+          } catch (e) {
+            print('Error uploading photo ${i + 1}: $e');
+          }
+        }
+      }
+      
+      // Create media items in database for each uploaded photo
+      for (int i = 0; i < uploadedUrls.length; i++) {
+        final url = uploadedUrls[i];
+        final fileName = useAssets ? photoFiles[i].split('/').last : 'photo_${i + 1}';
         
-        // In a real implementation, you would upload the file to Supabase Storage here
-        // For now, we'll create a placeholder URL structure
-        final fileName = 'album_${albumId}/photo_${i + 1}.jpg';
-        final storageUrl = 'https://goetblgcpplhbmbuttyv.supabase.co/storage/v1/object/public/media/$fileName';
-        final thumbnailUrl = 'https://goetblgcpplhbmbuttyv.supabase.co/storage/v1/object/public/media/thumbs/$fileName';
-        
-        final mediaData = {
-          'title': '$title - Photo ${i + 1}',
-          'type': 'photo',
-          'category': category.name,
-          'url': storageUrl,
-          'thumbnail_url': thumbnailUrl,
-          'album_id': albumId,
-          'is_album_cover': coverPhotoIndex == i || (coverPhotoIndex == null && i == 0),
-          'photographer': photographer,
-          'tags': tags,
-        };
+        try {
+          final mediaData = {
+            'title': '$title - ${fileName}',
+            'type': 'photo',
+            'category': category.name,
+            'url': url,
+            'thumbnail_url': url, // For now, use same URL
+            'album_id': albumId,
+            'is_album_cover': coverPhotoIndex == i || (coverPhotoIndex == null && i == 0),
+            'photographer': photographer,
+            'tags': tags,
+          };
 
-        final mediaResult = await DatabaseService.createMediaItem(mediaData);
-        
-        // Set cover photo ID
-        if (coverPhotoIndex == i || (coverPhotoIndex == null && i == 0)) {
-          coverPhotoId = mediaResult!['id'] as String;
+          await DatabaseService.createMediaItem(mediaData);
+        } catch (e) {
+          print('Error creating media item for photo ${i + 1}: $e');
         }
       }
 
-      // Update album with cover photo ID
-      if (coverPhotoId != null) {
-        await DatabaseService.update('photo_albums', albumId, {
-          'cover_photo_id': coverPhotoId,
-        });
+      // Update the album with cover photo if we have uploaded photos
+      if (uploadedUrls.isNotEmpty) {
+        // Find the cover photo (first one or specified index)
+        final coverIndex = coverPhotoIndex ?? 0;
+        if (coverIndex < uploadedUrls.length) {
+          // Get the media item that was created for the cover photo
+          final albumPhotos = await DatabaseService.getMediaItems(albumId: albumId);
+          if (albumPhotos.isNotEmpty) {
+            final coverPhotoId = albumPhotos[coverIndex]['id'];
+            await DatabaseService.update('photo_albums', albumId, {
+              'cover_photo_id': coverPhotoId,
+            });
+          }
+        }
       }
 
+      // Reload albums to show the new one
+      await _loadPhotoAlbums();
+      
       return albumId;
     } catch (error) {
       rethrow;

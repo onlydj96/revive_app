@@ -10,10 +10,16 @@ class DatabaseService {
     bool ascending = true,
     int? limit,
     int? offset,
+    bool excludeSoftDeleted = false,
   }) async {
     var query = _client.from(table).select();
     
     dynamic finalQuery = query;
+    
+    // Exclude soft deleted records if requested
+    if (excludeSoftDeleted) {
+      finalQuery = finalQuery.isFilter('deleted_at', null);
+    }
     
     if (orderBy != null) {
       finalQuery = finalQuery.order(orderBy, ascending: ascending);
@@ -50,13 +56,46 @@ class DatabaseService {
   }
 
   static Future<Map<String, dynamic>?> update(String table, String id, Map<String, dynamic> data) async {
-    final response = await _client
-        .from(table)
-        .update(data)
-        .eq('id', id)
-        .select()
-        .single();
-    return response;
+    try {
+      print('💾 [DEBUG] DatabaseService.update called for table: $table, id: $id');
+      print('💾 [DEBUG] Update data: $data');
+      
+      // First check if the record exists
+      final existing = await _client
+          .from(table)
+          .select('id')
+          .eq('id', id)
+          .maybeSingle();
+      
+      if (existing == null) {
+        print('💾 [ERROR] Record with id $id not found in table $table');
+        throw Exception('Record with id $id not found in table $table');
+      }
+      
+      print('💾 [DEBUG] Record exists, proceeding with update...');
+      
+      // Perform the update without returning the result to avoid the error
+      await _client
+          .from(table)
+          .update(data)
+          .eq('id', id);
+      
+      print('💾 [DEBUG] Update query executed successfully');
+      
+      // Return the updated record
+      final response = await _client
+          .from(table)
+          .select()
+          .eq('id', id)
+          .single();
+      
+      print('💾 [DEBUG] Updated record retrieved: $response');
+      
+      return response;
+    } catch (error) {
+      print('💾 [ERROR] DatabaseService.update failed: $error');
+      rethrow;
+    }
   }
 
   static Future<void> delete(String table, String id) async {
@@ -122,9 +161,16 @@ class DatabaseService {
     String? category,
     String? search,
     String? albumId,
+    String? folderId,
     int? limit,
+    bool excludeSoftDeleted = true,
   }) async {
     var query = _client.from('media_items').select();
+    
+    // Exclude soft deleted records by default
+    if (excludeSoftDeleted) {
+      query = query.isFilter('deleted_at', null);
+    }
     
     if (type != null) {
       query = query.eq('type', type);
@@ -141,6 +187,10 @@ class DatabaseService {
     if (albumId != null) {
       query = query.eq('album_id', albumId);
     }
+
+    if (folderId != null) {
+      query = query.eq('folder_id', folderId);
+    }
     
     var orderedQuery = query.order('created_at', ascending: false);
     
@@ -153,10 +203,10 @@ class DatabaseService {
   }
 
   static Future<Map<String, dynamic>?> createMediaItem(Map<String, dynamic> data) async {
-    // Add current user as uploader
+    // Add current user as creator
     final user = SupabaseService.currentUser;
     if (user != null) {
-      data['uploaded_by'] = user.id;
+      data['created_by'] = user.id;
     }
     
     return await create('media_items', data);
@@ -266,10 +316,10 @@ class DatabaseService {
   }
 
   static Future<Map<String, dynamic>?> createSermon(Map<String, dynamic> data) async {
-    // Add current user as uploader
+    // Add current user as creator
     final user = SupabaseService.currentUser;
     if (user != null) {
-      data['uploaded_by'] = user.id;
+      data['created_by'] = user.id;
     }
     
     return await create('sermons', data);
@@ -362,6 +412,49 @@ class DatabaseService {
         .delete()
         .eq('team_id', teamId)
         .eq('user_id', userId);
+  }
+
+  // Generic query method for custom filtering
+  static Future<List<Map<String, dynamic>>> query(
+    String table, {
+    String? where,
+    List<dynamic>? whereArgs,
+    String? orderBy,
+    bool ascending = true,
+    int? limit,
+  }) async {
+    dynamic query = _client.from(table).select();
+    
+    if (where != null && whereArgs != null) {
+      // Convert simple where clause to Supabase filter
+      // This is a simplified implementation for common patterns
+      if (where.contains('parent_id = ?')) {
+        final value = whereArgs.first;
+        if (value == null) {
+          query = query.isFilter('parent_id', null);
+        } else {
+          query = query.eq('parent_id', value);
+        }
+      } else if (where.contains(' = ?')) {
+        final parts = where.split(' = ');
+        if (parts.length == 2) {
+          final column = parts[0].trim();
+          final value = whereArgs.first;
+          query = query.eq(column, value);
+        }
+      }
+    }
+    
+    if (orderBy != null) {
+      query = query.order(orderBy, ascending: ascending);
+    }
+    
+    if (limit != null) {
+      query = query.limit(limit);
+    }
+    
+    final response = await query;
+    return List<Map<String, dynamic>>.from(response);
   }
 
   // Real-time subscriptions
