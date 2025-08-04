@@ -17,6 +17,9 @@ final mediaFilterProvider = StateProvider<MediaType?>((ref) => null);
 
 final mediaCategoryFilterProvider = StateProvider<MediaCategory?>((ref) => null);
 
+// Grid view toggle for ResourcesScreen
+final resourcesViewModeProvider = StateProvider<bool>((ref) => true); // true = grid, false = list
+
 final filteredMediaProvider = Provider<List<MediaItem>>((ref) {
   final mediaAsyncValue = ref.watch(mediaProvider);
   final searchQuery = ref.watch(mediaSearchProvider);
@@ -232,13 +235,11 @@ class MediaNotifier extends StateNotifier<AsyncValue<List<MediaItem>>> {
   }) async {
     try {
       // Debug: Check if user is authenticated
-      print('Starting upload with ${mediaItems.length} items');
       
       for (int i = 0; i < mediaItems.length; i++) {
         final mediaItem = mediaItems[i];
         final file = File(mediaItem.path);
         
-        print('Uploading item ${i + 1}: ${mediaItem.name}');
         
         // Generate unique filename
         final timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -246,7 +247,6 @@ class MediaNotifier extends StateNotifier<AsyncValue<List<MediaItem>>> {
         final fileName = '${mediaItem.type.name}_${timestamp}_$i.$extension';
         
         // Upload to storage
-        print('Uploading to storage: $folderPath/$fileName');
         final fileUrl = await StorageService.uploadFile(
           bucketName: StorageService.mediaBucket,
           folderPath: folderPath,
@@ -254,7 +254,6 @@ class MediaNotifier extends StateNotifier<AsyncValue<List<MediaItem>>> {
           file: file,
         );
         
-        print('Upload successful, creating database entry...');
         
         // Create media item in database
         await createMediaItem(
@@ -267,14 +266,11 @@ class MediaNotifier extends StateNotifier<AsyncValue<List<MediaItem>>> {
           folderId: folderId,
         );
         
-        print('Database entry created successfully');
       }
       
       // Reload media to show new items
       await _loadMedia();
-      print('Upload process completed successfully');
     } catch (error) {
-      print('Upload error: $error');
       rethrow;
     }
   }

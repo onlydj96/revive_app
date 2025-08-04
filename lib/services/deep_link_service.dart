@@ -27,18 +27,16 @@ class DeepLinkService {
         await _handleDeepLink(initialLink);
       }
     } on PlatformException catch (e) {
-      print('Failed to get initial link: $e');
     }
 
     // Handle deep links when app is already running
     _linkSubscription = _appLinks.uriLinkStream.listen(
       (uri) => _handleDeepLink(uri),
-      onError: (err) => print('Deep link error: $err'),
+      onError: (err) => {},  // Silently handle errors
     );
   }
 
   Future<void> _handleDeepLink(Uri uri) async {
-    print('Received deep link: $uri');
     
     // Check if it's an auth callback
     if (uri.scheme == 'ezer' && uri.host == 'auth-callback') {
@@ -48,13 +46,11 @@ class DeepLinkService {
 
   Future<void> _handleAuthCallback(Uri uri) async {
     try {
-      print('Processing auth callback: ${uri.toString()}');
       
       // Modern Supabase Flutter automatically handles deep links
       // We just need to notify that a deep link was received
       // The auth state change will be handled by the auth listener in AuthNotifier
       
-      print('Deep link received, waiting for Supabase to process...');
       
       // Give Supabase time to process the authentication
       await Future.delayed(const Duration(seconds: 1));
@@ -62,16 +58,13 @@ class DeepLinkService {
       // Check if authentication was successful
       final session = SupabaseService.client.auth.currentSession;
       if (session != null) {
-        print('Authentication successful via deep link');
         onAuthStateChanged?.call(true);
       } else {
-        print('Authentication may still be processing...');
         // Don't call onAuthStateChanged(false) immediately
         // as the auth state listener will handle it
       }
       
     } catch (e) {
-      print('Error handling auth callback: $e');
       onAuthStateChanged?.call(false);
     }
   }

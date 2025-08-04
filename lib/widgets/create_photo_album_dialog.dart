@@ -1,11 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import '../models/media_item.dart';
+import '../providers/dialog_state_provider.dart';
 
-class CreatePhotoAlbumDialog extends StatefulWidget {
+class CreatePhotoAlbumDialog extends ConsumerStatefulWidget {
   final Function(
     String title,
     String? description,
@@ -23,21 +25,16 @@ class CreatePhotoAlbumDialog extends StatefulWidget {
   });
 
   @override
-  State<CreatePhotoAlbumDialog> createState() => _CreatePhotoAlbumDialogState();
+  ConsumerState<CreatePhotoAlbumDialog> createState() => _CreatePhotoAlbumDialogState();
 }
 
-class _CreatePhotoAlbumDialogState extends State<CreatePhotoAlbumDialog> {
+class _CreatePhotoAlbumDialogState extends ConsumerState<CreatePhotoAlbumDialog> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _photographerController = TextEditingController();
   final _tagsController = TextEditingController();
   final _folderPathController = TextEditingController();
-  
-  MediaCategory _selectedCategory = MediaCategory.general;
-  List<XFile> _selectedPhotos = [];
-  int? _coverPhotoIndex;
-  bool _isUploading = false;
 
   @override
   void dispose() {
@@ -46,6 +43,11 @@ class _CreatePhotoAlbumDialogState extends State<CreatePhotoAlbumDialog> {
     _photographerController.dispose();
     _tagsController.dispose();
     _folderPathController.dispose();
+    // Reset providers when dialog is closed
+    ref.read(createAlbumLoadingProvider.notifier).state = false;
+    ref.read(selectedPhotosProvider.notifier).state = [];
+    ref.read(coverPhotoIndexProvider.notifier).state = null;
+    ref.read(albumCategoryProvider.notifier).state = MediaCategory.general;
     super.dispose();
   }
 
@@ -119,10 +121,8 @@ class _CreatePhotoAlbumDialogState extends State<CreatePhotoAlbumDialog> {
       }
       
       if (photos.isNotEmpty) {
-        setState(() {
-          _selectedPhotos = photos;
-          _coverPhotoIndex = null; // Reset cover photo selection
-        });
+        ref.read(selectedPhotosProvider.notifier).state = photos;
+        ref.read(coverPhotoIndexProvider.notifier).state = null; // Reset cover photo selection
       }
     } catch (e) {
       if (mounted) {
@@ -222,30 +222,31 @@ class _CreatePhotoAlbumDialogState extends State<CreatePhotoAlbumDialog> {
   }
 
   void _setCoverPhoto(int index) {
-    setState(() {
-      _coverPhotoIndex = index;
-    });
+    ref.read(coverPhotoIndexProvider.notifier).state = index;
   }
 
   void _removePhoto(int index) {
-    setState(() {
-      _selectedPhotos.removeAt(index);
-      if (_coverPhotoIndex == index) {
-        _coverPhotoIndex = null;
-      } else if (_coverPhotoIndex != null && _coverPhotoIndex! > index) {
-        _coverPhotoIndex = _coverPhotoIndex! - 1;
-      }
-    });
+    final currentPhotos = ref.read(selectedPhotosProvider);
+    final currentCoverIndex = ref.read(coverPhotoIndexProvider);
+    
+    final updatedPhotos = List<XFile>.from(currentPhotos);
+    updatedPhotos.removeAt(index);
+    ref.read(selectedPhotosProvider.notifier).state = updatedPhotos;
+    
+    if (currentCoverIndex == index) {
+      ref.read(coverPhotoIndexProvider.notifier).state = null;
+    } else if (currentCoverIndex != null && currentCoverIndex > index) {
+      ref.read(coverPhotoIndexProvider.notifier).state = currentCoverIndex - 1;
+    }
   }
 
   Future<void> _createAlbum() async {
-    if (!_formKey.currentState!.validate() || _selectedPhotos.isEmpty) {
+    final selectedPhotos = ref.read(selectedPhotosProvider);
+    if (!_formKey.currentState!.validate() || selectedPhotos.isEmpty) {
       return;
     }
 
-    setState(() {
-      _isUploading = true;
-    });
+    ref.read(createAlbumLoadingProvider.notifier).state = true;
 
     try {
       final tags = _tagsController.text
@@ -254,13 +255,15 @@ class _CreatePhotoAlbumDialogState extends State<CreatePhotoAlbumDialog> {
           .where((tag) => tag.isNotEmpty)
           .toList();
 
-      final photoFiles = _selectedPhotos.map((photo) => photo.path).toList();
+      final photoFiles = selectedPhotos.map((photo) => photo.path).toList();
+      final selectedCategory = ref.read(albumCategoryProvider);
+      final coverPhotoIndex = ref.read(coverPhotoIndexProvider);
 
       // Generate folder path if not provided
       String folderPath = _folderPathController.text.trim();
       if (folderPath.isEmpty) {
         // Auto-generate folder path based on category and title
-        final categoryName = _getCategoryLabel(_selectedCategory);
+        final categoryName = _getCategoryLabel(selectedCategory);
         final sanitizedTitle = _titleController.text
             .replaceAll(RegExp(r'[^a-zA-Z0-9가-힣\s]'), '')
             .replaceAll(RegExp(r'\s+'), ' ')
@@ -271,12 +274,12 @@ class _CreatePhotoAlbumDialogState extends State<CreatePhotoAlbumDialog> {
       await widget.onCreateAlbum(
         _titleController.text,
         _descriptionController.text.isEmpty ? null : _descriptionController.text,
-        _selectedCategory,
+        selectedCategory,
         folderPath,
         photoFiles,
         _photographerController.text.isEmpty ? null : _photographerController.text,
         tags,
-        _coverPhotoIndex,
+        coverPhotoIndex,
       );
 
       if (mounted) {
@@ -290,15 +293,18 @@ class _CreatePhotoAlbumDialogState extends State<CreatePhotoAlbumDialog> {
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isUploading = false;
-        });
+        ref.read(createAlbumLoadingProvider.notifier).state = false;
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isUploading = ref.watch(createAlbumLoadingProvider);
+    final selectedPhotos = ref.watch(selectedPhotosProvider);
+    final coverPhotoIndex = ref.watch(coverPhotoIndexProvider);
+    final selectedCategory = ref.watch(albumCategoryProvider);
+    
     return AlertDialog(
       title: const Text('사진 앨범 만들기'),
       content: Form(
@@ -334,7 +340,7 @@ class _CreatePhotoAlbumDialogState extends State<CreatePhotoAlbumDialog> {
               const SizedBox(height: 16),
               
               DropdownButtonFormField<MediaCategory>(
-                value: _selectedCategory,
+                value: selectedCategory,
                 decoration: const InputDecoration(
                   labelText: '카테고리',
                   border: OutlineInputBorder(),
@@ -347,9 +353,7 @@ class _CreatePhotoAlbumDialogState extends State<CreatePhotoAlbumDialog> {
                 }).toList(),
                 onChanged: (value) {
                   if (value != null) {
-                    setState(() {
-                      _selectedCategory = value;
-                    });
+                    ref.read(albumCategoryProvider.notifier).state = value;
                   }
                 },
               ),
@@ -396,13 +400,13 @@ class _CreatePhotoAlbumDialogState extends State<CreatePhotoAlbumDialog> {
                   ElevatedButton.icon(
                     onPressed: _pickPhotos,
                     icon: const Icon(Icons.photo_library),
-                    label: Text(_selectedPhotos.isEmpty ? '사진 선택' : '사진 변경'),
+                    label: Text(selectedPhotos.isEmpty ? '사진 선택' : '사진 변경'),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
               
-              if (_selectedPhotos.isEmpty)
+              if (selectedPhotos.isEmpty)
                 Container(
                   height: 120,
                   width: double.infinity,
@@ -428,7 +432,7 @@ class _CreatePhotoAlbumDialogState extends State<CreatePhotoAlbumDialog> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '선택된 사진 (${_selectedPhotos.length}장)',
+                        '선택된 사진 (${selectedPhotos.length}장)',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       const SizedBox(height: 8),
@@ -439,10 +443,10 @@ class _CreatePhotoAlbumDialogState extends State<CreatePhotoAlbumDialog> {
                             crossAxisSpacing: 8,
                             mainAxisSpacing: 8,
                           ),
-                          itemCount: _selectedPhotos.length,
+                          itemCount: selectedPhotos.length,
                           itemBuilder: (context, index) {
-                            final photo = _selectedPhotos[index];
-                            final isCover = _coverPhotoIndex == index;
+                            final photo = selectedPhotos[index];
+                            final isCover = coverPhotoIndex == index;
                             
                             return Stack(
                               children: [
@@ -530,7 +534,7 @@ class _CreatePhotoAlbumDialogState extends State<CreatePhotoAlbumDialog> {
                           },
                         ),
                       ),
-                      if (_coverPhotoIndex == null && _selectedPhotos.isNotEmpty)
+                      if (coverPhotoIndex == null && selectedPhotos.isNotEmpty)
                         Text(
                           '첫 번째 사진이 표지가 됩니다. 별표를 눌러 표지를 변경할 수 있습니다.',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -546,12 +550,12 @@ class _CreatePhotoAlbumDialogState extends State<CreatePhotoAlbumDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: _isUploading ? null : () => Navigator.of(context).pop(),
+          onPressed: isUploading ? null : () => Navigator.of(context).pop(),
           child: const Text('취소'),
         ),
         ElevatedButton(
-          onPressed: _isUploading || _selectedPhotos.isEmpty ? null : _createAlbum,
-          child: _isUploading
+          onPressed: isUploading || selectedPhotos.isEmpty ? null : _createAlbum,
+          child: isUploading
               ? const SizedBox(
                   width: 16,
                   height: 16,

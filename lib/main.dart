@@ -36,7 +36,6 @@ class EzerApp extends ConsumerWidget {
         break;
     }
     
-    print('Main: Building with theme mode: ${themeSettings.mode.name} -> ${themeMode.name}');
     
     return MaterialApp.router(
       title: 'Ezer - Revive Church',

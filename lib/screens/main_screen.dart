@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../models/notification.dart';
 import '../providers/notification_provider.dart';
 import '../providers/user_provider.dart';
+import '../widgets/feedback_detail_dialog.dart';
 
 class MainScreen extends ConsumerWidget {
   final Widget child;
@@ -235,16 +236,59 @@ class MainScreen extends ConsumerWidget {
                                 children: [
                                   Text(notification.message),
                                   const SizedBox(height: 4),
-                                  Text(
-                                    _formatTimestamp(notification.timestamp),
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Colors.grey[600],
-                                    ),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 4,
+                                    children: [
+                                      Text(
+                                        _formatTimestamp(notification.timestamp),
+                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                      if (notification.isFeedbackNotification && notification.hasLocation)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.blue[100],
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.location_on,
+                                                size: 12,
+                                                color: Colors.blue[700],
+                                              ),
+                                              const SizedBox(width: 2),
+                                              Text(
+                                                'Location',
+                                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                  color: Colors.blue[700],
+                                                  fontSize: 10,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ],
                               ),
                               onTap: () {
                                 ref.read(notificationProvider.notifier).markAsRead(notification.id);
+                                
+                                // Show detailed view for feedback notifications
+                                if (notification.isFeedbackNotification) {
+                                  Navigator.of(context).pop(); // Close the notification bottom sheet
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => FeedbackDetailDialog(
+                                      notification: notification,
+                                    ),
+                                  );
+                                }
                               },
                               trailing: IconButton(
                                 icon: const Icon(Icons.close, size: 20),

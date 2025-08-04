@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../providers/teams_provider.dart';
 import '../providers/permissions_provider.dart';
+import '../providers/team_applications_provider.dart';
 import '../models/team.dart';
 
 class TeamsScreen extends ConsumerWidget {
@@ -255,6 +256,10 @@ class TeamCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final applicationsState = ref.watch(teamApplicationsProvider);
+    final hasApplied = applicationsState.appliedTeams.contains(team.id);
+    final isLoading = applicationsState.loadingTeams.contains(team.id);
+    
     return Card(
       child: InkWell(
         onTap: () => context.push('/team/${team.id}'),
@@ -415,30 +420,91 @@ class TeamCard extends ConsumerWidget {
                     ),
                     const SizedBox(width: 16),
                     ElevatedButton(
-                      onPressed: team.maxMembers != null && 
-                          team.currentMembers >= team.maxMembers!
+                      onPressed: (team.maxMembers != null && 
+                          team.currentMembers >= team.maxMembers!) || isLoading
                           ? null
-                          : () {
+                          : () async {
                               if (team.requiresApplication) {
-                                context.push('/team/${team.id}');
+                                if (hasApplied) {
+                                  // Show optimistic feedback immediately
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Left ${team.name}'),
+                                      backgroundColor: Colors.orange,
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                  
+                                  try {
+                                    // Cancel application
+                                    await ref.read(teamApplicationsProvider.notifier).cancelApplication(team.id);
+                                  } catch (e) {
+                                    // Show error message if operation failed
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Failed to leave ${team.name}. Please try again.'),
+                                        backgroundColor: Colors.red,
+                                        duration: const Duration(seconds: 3),
+                                      ),
+                                    );
+                                  }
+                                } else {
+                                  // Show optimistic feedback immediately
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Applied to ${team.name}!'),
+                                      backgroundColor: Colors.green,
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                  
+                                  try {
+                                    // Apply to team
+                                    await ref.read(teamApplicationsProvider.notifier).applyToTeam(team.id);
+                                  } catch (e) {
+                                    // Show error message if operation failed
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Failed to apply to ${team.name}. Please try again.'),
+                                        backgroundColor: Colors.red,
+                                        duration: const Duration(seconds: 3),
+                                      ),
+                                    );
+                                  }
+                                }
                               } else {
-                                ref.read(teamsProvider.notifier).joinTeam(team.id);
+                                // Show optimistic feedback immediately
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text('Joined ${team.name}!'),
                                     backgroundColor: Colors.green,
+                                    duration: const Duration(seconds: 2),
                                   ),
                                 );
+                                
+                                // For non-application teams, join directly
+                                ref.read(teamsProvider.notifier).joinTeam(team.id);
                               }
                             },
-                      child: Text(
-                        team.maxMembers != null && 
-                            team.currentMembers >= team.maxMembers!
-                            ? 'Full'
-                            : team.requiresApplication
-                                ? 'Apply'
-                                : 'Join',
-                      ),
+                      style: hasApplied && team.requiresApplication ? 
+                          ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            foregroundColor: Colors.white,
+                          ) : null,
+                      child: isLoading
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(
+                              team.maxMembers != null && 
+                                  team.currentMembers >= team.maxMembers!
+                                  ? 'Full'
+                                  : team.requiresApplication
+                                      ? (hasApplied ? 'Leave' : 'Apply')
+                                      : 'Join',
+                            ),
                     ),
                   ],
                 ),
@@ -455,20 +521,81 @@ class TeamCard extends ConsumerWidget {
                       ),
                     ),
                     ElevatedButton(
-                      onPressed: () {
+                      onPressed: isLoading ? null : () async {
                         if (team.requiresApplication) {
-                          context.push('/team/${team.id}');
+                          if (hasApplied) {
+                            // Show optimistic feedback immediately
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Left ${team.name}'),
+                                backgroundColor: Colors.orange,
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                            
+                            try {
+                              // Cancel application
+                              await ref.read(teamApplicationsProvider.notifier).cancelApplication(team.id);
+                            } catch (e) {
+                              // Show error message if operation failed
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Failed to leave ${team.name}. Please try again.'),
+                                  backgroundColor: Colors.red,
+                                  duration: const Duration(seconds: 3),
+                                ),
+                              );
+                            }
+                          } else {
+                            // Show optimistic feedback immediately
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Applied to ${team.name}!'),
+                                backgroundColor: Colors.green,
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                            
+                            try {
+                              // Apply to team
+                              await ref.read(teamApplicationsProvider.notifier).applyToTeam(team.id);
+                            } catch (e) {
+                              // Show error message if operation failed
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Failed to apply to ${team.name}. Please try again.'),
+                                  backgroundColor: Colors.red,
+                                  duration: const Duration(seconds: 3),
+                                ),
+                              );
+                            }
+                          }
                         } else {
-                          ref.read(teamsProvider.notifier).joinTeam(team.id);
+                          // Show optimistic feedback immediately
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text('Joined ${team.name}!'),
                               backgroundColor: Colors.green,
+                              duration: const Duration(seconds: 2),
                             ),
                           );
+                          
+                          // For non-application teams, join directly
+                          ref.read(teamsProvider.notifier).joinTeam(team.id);
                         }
                       },
-                      child: Text(team.requiresApplication ? 'Apply' : 'Join'),
+                      style: hasApplied && team.requiresApplication ? 
+                          ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            foregroundColor: Colors.white,
+                          ) : null,
+                      child: isLoading
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(team.requiresApplication ? (hasApplied ? 'Leave' : 'Apply') : 'Join'),
                     ),
                   ],
                 ),

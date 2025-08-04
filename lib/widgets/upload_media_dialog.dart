@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/media_item.dart';
+import '../providers/dialog_state_provider.dart';
 
-class UploadMediaDialog extends StatefulWidget {
+class UploadMediaDialog extends ConsumerStatefulWidget {
   final String? folderId;
   final String folderPath;
   final Function(List<UploadMediaItem> mediaItems) onUploadMedia;
@@ -16,17 +18,27 @@ class UploadMediaDialog extends StatefulWidget {
   });
 
   @override
-  State<UploadMediaDialog> createState() => _UploadMediaDialogState();
+  ConsumerState<UploadMediaDialog> createState() => _UploadMediaDialogState();
 }
 
-class _UploadMediaDialogState extends State<UploadMediaDialog> {
+class _UploadMediaDialogState extends ConsumerState<UploadMediaDialog> {
   final ImagePicker _picker = ImagePicker();
-  final List<UploadMediaItem> _selectedMedia = [];
-  bool _isUploading = false;
-  double _uploadProgress = 0.0;
+
+  @override
+  void dispose() {
+    // Reset providers when dialog is closed
+    ref.read(uploadMediaLoadingProvider.notifier).state = false;
+    ref.read(uploadProgressProvider.notifier).state = 0.0;
+    ref.read(selectedMediaItemsProvider.notifier).state = [];
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isUploading = ref.watch(uploadMediaLoadingProvider);
+    final uploadProgress = ref.watch(uploadProgressProvider);
+    final selectedMedia = ref.watch(selectedMediaItemsProvider);
+    
     return AlertDialog(
       title: const Text('미디어 업로드'),
       contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
@@ -36,15 +48,15 @@ class _UploadMediaDialogState extends State<UploadMediaDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             // Upload progress indicator
-            if (_isUploading) ...[
-              LinearProgressIndicator(value: _uploadProgress),
+            if (isUploading) ...[
+              LinearProgressIndicator(value: uploadProgress),
               const SizedBox(height: 16),
-              Text('업로드 중... ${(_uploadProgress * 100).toInt()}%'),
+              Text('업로드 중... ${(uploadProgress * 100).toInt()}%'),
               const SizedBox(height: 16),
             ],
             
             // Media selection buttons
-            if (!_isUploading) ...[
+            if (!isUploading) ...[
               Row(
                 children: [
                   Expanded(
@@ -101,12 +113,12 @@ class _UploadMediaDialogState extends State<UploadMediaDialog> {
             ],
             
             // Selected media preview
-            if (_selectedMedia.isNotEmpty) ...[
+            if (selectedMedia.isNotEmpty) ...[
               const SizedBox(height: 16),
               const Divider(),
               const SizedBox(height: 8),
               Text(
-                '선택된 파일 (${_selectedMedia.length}개)',
+                '선택된 파일 (${selectedMedia.length}개)',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -116,9 +128,9 @@ class _UploadMediaDialogState extends State<UploadMediaDialog> {
                 constraints: const BoxConstraints(maxHeight: 200),
                 child: ListView.builder(
                   shrinkWrap: true,
-                  itemCount: _selectedMedia.length,
+                  itemCount: selectedMedia.length,
                   itemBuilder: (context, index) {
-                    final media = _selectedMedia[index];
+                    final media = selectedMedia[index];
                     return _buildMediaPreview(media, index);
                   },
                 ),
@@ -129,14 +141,14 @@ class _UploadMediaDialogState extends State<UploadMediaDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: _isUploading ? null : () => Navigator.of(context).pop(),
+          onPressed: isUploading ? null : () => Navigator.of(context).pop(),
           child: const Text('취소'),
         ),
         ElevatedButton(
-          onPressed: _selectedMedia.isNotEmpty && !_isUploading
+          onPressed: selectedMedia.isNotEmpty && !isUploading
               ? _uploadMedia
               : null,
-          child: Text(_isUploading ? '업로드 중...' : '업로드'),
+          child: Text(isUploading ? '업로드 중...' : '업로드'),
         ),
       ],
     );
@@ -161,9 +173,10 @@ class _UploadMediaDialogState extends State<UploadMediaDialog> {
         trailing: IconButton(
           icon: const Icon(Icons.remove_circle_outline),
           onPressed: () {
-            setState(() {
-              _selectedMedia.removeAt(index);
-            });
+            final currentMedia = ref.read(selectedMediaItemsProvider);
+            final updatedMedia = List<UploadMediaItem>.from(currentMedia);
+            updatedMedia.removeAt(index);
+            ref.read(selectedMediaItemsProvider.notifier).state = updatedMedia;
           },
         ),
       ),
@@ -200,15 +213,16 @@ class _UploadMediaDialogState extends State<UploadMediaDialog> {
         final file = File(image.path);
         final stats = await file.stat();
         
-        _selectedMedia.add(UploadMediaItem(
+        final currentMedia = ref.read(selectedMediaItemsProvider);
+        final updatedMedia = List<UploadMediaItem>.from(currentMedia);
+        updatedMedia.add(UploadMediaItem(
           name: image.name,
           path: image.path,
           size: stats.size,
           type: MediaType.photo,
         ));
+        ref.read(selectedMediaItemsProvider.notifier).state = updatedMedia;
       }
-      
-      setState(() {});
     } catch (e) {
       _showError('사진 선택 중 오류가 발생했습니다: $e');
     }
@@ -222,14 +236,15 @@ class _UploadMediaDialogState extends State<UploadMediaDialog> {
         final file = File(video.path);
         final stats = await file.stat();
         
-        _selectedMedia.add(UploadMediaItem(
+        final currentMedia = ref.read(selectedMediaItemsProvider);
+        final updatedMedia = List<UploadMediaItem>.from(currentMedia);
+        updatedMedia.add(UploadMediaItem(
           name: video.name,
           path: video.path,
           size: stats.size,
           type: MediaType.video,
         ));
-        
-        setState(() {});
+        ref.read(selectedMediaItemsProvider.notifier).state = updatedMedia;
       }
     } catch (e) {
       _showError('동영상 선택 중 오류가 발생했습니다: $e');
@@ -244,14 +259,15 @@ class _UploadMediaDialogState extends State<UploadMediaDialog> {
         final file = File(photo.path);
         final stats = await file.stat();
         
-        _selectedMedia.add(UploadMediaItem(
+        final currentMedia = ref.read(selectedMediaItemsProvider);
+        final updatedMedia = List<UploadMediaItem>.from(currentMedia);
+        updatedMedia.add(UploadMediaItem(
           name: photo.name,
           path: photo.path,
           size: stats.size,
           type: MediaType.photo,
         ));
-        
-        setState(() {});
+        ref.read(selectedMediaItemsProvider.notifier).state = updatedMedia;
       }
     } catch (e) {
       _showError('사진 촬영 중 오류가 발생했습니다: $e');
@@ -266,14 +282,15 @@ class _UploadMediaDialogState extends State<UploadMediaDialog> {
         final file = File(video.path);
         final stats = await file.stat();
         
-        _selectedMedia.add(UploadMediaItem(
+        final currentMedia = ref.read(selectedMediaItemsProvider);
+        final updatedMedia = List<UploadMediaItem>.from(currentMedia);
+        updatedMedia.add(UploadMediaItem(
           name: video.name,
           path: video.path,
           size: stats.size,
           type: MediaType.video,
         ));
-        
-        setState(() {});
+        ref.read(selectedMediaItemsProvider.notifier).state = updatedMedia;
       }
     } catch (e) {
       _showError('동영상 촬영 중 오류가 발생했습니다: $e');
@@ -281,21 +298,20 @@ class _UploadMediaDialogState extends State<UploadMediaDialog> {
   }
 
   Future<void> _uploadMedia() async {
-    if (_selectedMedia.isEmpty) return;
+    final selectedMedia = ref.read(selectedMediaItemsProvider);
+    if (selectedMedia.isEmpty) return;
 
-    setState(() {
-      _isUploading = true;
-      _uploadProgress = 0.0;
-    });
+    ref.read(uploadMediaLoadingProvider.notifier).state = true;
+    ref.read(uploadProgressProvider.notifier).state = 0.0;
 
     try {
-      await widget.onUploadMedia(_selectedMedia);
+      await widget.onUploadMedia(selectedMedia);
       
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${_selectedMedia.length}개 파일이 성공적으로 업로드되었습니다!'),
+            content: Text('${selectedMedia.length}개 파일이 성공적으로 업로드되었습니다!'),
             backgroundColor: Colors.green,
           ),
         );
@@ -306,10 +322,8 @@ class _UploadMediaDialogState extends State<UploadMediaDialog> {
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isUploading = false;
-          _uploadProgress = 0.0;
-        });
+        ref.read(uploadMediaLoadingProvider.notifier).state = false;
+        ref.read(uploadProgressProvider.notifier).state = 0.0;
       }
     }
   }

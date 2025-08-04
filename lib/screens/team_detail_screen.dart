@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/teams_provider.dart';
 import '../providers/permissions_provider.dart';
+import '../providers/team_members_provider.dart';
+import '../providers/team_applications_provider.dart';
 import '../models/team.dart';
 
 class TeamDetailScreen extends ConsumerWidget {
@@ -16,8 +18,11 @@ class TeamDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final teams = ref.watch(teamsProvider);
     final permissions = ref.watch(permissionsProvider);
+    final applicationsState = ref.watch(teamApplicationsProvider);
     
     final team = teams.where((t) => t.id == teamId).firstOrNull;
+    final hasApplied = applicationsState.appliedTeams.contains(teamId);
+    final isLoading = applicationsState.loadingTeams.contains(teamId);
     
     if (team == null) {
       return Scaffold(
@@ -265,6 +270,10 @@ class TeamDetailScreen extends ConsumerWidget {
                       ),
                     )),
                   ],
+
+                  // Team Members Section
+                  const SizedBox(height: 24),
+                  _buildMembersSection(context, ref, team),
                   
                   const SizedBox(height: 32),
                   
@@ -272,34 +281,87 @@ class TeamDetailScreen extends ConsumerWidget {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: team.maxMembers != null && 
-                          team.currentMembers >= team.maxMembers!
+                      onPressed: (team.maxMembers != null && 
+                          team.currentMembers >= team.maxMembers!) || isLoading
                           ? null
-                          : () {
+                          : () async {
                               if (team.requiresApplication) {
-                                _showApplicationDialog(context, ref, team);
+                                if (hasApplied) {
+                                  // Show optimistic feedback immediately
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Left ${team.name}'),
+                                      backgroundColor: Colors.orange,
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                  
+                                  try {
+                                    await ref.read(teamApplicationsProvider.notifier).cancelApplication(team.id);
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Failed to leave ${team.name}. Please try again.'),
+                                        backgroundColor: Colors.red,
+                                        duration: const Duration(seconds: 3),
+                                      ),
+                                    );
+                                  }
+                                } else {
+                                  // Show optimistic feedback immediately
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Applied to ${team.name}!'),
+                                      backgroundColor: Colors.green,
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                  
+                                  try {
+                                    await ref.read(teamApplicationsProvider.notifier).applyToTeam(team.id);
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Failed to apply to ${team.name}. Please try again.'),
+                                        backgroundColor: Colors.red,
+                                        duration: const Duration(seconds: 3),
+                                      ),
+                                    );
+                                  }
+                                }
                               } else {
-                                ref.read(teamsProvider.notifier).joinTeam(team.id);
+                                // Show optimistic feedback immediately
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text('Successfully joined ${team.name}!'),
+                                    content: Text('Joined ${team.name}!'),
                                     backgroundColor: Colors.green,
+                                    duration: const Duration(seconds: 2),
                                   ),
                                 );
+                                
+                                ref.read(teamsProvider.notifier).joinTeam(team.id);
                               }
                             },
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: hasApplied && team.requiresApplication ? Colors.orange : null,
+                        foregroundColor: hasApplied && team.requiresApplication ? Colors.white : null,
                       ),
-                      child: Text(
-                        team.maxMembers != null && 
-                            team.currentMembers >= team.maxMembers!
-                            ? 'Team Full'
-                            : team.requiresApplication
-                                ? 'Apply to Join'
-                                : 'Join This ${team.type == TeamType.connectGroup ? 'Group' : 'Hangout'}',
-                        style: const TextStyle(fontSize: 16),
-                      ),
+                      child: isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(
+                              team.maxMembers != null && 
+                                  team.currentMembers >= team.maxMembers!
+                                  ? 'Team Full'
+                                  : team.requiresApplication
+                                      ? (hasApplied ? 'Leave Team' : 'Apply to Join')
+                                      : 'Join This ${team.type == TeamType.connectGroup ? 'Group' : 'Hangout'}',
+                              style: const TextStyle(fontSize: 16),
+                            ),
                     ),
                   ),
                 ],
@@ -309,6 +371,211 @@ class TeamDetailScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildMembersSection(BuildContext context, WidgetRef ref, Team team) {
+    final membersAsync = ref.watch(teamMembersProvider(team.id));
+    final permissions = ref.watch(permissionsProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Team Members',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (permissions.isAdmin)
+              Text(
+                '${team.currentMembers} members',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.grey[600],
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        
+        membersAsync.when(
+          data: (members) {
+            if (members.isEmpty) {
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.people_outline, color: Colors.grey[500]),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'No members have joined yet',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return Column(
+              children: members.map((member) => _buildMemberCard(context, member, permissions.isAdmin)).toList(),
+            );
+          },
+          loading: () => const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: CircularProgressIndicator(),
+            ),
+          ),
+          error: (error, stack) => Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.red[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.red[200]!),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.red[600]),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Failed to load members',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.red[700],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMemberCard(BuildContext context, TeamMember member, bool isAdmin) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey[200]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Avatar
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+            backgroundImage: member.userAvatar != null 
+                ? CachedNetworkImageProvider(member.userAvatar!)
+                : null,
+            child: member.userAvatar == null
+                ? Text(
+                    member.userName.isNotEmpty ? member.userName[0].toUpperCase() : 'U',
+                    style: TextStyle(
+                      color: Theme.of(context).primaryColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  )
+                : null,
+          ),
+          const SizedBox(width: 12),
+          
+          // Member info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  member.userName,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                if (member.userEmail != null && isAdmin)
+                  Text(
+                    member.userEmail!,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                Text(
+                  'Joined ${DateFormat('MMM d, yyyy').format(member.joinedAt)}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[500],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Status badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: _getStatusColor(member.status).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              _getStatusText(member.status),
+              style: TextStyle(
+                color: _getStatusColor(member.status),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'pending':
+        return Colors.orange;
+      case 'approved':
+      case 'member':
+        return Colors.green;
+      case 'rejected':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getStatusText(String status) {
+    switch (status) {
+      case 'pending':
+        return 'Pending';
+      case 'approved':
+      case 'member':
+        return 'Member';
+      case 'rejected':
+        return 'Rejected';
+      default:
+        return 'Unknown';
+    }
   }
 
   Widget _buildInfoRow(BuildContext context, IconData icon, String label, String value) {

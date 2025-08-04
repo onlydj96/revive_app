@@ -7,6 +7,7 @@ import 'supabase_service.dart';
 class StorageService {
   static const String mediaBucket = 'media';
   static const String thumbsBucket = 'media-thumbnails';
+  static const String eventsBucket = 'events';
   
   // Initialize storage buckets
   static Future<void> initializeBuckets() async {
@@ -14,7 +15,6 @@ class StorageService {
       // Check if user is authenticated first
       final user = SupabaseService.currentUser;
       if (user == null) {
-        print('User not authenticated, skipping bucket initialization');
         return;
       }
 
@@ -23,29 +23,30 @@ class StorageService {
       final mediaBucketExists = buckets.any((b) => b.name == mediaBucket);
       
       if (!mediaBucketExists) {
-        print('Creating media bucket...');
         await SupabaseService.storage.createBucket(
           mediaBucket,
           const BucketOptions(public: true),
         );
-        print('Media bucket created successfully');
       } else {
-        print('Media bucket already exists');
       }
       
       final thumbsBucketExists = buckets.any((b) => b.name == thumbsBucket);
       if (!thumbsBucketExists) {
-        print('Creating thumbnails bucket...');
         await SupabaseService.storage.createBucket(
           thumbsBucket,
           const BucketOptions(public: true),
         );
-        print('Thumbnails bucket created successfully');
       } else {
-        print('Thumbnails bucket already exists');
+      }
+      
+      final eventsBucketExists = buckets.any((b) => b.name == eventsBucket);
+      if (!eventsBucketExists) {
+        await SupabaseService.storage.createBucket(
+          eventsBucket,
+          const BucketOptions(public: true),
+        );
       }
     } catch (e) {
-      print('Error initializing storage buckets: $e');
       // Don't throw error, just log it
       // The buckets might already exist or user might not have permissions
     }
@@ -156,7 +157,6 @@ class StorageService {
           .uploadBinary(placeholderPath, Uint8List(0));
     } catch (e) {
       // Folder might already exist, which is fine
-      print('Folder creation note: $e');
     }
   }
 
@@ -283,10 +283,43 @@ class StorageService {
         );
         urls.add(url);
       } catch (e) {
-        print('Failed to upload file $fileName: $e');
       }
     }
     
     return urls;
+  }
+  
+  // Upload event image
+  static Future<String> uploadEventImage({
+    required String eventId,
+    required dynamic file, // Can be File, Uint8List, or String (path)
+    String? fileName,
+  }) async {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final finalFileName = fileName ?? 'event_$timestamp.jpg';
+    
+    return await uploadFile(
+      bucketName: eventsBucket,
+      folderPath: eventId,
+      fileName: finalFileName,
+      file: file,
+    );
+  }
+  
+  // Get event image URL with default fallback
+  static String getEventImageUrl(String? imageUrl) {
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      // If it's already a full URL, return it
+      if (imageUrl.startsWith('http')) {
+        return imageUrl;
+      }
+      // Otherwise, construct the storage URL
+      return getPublicUrl(
+        bucketName: eventsBucket,
+        filePath: imageUrl,
+      );
+    }
+    // Return default event image
+    return 'https://via.placeholder.com/800x400/9c27b0/ffffff?text=Church+Event';
   }
 }

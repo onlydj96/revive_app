@@ -18,7 +18,6 @@ class ResourcesScreen extends ConsumerStatefulWidget {
 }
 
 class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
-  bool _isGridView = true;
   
   @override
   Widget build(BuildContext context) {
@@ -27,6 +26,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     final currentFolderId = ref.watch(currentFolderProvider);
     final searchQuery = ref.watch(mediaFolderSearchProvider);
     final permissions = ref.watch(permissionsProvider);
+    final isGridView = ref.watch(resourcesViewModeProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -57,11 +57,9 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
             ),
           ],
           IconButton(
-            icon: Icon(_isGridView ? Icons.list : Icons.grid_view),
+            icon: Icon(isGridView ? Icons.list : Icons.grid_view),
             onPressed: () {
-              setState(() {
-                _isGridView = !_isGridView;
-              });
+              ref.read(resourcesViewModeProvider.notifier).state = !isGridView;
             },
           ),
         ],
@@ -580,16 +578,13 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
 
   Future<void> _deleteFolderSoft(BuildContext context, MediaFolder folder) async {
     try {
-      print('🖱️ [DEBUG] UI: Delete button clicked for folder: ${folder.name} (ID: ${folder.id})');
       
       await ref.read(mediaFolderProvider.notifier).softDeleteFolder(folder.id);
       
-      print('🖱️ [DEBUG] UI: Soft delete completed');
       
       if (context.mounted) {
         final showDeleted = ref.read(showDeletedFoldersProvider);
         
-        print('🖱️ [DEBUG] UI: showDeleted toggle state: $showDeleted');
         
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -609,7 +604,6 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
         );
       }
     } catch (e) {
-      print('🖱️ [ERROR] UI: Delete failed with error: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

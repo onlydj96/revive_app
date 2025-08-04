@@ -21,20 +21,15 @@ class ThemeNotifier extends StateNotifier<ThemeSettings> {
       state = ThemeSettings(mode: AppThemeMode.values[themeIndex]);
     } catch (e) {
       // If loading fails, keep default
-      print('Failed to load theme preference: $e');
     }
   }
 
   Future<void> setThemeMode(AppThemeMode mode) async {
     try {
-      print('ThemeNotifier: Setting theme mode to ${mode.name}');
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_themeKey, mode.index);
       state = state.copyWith(mode: mode);
-      print('ThemeNotifier: Theme mode set successfully. Current state: ${state.mode.name}');
-      print('ThemeNotifier: Computed ThemeMode: ${themeMode.name}');
     } catch (e) {
-      print('Failed to save theme preference: $e');
     }
   }
 

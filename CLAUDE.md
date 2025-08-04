@@ -56,7 +56,7 @@ Ezer is a church management assistant app for Revive Church, built with Flutter.
 - **Sign Up Screen** (`/signup`) - Account creation with email verification
 
 #### Additional Features
-- **Sanctuary Map** (`/sanctuary-map`) - Interactive 2D map for location sharing and environmental feedback
+- **Worship Feedback Map** (`/worship-feedback-map`) - Interactive 2D map for location sharing and environmental feedback
 - **Profile Management** (`/profile`) - User profile and church information
 - **Detail Screens** - Individual screens for events, teams, media, updates, and sermons
 

@@ -36,7 +36,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     try {
       await StorageService.initializeBuckets();
     } catch (e) {
-      print('Error initializing storage in HomeScreen: $e');
       // Don't show error to user, just log it
     }
   }

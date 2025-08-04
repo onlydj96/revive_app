@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import '../providers/dialog_state_provider.dart';
 
-class CreateMediaFolderDialog extends StatefulWidget {
+class CreateMediaFolderDialog extends ConsumerStatefulWidget {
   final String? parentFolderId;
   final Function(String name, String? description, String folderPath, String? thumbnailUrl) onCreateFolder;
 
@@ -13,19 +15,15 @@ class CreateMediaFolderDialog extends StatefulWidget {
   });
 
   @override
-  State<CreateMediaFolderDialog> createState() => _CreateMediaFolderDialogState();
+  ConsumerState<CreateMediaFolderDialog> createState() => _CreateMediaFolderDialogState();
 }
 
-class _CreateMediaFolderDialogState extends State<CreateMediaFolderDialog> {
+class _CreateMediaFolderDialogState extends ConsumerState<CreateMediaFolderDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _folderPathController = TextEditingController();
   final ImagePicker _imagePicker = ImagePicker();
-
-  bool _isLoading = false;
-  XFile? _selectedThumbnail;
-  String? _thumbnailUrl;
 
   @override
   void initState() {
@@ -39,6 +37,10 @@ class _CreateMediaFolderDialogState extends State<CreateMediaFolderDialog> {
     _nameController.dispose();
     _descriptionController.dispose();
     _folderPathController.dispose();
+    // Reset providers when dialog is closed
+    ref.read(createFolderLoadingProvider.notifier).state = false;
+    ref.read(createFolderThumbnailProvider.notifier).state = null;
+    ref.read(createFolderThumbnailUrlProvider.notifier).state = null;
     super.dispose();
   }
 
@@ -52,10 +54,8 @@ class _CreateMediaFolderDialogState extends State<CreateMediaFolderDialog> {
       );
       
       if (image != null) {
-        setState(() {
-          _selectedThumbnail = image;
-          _thumbnailUrl = image.path; // In real app, this would be uploaded to storage
-        });
+        ref.read(createFolderThumbnailProvider.notifier).state = image;
+        ref.read(createFolderThumbnailUrlProvider.notifier).state = image.path; // In real app, this would be uploaded to storage
       }
     } catch (e) {
       if (mounted) {
@@ -87,9 +87,7 @@ class _CreateMediaFolderDialogState extends State<CreateMediaFolderDialog> {
   Future<void> _createFolder() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    ref.read(createFolderLoadingProvider.notifier).state = true;
 
     try {
       final name = _nameController.text.trim();
@@ -97,8 +95,9 @@ class _CreateMediaFolderDialogState extends State<CreateMediaFolderDialog> {
           ? null 
           : _descriptionController.text.trim();
       final folderPath = _folderPathController.text.trim();
+      final thumbnailUrl = ref.read(createFolderThumbnailUrlProvider);
 
-      await widget.onCreateFolder(name, description, folderPath, _thumbnailUrl);
+      await widget.onCreateFolder(name, description, folderPath, thumbnailUrl);
       
       if (mounted) {
         Navigator.of(context).pop();
@@ -111,15 +110,16 @@ class _CreateMediaFolderDialogState extends State<CreateMediaFolderDialog> {
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        ref.read(createFolderLoadingProvider.notifier).state = false;
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isLoading = ref.watch(createFolderLoadingProvider);
+    final selectedThumbnail = ref.watch(createFolderThumbnailProvider);
+    
     return AlertDialog(
       title: const Text('새 폴더 만들기'),
       content: SingleChildScrollView(
@@ -211,7 +211,7 @@ class _CreateMediaFolderDialogState extends State<CreateMediaFolderDialog> {
                         ],
                       ),
                     ),
-                    if (_selectedThumbnail != null) ...[
+                    if (selectedThumbnail != null) ...[
                       Container(
                         margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                         height: 120,
@@ -225,7 +225,7 @@ class _CreateMediaFolderDialogState extends State<CreateMediaFolderDialog> {
                             ClipRRect(
                               borderRadius: BorderRadius.circular(7),
                               child: Image.file(
-                                File(_selectedThumbnail!.path),
+                                File(selectedThumbnail!.path),
                                 width: double.infinity,
                                 height: 120,
                                 fit: BoxFit.cover,
@@ -241,10 +241,8 @@ class _CreateMediaFolderDialogState extends State<CreateMediaFolderDialog> {
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(),
                                   onPressed: () {
-                                    setState(() {
-                                      _selectedThumbnail = null;
-                                      _thumbnailUrl = null;
-                                    });
+                                    ref.read(createFolderThumbnailProvider.notifier).state = null;
+                                    ref.read(createFolderThumbnailUrlProvider.notifier).state = null;
                                   },
                                   icon: const Icon(
                                     Icons.close,
@@ -328,12 +326,12 @@ class _CreateMediaFolderDialogState extends State<CreateMediaFolderDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+          onPressed: isLoading ? null : () => Navigator.of(context).pop(),
           child: const Text('취소'),
         ),
         ElevatedButton(
-          onPressed: _isLoading ? null : _createFolder,
-          child: _isLoading
+          onPressed: isLoading ? null : _createFolder,
+          child: isLoading
               ? const SizedBox(
                   width: 16,
                   height: 16,

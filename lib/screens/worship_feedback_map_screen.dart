@@ -14,6 +14,7 @@ enum EnvironmentFeedback {
 
 final selectedLocationProvider = StateProvider<Offset?>((ref) => null);
 final environmentFeedbackProvider = StateProvider<EnvironmentFeedback?>((ref) => null);
+final mapSizeProvider = StateProvider<Size?>((ref) => null);
 
 class WorshipFeedbackMapScreen extends ConsumerWidget {
   const WorshipFeedbackMapScreen({super.key});
@@ -81,17 +82,26 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(12),
                 child: Stack(
                   children: [
-                    GestureDetector(
-                      onTapDown: (details) {
-                        ref.read(selectedLocationProvider.notifier).state = details.localPosition;
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        // Store map size for relative coordinate calculation
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          ref.read(mapSizeProvider.notifier).state = constraints.biggest;
+                        });
+                        
+                        return GestureDetector(
+                          onTapDown: (details) {
+                            ref.read(selectedLocationProvider.notifier).state = details.localPosition;
+                          },
+                          child: Container(
+                            width: double.infinity,
+                            height: double.infinity,
+                            child: CustomPaint(
+                              painter: WorshipFeedbackMapPainter(selectedLocation: selectedLocation),
+                            ),
+                          ),
+                        );
                       },
-                      child: Container(
-                        width: double.infinity,
-                        height: double.infinity,
-                        child: CustomPaint(
-                          painter: SanctuaryMapPainter(selectedLocation: selectedLocation),
-                        ),
-                      ),
                     ),
                     
                     if (selectedLocation != null)
@@ -242,6 +252,13 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
   }
 
   void _submitFeedback(BuildContext context, WidgetRef ref, Offset location, EnvironmentFeedback feedback) {
+    // Get the map size from provider
+    final mapSize = ref.read(mapSizeProvider) ?? Size.zero;
+    
+    // Calculate relative position (0.0 to 1.0)
+    final relativeX = mapSize.width > 0 ? location.dx / mapSize.width : 0.0;
+    final relativeY = mapSize.height > 0 ? location.dy / mapSize.height : 0.0;
+    
     final notification = AppNotification(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: 'New Worship Feedback',
@@ -250,7 +267,12 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
       timestamp: DateTime.now(),
       data: {
         'feedback': feedback.name,
-        'location': {'x': location.dx, 'y': location.dy},
+        'location': {
+          'x': location.dx, // Keep absolute for display in original map
+          'y': location.dy,
+          'relativeX': relativeX, // Add relative coordinates
+          'relativeY': relativeY,
+        },
       },
     );
     
@@ -326,10 +348,10 @@ class FeedbackChip extends StatelessWidget {
   }
 }
 
-class SanctuaryMapPainter extends CustomPainter {
+class WorshipFeedbackMapPainter extends CustomPainter {
   final Offset? selectedLocation;
 
-  SanctuaryMapPainter({this.selectedLocation});
+  WorshipFeedbackMapPainter({this.selectedLocation});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -342,15 +364,15 @@ class SanctuaryMapPainter extends CustomPainter {
       ..color = Colors.grey[100]!
       ..style = PaintingStyle.fill;
 
-    // Draw sanctuary outline
-    final sanctuaryRect = Rect.fromLTWH(
+    // Draw worship area outline
+    final worshipAreaRect = Rect.fromLTWH(
       size.width * 0.1,
       size.height * 0.2,
       size.width * 0.8,
       size.height * 0.6,
     );
-    canvas.drawRect(sanctuaryRect, fillPaint);
-    canvas.drawRect(sanctuaryRect, paint);
+    canvas.drawRect(worshipAreaRect, fillPaint);
+    canvas.drawRect(worshipAreaRect, paint);
 
     // Draw stage
     final stageRect = Rect.fromLTWH(

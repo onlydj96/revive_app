@@ -242,13 +242,11 @@ class MediaFolderNotifier extends StateNotifier<AsyncValue<List<MediaFolder>>> {
 
   Future<void> softDeleteFolder(String id) async {
     try {
-      print('🗑️ [DEBUG] Starting soft delete for folder ID: $id');
       
       // Get current authenticated user ID
       final currentUser = SupabaseService.currentUser;
       final currentUserId = currentUser?.id ?? '37494678-2554-4e62-9fd0-c78308e82585'; // Fallback to a valid UUID
       
-      print('🗑️ [DEBUG] Current user ID: $currentUserId');
       
       final updateData = {
         'deleted_at': DateTime.now().toIso8601String(),
@@ -256,18 +254,14 @@ class MediaFolderNotifier extends StateNotifier<AsyncValue<List<MediaFolder>>> {
         'updated_at': DateTime.now().toIso8601String(),
       };
       
-      print('🗑️ [DEBUG] Update data: $updateData');
       
       await DatabaseService.update('media_folders', id, updateData);
       
-      print('🗑️ [DEBUG] Database update completed successfully');
       
       // Refresh the folders list to reflect the changes
       await _loadMediaFolders();
       
-      print('🗑️ [DEBUG] Folders list refreshed');
     } catch (error) {
-      print('🗑️ [ERROR] Soft delete failed: $error');
       rethrow;
     }
   }

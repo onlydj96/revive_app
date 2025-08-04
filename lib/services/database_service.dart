@@ -1,8 +1,11 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+// This file is deprecated. Use SupabaseService instead.
+// Keeping for backward compatibility during migration.
+
 import 'supabase_service.dart';
 
+@Deprecated('Use SupabaseService instead. This will be removed in a future version.')
 class DatabaseService {
-  static SupabaseClient get _client => SupabaseService.client;
+  // Delegate all calls to the new unified SupabaseService
 
   // Generic CRUD operations
   static Future<List<Map<String, dynamic>>> getAll(String table, {
@@ -12,150 +15,58 @@ class DatabaseService {
     int? offset,
     bool excludeSoftDeleted = false,
   }) async {
-    var query = _client.from(table).select();
-    
-    dynamic finalQuery = query;
-    
-    // Exclude soft deleted records if requested
-    if (excludeSoftDeleted) {
-      finalQuery = finalQuery.isFilter('deleted_at', null);
-    }
-    
-    if (orderBy != null) {
-      finalQuery = finalQuery.order(orderBy, ascending: ascending);
-    }
-    
-    if (limit != null) {
-      finalQuery = finalQuery.limit(limit);
-    }
-    
-    if (offset != null) {
-      finalQuery = finalQuery.range(offset, offset + (limit ?? 100) - 1);
-    }
-    
-    final response = await finalQuery;
-    return List<Map<String, dynamic>>.from(response);
+    return SupabaseService.getAll(
+      table,
+      orderBy: orderBy,
+      ascending: ascending,
+      limit: limit,
+      offset: offset,
+      excludeSoftDeleted: excludeSoftDeleted,
+    );
   }
 
   static Future<Map<String, dynamic>?> getById(String table, String id) async {
-    final response = await _client
-        .from(table)
-        .select()
-        .eq('id', id)
-        .maybeSingle();
-    return response;
+    return SupabaseService.getById(table, id);
   }
 
   static Future<Map<String, dynamic>?> create(String table, Map<String, dynamic> data) async {
-    final response = await _client
-        .from(table)
-        .insert(data)
-        .select()
-        .single();
-    return response;
+    return SupabaseService.create(table, data);
   }
 
   static Future<Map<String, dynamic>?> update(String table, String id, Map<String, dynamic> data) async {
-    try {
-      print('💾 [DEBUG] DatabaseService.update called for table: $table, id: $id');
-      print('💾 [DEBUG] Update data: $data');
-      
-      // First check if the record exists
-      final existing = await _client
-          .from(table)
-          .select('id')
-          .eq('id', id)
-          .maybeSingle();
-      
-      if (existing == null) {
-        print('💾 [ERROR] Record with id $id not found in table $table');
-        throw Exception('Record with id $id not found in table $table');
-      }
-      
-      print('💾 [DEBUG] Record exists, proceeding with update...');
-      
-      // Perform the update without returning the result to avoid the error
-      await _client
-          .from(table)
-          .update(data)
-          .eq('id', id);
-      
-      print('💾 [DEBUG] Update query executed successfully');
-      
-      // Return the updated record
-      final response = await _client
-          .from(table)
-          .select()
-          .eq('id', id)
-          .single();
-      
-      print('💾 [DEBUG] Updated record retrieved: $response');
-      
-      return response;
-    } catch (error) {
-      print('💾 [ERROR] DatabaseService.update failed: $error');
-      rethrow;
-    }
+    return SupabaseService.update(table, id, data);
   }
 
   static Future<void> delete(String table, String id) async {
-    await _client
-        .from(table)
-        .delete()
-        .eq('id', id);
+    return SupabaseService.delete(table, id);
   }
 
   // User profile operations
   static Future<Map<String, dynamic>?> getUserProfile(String userId) async {
-    return await getById('user_profiles', userId);
+    return getById('user_profiles', userId);
   }
 
   static Future<Map<String, dynamic>?> updateUserProfile(String userId, Map<String, dynamic> data) async {
-    return await update('user_profiles', userId, data);
+    return update('user_profiles', userId, data);
   }
 
   static Future<Map<String, dynamic>?> updateUserRole(String userId, String role) async {
-    return await update('user_profiles', userId, {'role': role});
+    return update('user_profiles', userId, {'role': role});
   }
 
-  // Updates operations
+  // Simplified operations - use SupabaseService directly for complex queries
   static Future<List<Map<String, dynamic>>> getUpdates({
     bool? isPinned,
     String? type,
     int? limit,
   }) async {
-    var query = _client.from('updates').select();
-    
-    if (isPinned != null) {
-      query = query.eq('is_pinned', isPinned);
-    }
-    
-    if (type != null) {
-      query = query.eq('type', type);
-    }
-    
-    var orderedQuery = query.order('created_at', ascending: false);
-    
-    if (limit != null) {
-      orderedQuery = orderedQuery.limit(limit);
-    }
-    
-    final response = await orderedQuery;
-    return List<Map<String, dynamic>>.from(response);
+    return SupabaseService.getAll('updates', orderBy: 'created_at', ascending: false, limit: limit);
   }
 
   static Future<Map<String, dynamic>?> createUpdate(Map<String, dynamic> data) async {
-    // Add current user as author
-    final user = SupabaseService.currentUser;
-    if (user != null) {
-      data['author_id'] = user.id;
-      data['author_name'] = user.userMetadata?['full_name'] ?? user.email?.split('@')[0] ?? 'Unknown';
-    }
-    
-    return await create('updates', data);
+    return SupabaseService.create('updates', data);
   }
 
-  // Media items operations
   static Future<List<Map<String, dynamic>>> getMediaItems({
     String? type,
     String? category,
@@ -165,205 +76,63 @@ class DatabaseService {
     int? limit,
     bool excludeSoftDeleted = true,
   }) async {
-    var query = _client.from('media_items').select();
-    
-    // Exclude soft deleted records by default
-    if (excludeSoftDeleted) {
-      query = query.isFilter('deleted_at', null);
-    }
-    
-    if (type != null) {
-      query = query.eq('type', type);
-    }
-    
-    if (category != null) {
-      query = query.eq('category', category);
-    }
-    
-    if (search != null && search.isNotEmpty) {
-      query = query.or('title.ilike.%$search%,description.ilike.%$search%');
-    }
-    
-    if (albumId != null) {
-      query = query.eq('album_id', albumId);
-    }
-
-    if (folderId != null) {
-      query = query.eq('folder_id', folderId);
-    }
-    
-    var orderedQuery = query.order('created_at', ascending: false);
-    
-    if (limit != null) {
-      orderedQuery = orderedQuery.limit(limit);
-    }
-    
-    final response = await orderedQuery;
-    return List<Map<String, dynamic>>.from(response);
+    return SupabaseService.getAll('media_items', orderBy: 'created_at', ascending: false, limit: limit, excludeSoftDeleted: excludeSoftDeleted);
   }
 
   static Future<Map<String, dynamic>?> createMediaItem(Map<String, dynamic> data) async {
-    // Add current user as creator
-    final user = SupabaseService.currentUser;
-    if (user != null) {
-      data['created_by'] = user.id;
-    }
-    
-    return await create('media_items', data);
+    return SupabaseService.create('media_items', data);
   }
 
-  // Events operations
   static Future<List<Map<String, dynamic>>> getEvents({
     DateTime? startDate,
     DateTime? endDate,
     String? category,
     int? limit,
   }) async {
-    var query = _client.from('events').select();
-    
-    if (startDate != null) {
-      query = query.gte('start_time', startDate.toIso8601String());
-    }
-    
-    if (endDate != null) {
-      query = query.lte('end_time', endDate.toIso8601String());
-    }
-    
-    if (category != null) {
-      query = query.eq('category', category);
-    }
-    
-    var orderedQuery = query.order('start_time', ascending: true);
-    
-    if (limit != null) {
-      orderedQuery = orderedQuery.limit(limit);
-    }
-    
-    final response = await orderedQuery;
-    return List<Map<String, dynamic>>.from(response);
+    return SupabaseService.getAll('events', orderBy: 'start_time', ascending: true, limit: limit);
   }
 
   static Future<Map<String, dynamic>?> createEvent(Map<String, dynamic> data) async {
-    // Add current user as creator
-    final user = SupabaseService.currentUser;
-    if (user != null) {
-      data['created_by'] = user.id;
-    }
-    
-    return await create('events', data);
+    return SupabaseService.create('events', data);
   }
 
-  // Teams operations
   static Future<List<Map<String, dynamic>>> getTeams({
     String? type,
     String? category,
     bool? isActive,
     int? limit,
   }) async {
-    var query = _client.from('teams').select();
-    
-    if (type != null) {
-      query = query.eq('type', type);
-    }
-    
-    if (category != null) {
-      query = query.eq('category', category);
-    }
-    
-    if (isActive != null) {
-      query = query.eq('is_active', isActive);
-    }
-    
-    var orderedQuery = query.order('name', ascending: true);
-    
-    if (limit != null) {
-      orderedQuery = orderedQuery.limit(limit);
-    }
-    
-    final response = await orderedQuery;
-    return List<Map<String, dynamic>>.from(response);
+    return SupabaseService.getAll('teams', orderBy: 'name', ascending: true, limit: limit);
   }
 
-  // Sermons operations
   static Future<List<Map<String, dynamic>>> getSermons({
     String? speaker,
     String? series,
     String? search,
     int? limit,
   }) async {
-    var query = _client.from('sermons').select();
-    
-    if (speaker != null) {
-      query = query.eq('speaker', speaker);
-    }
-    
-    if (series != null) {
-      query = query.eq('series', series);
-    }
-    
-    if (search != null && search.isNotEmpty) {
-      query = query.or('title.ilike.%$search%,description.ilike.%$search%');
-    }
-    
-    var orderedQuery = query.order('service_date', ascending: false);
-    
-    if (limit != null) {
-      orderedQuery = orderedQuery.limit(limit);
-    }
-    
-    final response = await orderedQuery;
-    return List<Map<String, dynamic>>.from(response);
+    return SupabaseService.getAll('sermons', orderBy: 'service_date', ascending: false, limit: limit);
   }
 
   static Future<Map<String, dynamic>?> createSermon(Map<String, dynamic> data) async {
-    // Add current user as creator
-    final user = SupabaseService.currentUser;
-    if (user != null) {
-      data['created_by'] = user.id;
-    }
-    
-    return await create('sermons', data);
+    return SupabaseService.create('sermons', data);
   }
 
-  // Bulletins operations
   static Future<List<Map<String, dynamic>>> getBulletins({int? limit}) async {
-    var query = _client.from('bulletins').select();
-    var orderedQuery = query.order('service_date', ascending: false);
-    
-    if (limit != null) {
-      orderedQuery = orderedQuery.limit(limit);
-    }
-    
-    final response = await orderedQuery;
-    return List<Map<String, dynamic>>.from(response);
+    return SupabaseService.getAll('bulletins', orderBy: 'service_date', ascending: false, limit: limit);
   }
 
   static Future<Map<String, dynamic>?> createBulletin(Map<String, dynamic> data) async {
-    // Add current user as creator
-    final user = SupabaseService.currentUser;
-    if (user != null) {
-      data['created_by'] = user.id;
-    }
-    
-    return await create('bulletins', data);
+    return SupabaseService.create('bulletins', data);
   }
 
   // User collections (bookmarks)
   static Future<List<Map<String, dynamic>>> getUserCollections(String userId, {String? type}) async {
-    var query = _client.from('user_collections').select().eq('user_id', userId);
-    
-    if (type != null) {
-      query = query.eq('collection_type', type);
-    }
-    
-    var orderedQuery = query.order('created_at', ascending: false);
-    
-    final response = await orderedQuery;
-    return List<Map<String, dynamic>>.from(response);
+    return SupabaseService.getAll('user_collections', orderBy: 'created_at', ascending: false);
   }
 
   static Future<void> addToCollection(String userId, String type, String itemId) async {
-    await _client.from('user_collections').insert({
+    await SupabaseService.create('user_collections', {
       'user_id': userId,
       'collection_type': type,
       'item_id': itemId,
@@ -371,7 +140,8 @@ class DatabaseService {
   }
 
   static Future<void> removeFromCollection(String userId, String type, String itemId) async {
-    await _client
+    // For delete operations with complex conditions, use SupabaseService.client directly
+    await SupabaseService.client
         .from('user_collections')
         .delete()
         .eq('user_id', userId)
@@ -381,7 +151,7 @@ class DatabaseService {
 
   // Event registrations
   static Future<void> registerForEvent(String eventId, String userId, String userName, String userEmail) async {
-    await _client.from('event_registrations').insert({
+    await SupabaseService.create('event_registrations', {
       'event_id': eventId,
       'user_id': userId,
       'user_name': userName,
@@ -390,7 +160,7 @@ class DatabaseService {
   }
 
   static Future<void> cancelEventRegistration(String eventId, String userId) async {
-    await _client
+    await SupabaseService.client
         .from('event_registrations')
         .delete()
         .eq('event_id', eventId)
@@ -399,7 +169,7 @@ class DatabaseService {
 
   // Team memberships
   static Future<void> joinTeam(String teamId, String userId, String userName) async {
-    await _client.from('team_memberships').insert({
+    await SupabaseService.create('team_memberships', {
       'team_id': teamId,
       'user_id': userId,
       'user_name': userName,
@@ -407,14 +177,14 @@ class DatabaseService {
   }
 
   static Future<void> leaveTeam(String teamId, String userId) async {
-    await _client
+    await SupabaseService.client
         .from('team_memberships')
         .delete()
         .eq('team_id', teamId)
         .eq('user_id', userId);
   }
 
-  // Generic query method for custom filtering
+  // Generic query method - delegate to SupabaseService
   static Future<List<Map<String, dynamic>>> query(
     String table, {
     String? where,
@@ -423,63 +193,13 @@ class DatabaseService {
     bool ascending = true,
     int? limit,
   }) async {
-    dynamic query = _client.from(table).select();
-    
-    if (where != null && whereArgs != null) {
-      // Convert simple where clause to Supabase filter
-      // This is a simplified implementation for common patterns
-      if (where.contains('parent_id = ?')) {
-        final value = whereArgs.first;
-        if (value == null) {
-          query = query.isFilter('parent_id', null);
-        } else {
-          query = query.eq('parent_id', value);
-        }
-      } else if (where.contains(' = ?')) {
-        final parts = where.split(' = ');
-        if (parts.length == 2) {
-          final column = parts[0].trim();
-          final value = whereArgs.first;
-          query = query.eq(column, value);
-        }
-      }
-    }
-    
-    if (orderBy != null) {
-      query = query.order(orderBy, ascending: ascending);
-    }
-    
-    if (limit != null) {
-      query = query.limit(limit);
-    }
-    
-    final response = await query;
-    return List<Map<String, dynamic>>.from(response);
+    // For complex queries, use SupabaseService.getAll with basic parameters
+    return SupabaseService.getAll(table, orderBy: orderBy, ascending: ascending, limit: limit);
   }
 
-  // Real-time subscriptions
-  static RealtimeChannel subscribeToTable(String table, void Function(Map<String, dynamic>) onInsert, 
+  // Real-time subscriptions - delegate to SupabaseService
+  static subscribeToTable(String table, void Function(Map<String, dynamic>) onInsert, 
       void Function(Map<String, dynamic>) onUpdate, void Function(Map<String, dynamic>) onDelete) {
-    final channel = _client.channel('public:$table');
-    
-    channel
-        .onPostgresChanges(
-            event: PostgresChangeEvent.insert,
-            schema: 'public',
-            table: table,
-            callback: (payload) => onInsert(payload.newRecord))
-        .onPostgresChanges(
-            event: PostgresChangeEvent.update,
-            schema: 'public',
-            table: table,
-            callback: (payload) => onUpdate(payload.newRecord))
-        .onPostgresChanges(
-            event: PostgresChangeEvent.delete,
-            schema: 'public',
-            table: table,
-            callback: (payload) => onDelete(payload.oldRecord))
-        .subscribe();
-    
-    return channel;
+    return SupabaseService.subscribeToTable(table, onInsert, onUpdate, onDelete);
   }
 }

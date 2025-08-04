@@ -21,9 +21,28 @@ final upcomingEventsProvider = Provider<List<Event>>((ref) {
     ..sort((a, b) => a.startTime.compareTo(b.startTime));
 });
 
+// Provider for upcoming events sorted by date (replaces highlighted events for banner)
+final upcomingEventsBannerProvider = Provider<List<Event>>((ref) {
+  final events = ref.watch(eventsProvider);
+  final now = DateTime.now();
+  
+  // Get all future events sorted by date
+  final upcomingEvents = events
+      .where((event) => event.startTime.isAfter(now))
+      .toList()
+    ..sort((a, b) => a.startTime.compareTo(b.startTime));
+  
+  // Return first 5 upcoming events for the banner
+  return upcomingEvents.take(5).toList();
+});
+
 final highlightedEventsProvider = Provider<List<Event>>((ref) {
   final events = ref.watch(eventsProvider);
-  return events.where((event) => event.isHighlighted).toList();
+  final now = DateTime.now();
+  return events
+      .where((event) => event.isHighlighted && event.startTime.isAfter(now))
+      .toList()
+    ..sort((a, b) => a.startTime.compareTo(b.startTime));
 });
 
 class EventsNotifier extends StateNotifier<List<Event>> {

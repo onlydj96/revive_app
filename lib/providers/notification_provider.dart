@@ -43,3 +43,13 @@ final hasUnreadNotificationsProvider = Provider<bool>((ref) {
   final count = ref.watch(unreadNotificationCountProvider);
   return count > 0;
 });
+
+final feedbackNotificationsProvider = Provider<List<AppNotification>>((ref) {
+  final notifications = ref.watch(notificationProvider);
+  return notifications.where((notification) => notification.isFeedbackNotification).toList();
+});
+
+final feedbackNotificationsWithLocationProvider = Provider<List<AppNotification>>((ref) {
+  final feedbackNotifications = ref.watch(feedbackNotificationsProvider);
+  return feedbackNotifications.where((notification) => notification.hasLocation).toList();
+});
