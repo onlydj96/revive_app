@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../providers/teams_provider.dart';
 import '../providers/permissions_provider.dart';
 import '../providers/team_applications_provider.dart';
+import '../providers/hangout_joins_provider.dart';
 import '../models/team.dart';
 
 class TeamsScreen extends ConsumerWidget {
@@ -257,8 +258,12 @@ class TeamCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final applicationsState = ref.watch(teamApplicationsProvider);
+    final hangoutJoinsState = ref.watch(hangoutJoinsProvider);
     final hasApplied = applicationsState.appliedTeams.contains(team.id);
-    final isLoading = applicationsState.loadingTeams.contains(team.id);
+    final hasJoined = hangoutJoinsState.joinedHangouts.contains(team.id);
+    final isLoading = team.requiresApplication 
+        ? applicationsState.loadingTeams.contains(team.id)
+        : hangoutJoinsState.loadingHangouts.contains(team.id);
     
     return Card(
       child: InkWell(
@@ -421,7 +426,8 @@ class TeamCard extends ConsumerWidget {
                     const SizedBox(width: 16),
                     ElevatedButton(
                       onPressed: (team.maxMembers != null && 
-                          team.currentMembers >= team.maxMembers!) || isLoading
+                          team.currentMembers >= team.maxMembers! && 
+                          !(team.requiresApplication ? hasApplied : hasJoined)) || isLoading
                           ? null
                           : () async {
                               if (team.requiresApplication) {
@@ -473,20 +479,57 @@ class TeamCard extends ConsumerWidget {
                                   }
                                 }
                               } else {
-                                // Show optimistic feedback immediately
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Joined ${team.name}!'),
-                                    backgroundColor: Colors.green,
-                                    duration: const Duration(seconds: 2),
-                                  ),
-                                );
-                                
-                                // For non-application teams, join directly
-                                ref.read(teamsProvider.notifier).joinTeam(team.id);
+                                // For hangouts
+                                if (hasJoined) {
+                                  // Show optimistic feedback immediately
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Left ${team.name}'),
+                                      backgroundColor: Colors.orange,
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                  
+                                  try {
+                                    // Leave hangout
+                                    await ref.read(hangoutJoinsProvider.notifier).leaveHangout(team.id);
+                                  } catch (e) {
+                                    // Show error message if operation failed
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Failed to leave ${team.name}. Please try again.'),
+                                        backgroundColor: Colors.red,
+                                        duration: const Duration(seconds: 3),
+                                      ),
+                                    );
+                                  }
+                                } else {
+                                  // Show optimistic feedback immediately
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Joined ${team.name}!'),
+                                      backgroundColor: Colors.green,
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                  
+                                  try {
+                                    // Join hangout
+                                    await ref.read(hangoutJoinsProvider.notifier).joinHangout(team.id);
+                                  } catch (e) {
+                                    // Show error message if operation failed
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Failed to join ${team.name}. Please try again.'),
+                                        backgroundColor: Colors.red,
+                                        duration: const Duration(seconds: 3),
+                                      ),
+                                    );
+                                  }
+                                }
                               }
                             },
-                      style: hasApplied && team.requiresApplication ? 
+                      style: (team.requiresApplication ? hasApplied : hasJoined) ? 
                           ElevatedButton.styleFrom(
                             backgroundColor: Colors.orange,
                             foregroundColor: Colors.white,
@@ -499,11 +542,12 @@ class TeamCard extends ConsumerWidget {
                             )
                           : Text(
                               team.maxMembers != null && 
-                                  team.currentMembers >= team.maxMembers!
+                                  team.currentMembers >= team.maxMembers! &&
+                                  !(team.requiresApplication ? hasApplied : hasJoined)
                                   ? 'Full'
                                   : team.requiresApplication
                                       ? (hasApplied ? 'Leave' : 'Apply')
-                                      : 'Join',
+                                      : (hasJoined ? 'Leave' : 'Join'),
                             ),
                     ),
                   ],
@@ -571,20 +615,57 @@ class TeamCard extends ConsumerWidget {
                             }
                           }
                         } else {
-                          // Show optimistic feedback immediately
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Joined ${team.name}!'),
-                              backgroundColor: Colors.green,
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
-                          
-                          // For non-application teams, join directly
-                          ref.read(teamsProvider.notifier).joinTeam(team.id);
+                          // For hangouts
+                          if (hasJoined) {
+                            // Show optimistic feedback immediately
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Left ${team.name}'),
+                                backgroundColor: Colors.orange,
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                            
+                            try {
+                              // Leave hangout
+                              await ref.read(hangoutJoinsProvider.notifier).leaveHangout(team.id);
+                            } catch (e) {
+                              // Show error message if operation failed
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Failed to leave ${team.name}. Please try again.'),
+                                  backgroundColor: Colors.red,
+                                  duration: const Duration(seconds: 3),
+                                ),
+                              );
+                            }
+                          } else {
+                            // Show optimistic feedback immediately
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Joined ${team.name}!'),
+                                backgroundColor: Colors.green,
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                            
+                            try {
+                              // Join hangout
+                              await ref.read(hangoutJoinsProvider.notifier).joinHangout(team.id);
+                            } catch (e) {
+                              // Show error message if operation failed
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Failed to join ${team.name}. Please try again.'),
+                                  backgroundColor: Colors.red,
+                                  duration: const Duration(seconds: 3),
+                                ),
+                              );
+                            }
+                          }
                         }
                       },
-                      style: hasApplied && team.requiresApplication ? 
+                      style: (team.requiresApplication ? hasApplied : hasJoined) ? 
                           ElevatedButton.styleFrom(
                             backgroundColor: Colors.orange,
                             foregroundColor: Colors.white,
@@ -595,7 +676,9 @@ class TeamCard extends ConsumerWidget {
                               height: 16,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : Text(team.requiresApplication ? (hasApplied ? 'Leave' : 'Apply') : 'Join'),
+                          : Text(team.requiresApplication 
+                              ? (hasApplied ? 'Leave' : 'Apply') 
+                              : (hasJoined ? 'Leave' : 'Join')),
                     ),
                   ],
                 ),

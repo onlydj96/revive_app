@@ -22,8 +22,8 @@ class ImagePickerUtils {
 
       return await _picker.pickImage(
         source: source,
-        maxWidth: maxWidth,
-        maxHeight: maxHeight,
+        maxWidth: maxWidth.toDouble(),
+        maxHeight: maxHeight.toDouble(),
         imageQuality: imageQuality,
       );
     } catch (e) {
@@ -55,8 +55,8 @@ class ImagePickerUtils {
       try {
         images = await _picker.pickMultiImage(
           imageQuality: imageQuality,
-          maxWidth: maxWidth,
-          maxHeight: maxHeight,
+          maxWidth: maxWidth.toDouble(),
+          maxHeight: maxHeight.toDouble(),
           limit: limit,
         );
       } catch (platformException) {

@@ -16,7 +16,12 @@
       "Bash(move:*)",
       "Bash(mv:*)",
       "Bash(dart:*)",
-      "Bash(del \"C:\\Users\\onlyd\\workspace\\app\\ezer\\test_teams_integration.dart\")"
+      "Bash(del \"C:\\Users\\onlyd\\workspace\\app\\ezer\\test_teams_integration.dart\")",
+      "Bash(nslookup:*)",
+      "Bash(ping:*)",
+      "Bash(del \"C:\\Users\\onlyd\\workspace\\app\\ezer\\lib\\services\\notification_service.dart\")",
+      "mcp__ide__getDiagnostics",
+      "Bash(del \"C:\\Users\\onlyd\\workspace\\app\\ezer\\test_pin_functionality.dart\")"
     ],
     "deny": []
   },

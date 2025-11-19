@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../providers/updates_provider.dart';
 import '../providers/permissions_provider.dart';
+import '../providers/user_pins_provider.dart';
 import '../models/update.dart';
 import '../widgets/create_update_dialog.dart';
+import '../widgets/update_detail_dialog.dart';
 
 class UpdatesScreen extends ConsumerWidget {
   const UpdatesScreen({super.key});
@@ -29,6 +31,7 @@ class UpdatesScreen extends ConsumerWidget {
           : null,
       body: updatesAsyncValue.when(
         data: (updates) {
+          final userPins = ref.watch(userPinsProvider);
           final pinnedUpdates = updates.where((update) => update.isPinned).toList();
           final recentUpdates = updates.where((update) => !update.isPinned).toList();
           
@@ -62,11 +65,16 @@ class UpdatesScreen extends ConsumerWidget {
                     
                     ...pinnedUpdates.map((update) => Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: UpdateCard(update: update, isPinned: true),
+                      child: UpdateCard(
+                        update: update, 
+                        isPinned: true, 
+                        isUserPinned: userPins.contains(update.id),
+                      ),
                     )),
                     
                     const SizedBox(height: 24),
                   ],
+                  
                   
                   if (recentUpdates.isNotEmpty) ...[
                     Text(
@@ -79,7 +87,11 @@ class UpdatesScreen extends ConsumerWidget {
                     
                     ...recentUpdates.map((update) => Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: UpdateCard(update: update, isPinned: false),
+                      child: UpdateCard(
+                        update: update, 
+                        isPinned: false, 
+                        isUserPinned: userPins.contains(update.id),
+                      ),
                     )),
                   ],
                   
@@ -173,11 +185,13 @@ class UpdatesScreen extends ConsumerWidget {
 class UpdateCard extends ConsumerWidget {
   final Update update;
   final bool isPinned;
+  final bool isUserPinned;
 
   const UpdateCard({
     super.key,
     required this.update,
     this.isPinned = false,
+    this.isUserPinned = false,
   });
 
   @override
@@ -186,14 +200,19 @@ class UpdateCard extends ConsumerWidget {
     return Card(
       elevation: isPinned ? 4 : 2,
       child: InkWell(
-        onTap: () => context.push('/update/${update.id}'),
+        onTap: () => showDialog(
+          context: context,
+          builder: (context) => UpdateDetailDialog(update: update),
+        ),
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          decoration: isPinned
+          decoration: (isPinned || isUserPinned)
               ? BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Theme.of(context).primaryColor.withOpacity(0.3),
+                    color: isPinned 
+                        ? Theme.of(context).primaryColor.withOpacity(0.3)
+                        : Theme.of(context).primaryColor.withOpacity(0.2),
                     width: 1,
                   ),
                 )
@@ -270,6 +289,14 @@ class UpdateCard extends ConsumerWidget {
                                     const SizedBox(width: 8),
                                     Icon(
                                       Icons.push_pin,
+                                      size: 16,
+                                      color: Theme.of(context).primaryColor,
+                                    ),
+                                  ],
+                                  if (isUserPinned) ...[
+                                    const SizedBox(width: 8),
+                                    Icon(
+                                      Icons.bookmark,
                                       size: 16,
                                       color: Theme.of(context).primaryColor,
                                     ),

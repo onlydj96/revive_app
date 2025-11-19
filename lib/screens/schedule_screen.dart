@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/events_provider.dart';
 import '../providers/permissions_provider.dart';
+import '../providers/hangout_joins_provider.dart';
 import '../models/event.dart';
 import '../widgets/create_event_dialog.dart';
 import '../widgets/edit_event_dialog.dart';
@@ -101,12 +102,6 @@ class ScheduleScreen extends ConsumerWidget {
             ),
         ],
       ),
-      floatingActionButton: permissions.isAdmin
-          ? FloatingActionButton(
-              onPressed: () => _showCreateEventDialog(context, ref),
-              child: const Icon(Icons.event_note),
-            )
-          : null,
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -539,7 +534,9 @@ class EventBannerCard extends ConsumerWidget {
                                 const SizedBox(width: 8),
                                 Consumer(
                                   builder: (context, ref, child) {
-                                    final isSignedUp = ref.watch(userSignedUpEventsProvider).contains(event.id);
+                                    final isSignedUp = event.type == EventType.hangout
+                                        ? ref.watch(hangoutJoinsProvider).joinedHangouts.contains(event.id)
+                                        : ref.watch(userSignedUpEventsProvider).contains(event.id);
                                     final isFull = event.maxParticipants != null && 
                                         event.currentParticipants >= event.maxParticipants!;
                                     
@@ -547,7 +544,15 @@ class EventBannerCard extends ConsumerWidget {
                                       height: 28,
                                       child: ElevatedButton(
                                         onPressed: (isFull && !isSignedUp) ? null : () async {
-                                          await ref.read(eventsProvider.notifier).toggleEventSignUp(event.id, ref);
+                                          if (event.type == EventType.hangout) {
+                                            if (isSignedUp) {
+                                              await ref.read(hangoutJoinsProvider.notifier).leaveHangout(event.id);
+                                            } else {
+                                              await ref.read(hangoutJoinsProvider.notifier).joinHangout(event.id);
+                                            }
+                                          } else {
+                                            await ref.read(eventsProvider.notifier).toggleEventSignUp(event.id, ref);
+                                          }
                                         },
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: isSignedUp 
@@ -842,7 +847,9 @@ class EventListItem extends ConsumerWidget {
                             ],
                             Consumer(
                               builder: (context, ref, child) {
-                                final isSignedUp = ref.watch(userSignedUpEventsProvider).contains(event.id);
+                                final isSignedUp = event.type == EventType.hangout
+                                    ? ref.watch(hangoutJoinsProvider).joinedHangouts.contains(event.id)
+                                    : ref.watch(userSignedUpEventsProvider).contains(event.id);
                                 final isFull = event.maxParticipants != null && 
                                     event.currentParticipants >= event.maxParticipants!;
                                 
@@ -850,14 +857,22 @@ class EventListItem extends ConsumerWidget {
                                   color: Colors.transparent,
                                   child: InkWell(
                                     onTap: (isFull && !isSignedUp) ? null : () async {
-                                      await ref.read(eventsProvider.notifier).toggleEventSignUp(event.id, ref);
+                                      if (event.type == EventType.hangout) {
+                                        if (isSignedUp) {
+                                          await ref.read(hangoutJoinsProvider.notifier).leaveHangout(event.id);
+                                        } else {
+                                          await ref.read(hangoutJoinsProvider.notifier).joinHangout(event.id);
+                                        }
+                                      } else {
+                                        await ref.read(eventsProvider.notifier).toggleEventSignUp(event.id, ref);
+                                      }
                                       if (context.mounted) {
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
                                             content: Text(
-                                              isSignedUp 
-                                                ? 'Cancelled registration'
-                                                : 'Successfully registered!'
+                                              event.type == EventType.hangout
+                                                ? (isSignedUp ? 'Left ${event.title}' : 'Joined ${event.title}!')
+                                                : (isSignedUp ? 'Cancelled registration' : 'Successfully registered!')
                                             ),
                                             backgroundColor: isSignedUp ? Colors.orange : Colors.green,
                                             behavior: SnackBarBehavior.floating,

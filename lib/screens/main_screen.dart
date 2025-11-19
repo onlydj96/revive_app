@@ -27,11 +27,9 @@ class MainScreen extends ConsumerWidget {
             children: [
               IconButton(
                 icon: const Icon(Icons.notifications),
-                onPressed: user?.isAdmin == true 
-                    ? () => _showNotifications(context, ref)
-                    : null,
+                onPressed: () => _showNotifications(context, ref),
               ),
-              if (hasUnreadNotifications && user?.isAdmin == true)
+              if (hasUnreadNotifications)
                 Positioned(
                   right: 8,
                   top: 8,
