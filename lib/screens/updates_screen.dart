@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../providers/updates_provider.dart';
 import '../providers/permissions_provider.dart';
@@ -32,9 +31,11 @@ class UpdatesScreen extends ConsumerWidget {
       body: updatesAsyncValue.when(
         data: (updates) {
           final userPins = ref.watch(userPinsProvider);
-          final pinnedUpdates = updates.where((update) => update.isPinned).toList();
-          final recentUpdates = updates.where((update) => !update.isPinned).toList();
-          
+          final pinnedUpdates =
+              updates.where((update) => update.isPinned).toList();
+          final recentUpdates =
+              updates.where((update) => !update.isPinned).toList();
+
           return RefreshIndicator(
             onRefresh: () async {
               await ref.read(updatesProvider.notifier).refresh();
@@ -55,46 +56,41 @@ class UpdatesScreen extends ConsumerWidget {
                         const SizedBox(width: 8),
                         Text(
                           'Pinned Updates',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
-                    
                     ...pinnedUpdates.map((update) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: UpdateCard(
-                        update: update, 
-                        isPinned: true, 
-                        isUserPinned: userPins.contains(update.id),
-                      ),
-                    )),
-                    
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: UpdateCard(
+                            update: update,
+                            isPinned: true,
+                            isUserPinned: userPins.contains(update.id),
+                          ),
+                        )),
                     const SizedBox(height: 24),
                   ],
-                  
-                  
                   if (recentUpdates.isNotEmpty) ...[
                     Text(
                       'Recent Updates',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                     const SizedBox(height: 12),
-                    
                     ...recentUpdates.map((update) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: UpdateCard(
-                        update: update, 
-                        isPinned: false, 
-                        isUserPinned: userPins.contains(update.id),
-                      ),
-                    )),
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: UpdateCard(
+                            update: update,
+                            isPinned: false,
+                            isUserPinned: userPins.contains(update.id),
+                          ),
+                        )),
                   ],
-                  
                   if (pinnedUpdates.isEmpty && recentUpdates.isEmpty)
                     Center(
                       child: Padding(
@@ -109,15 +105,21 @@ class UpdatesScreen extends ConsumerWidget {
                             const SizedBox(height: 16),
                             Text(
                               'No Updates',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color: Colors.grey[600],
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    color: Colors.grey[600],
+                                  ),
                             ),
                             Text(
                               'Check back later for church news and announcements',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Colors.grey[500],
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: Colors.grey[500],
+                                  ),
                               textAlign: TextAlign.center,
                             ),
                           ],
@@ -156,14 +158,14 @@ class UpdatesScreen extends ConsumerWidget {
         onCreateUpdate: (title, content, type, imageUrl, isPinned, tags) async {
           try {
             await ref.read(updatesProvider.notifier).createUpdate(
-              title: title,
-              content: content,
-              type: type,
-              imageUrl: imageUrl,
-              isPinned: isPinned,
-              tags: tags,
-            );
-            
+                  title: title,
+                  content: content,
+                  type: type,
+                  imageUrl: imageUrl,
+                  isPinned: isPinned,
+                  tags: tags,
+                );
+
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Update created successfully!')),
@@ -210,7 +212,7 @@ class UpdateCard extends ConsumerWidget {
               ? BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isPinned 
+                    color: isPinned
                         ? Theme.of(context).primaryColor.withOpacity(0.3)
                         : Theme.of(context).primaryColor.withOpacity(0.2),
                     width: 1,
@@ -222,8 +224,9 @@ class UpdateCard extends ConsumerWidget {
             children: [
               if (update.imageUrl != null)
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                  child: Container(
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(12)),
+                  child: SizedBox(
                     height: 160,
                     width: double.infinity,
                     child: Image.network(
@@ -231,7 +234,8 @@ class UpdateCard extends ConsumerWidget {
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
-                          color: _getUpdateTypeColor(update.type).withOpacity(0.1),
+                          color:
+                              _getUpdateTypeColor(update.type).withOpacity(0.1),
                           child: Center(
                             child: Icon(
                               _getUpdateTypeIcon(update.type),
@@ -244,7 +248,6 @@ class UpdateCard extends ConsumerWidget {
                     ),
                   ),
                 ),
-              
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -255,7 +258,8 @@ class UpdateCard extends ConsumerWidget {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: _getUpdateTypeColor(update.type).withOpacity(0.1),
+                            color: _getUpdateTypeColor(update.type)
+                                .withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(
@@ -272,17 +276,23 @@ class UpdateCard extends ConsumerWidget {
                               Row(
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 2),
                                     decoration: BoxDecoration(
-                                      color: _getUpdateTypeColor(update.type).withOpacity(0.1),
+                                      color: _getUpdateTypeColor(update.type)
+                                          .withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
                                       _getUpdateTypeLabel(update.type),
-                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: _getUpdateTypeColor(update.type),
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: _getUpdateTypeColor(
+                                                update.type),
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                     ),
                                   ),
                                   if (isPinned) ...[
@@ -306,14 +316,18 @@ class UpdateCard extends ConsumerWidget {
                               const SizedBox(height: 4),
                               Text(
                                 '${DateFormat('MMM d, yyyy').format(update.createdAt)} • ${update.author}',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Colors.grey[600],
-                                ),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: Colors.grey[600],
+                                    ),
                               ),
                             ],
                           ),
                         ),
-                        if (permissions.canEditContent || permissions.canDeleteContent) ...[
+                        if (permissions.canEditContent ||
+                            permissions.canDeleteContent) ...[
                           PopupMenuButton<String>(
                             onSelected: (value) {
                               if (value == 'edit') {
@@ -352,42 +366,46 @@ class UpdateCard extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    
                     Text(
                       update.title,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                     const SizedBox(height: 8),
-                    
                     Text(
                       update.content,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                            color: Colors.grey[600],
+                          ),
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    
                     if (update.tags.isNotEmpty) ...[
                       const SizedBox(height: 12),
                       Wrap(
                         spacing: 8,
                         runSpacing: 4,
-                        children: update.tags.take(3).map((tag) => Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[100],
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            '#$tag',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        )).toList(),
+                        children: update.tags
+                            .take(3)
+                            .map((tag) => Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[100],
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    '#$tag',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: Colors.grey[600],
+                                        ),
+                                  ),
+                                ))
+                            .toList(),
                       ),
                     ],
                   ],
@@ -450,7 +468,8 @@ class UpdateCard extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Edit Update'),
-        content: Text('Edit functionality for "${update.title}" would be implemented here.'),
+        content: Text(
+            'Edit functionality for "${update.title}" would be implemented here.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -475,7 +494,8 @@ class UpdateCard extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Update'),
-        content: Text('Are you sure you want to delete "${update.title}"? This action cannot be undone.'),
+        content: Text(
+            'Are you sure you want to delete "${update.title}"? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),

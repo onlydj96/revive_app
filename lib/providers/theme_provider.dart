@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/theme_mode.dart';
 
-final themeProvider = StateNotifierProvider<ThemeNotifier, ThemeSettings>((ref) {
+final themeProvider =
+    StateNotifierProvider<ThemeNotifier, ThemeSettings>((ref) {
   return ThemeNotifier();
 });
 
@@ -29,8 +30,7 @@ class ThemeNotifier extends StateNotifier<ThemeSettings> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_themeKey, mode.index);
       state = state.copyWith(mode: mode);
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   ThemeMode get themeMode {

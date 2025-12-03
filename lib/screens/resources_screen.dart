@@ -18,7 +18,6 @@ class ResourcesScreen extends ConsumerStatefulWidget {
 }
 
 class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
-  
   @override
   Widget build(BuildContext context) {
     final foldersAsyncValue = ref.watch(mediaFolderProvider);
@@ -31,7 +30,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: _buildAppBarTitle(),
-        leading: currentFolderId != null 
+        leading: currentFolderId != null
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () => _navigateUp(),
@@ -50,7 +49,8 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
                   ),
                   tooltip: showDeleted ? '삭제된 항목 숨기기' : '삭제된 항목 보기',
                   onPressed: () {
-                    ref.read(showDeletedFoldersProvider.notifier).state = !showDeleted;
+                    ref.read(showDeletedFoldersProvider.notifier).state =
+                        !showDeleted;
                   },
                 );
               },
@@ -93,10 +93,10 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
                 },
               ),
             ),
-            
+
             // Breadcrumb navigation
             if (currentFolderId != null) _buildBreadcrumb(),
-            
+
             // Content area
             Expanded(
               child: _buildFolderContent(filteredFolders, currentFolderId),
@@ -113,7 +113,8 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
               Text('Error loading folders: $error'),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: () => ref.read(mediaFolderProvider.notifier).refresh(),
+                onPressed: () =>
+                    ref.read(mediaFolderProvider.notifier).refresh(),
                 child: const Text('Retry'),
               ),
             ],
@@ -128,7 +129,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     if (currentFolderId == null) {
       return const Text('Resources');
     }
-    
+
     final folders = ref.watch(mediaFolderProvider).value ?? [];
     final currentFolder = folders.firstWhere(
       (f) => f.id == currentFolderId,
@@ -140,14 +141,14 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
         updatedAt: DateTime.now(),
       ),
     );
-    
+
     return Text(currentFolder.name);
   }
 
   void _navigateUp() {
     final folders = ref.watch(mediaFolderProvider).value ?? [];
     final currentFolderId = ref.watch(currentFolderProvider);
-    
+
     if (currentFolderId != null) {
       final currentFolder = folders.firstWhere((f) => f.id == currentFolderId);
       ref.read(currentFolderProvider.notifier).state = currentFolder.parentId;
@@ -155,10 +156,10 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
   }
 
   Widget _buildBreadcrumb() {
-    final breadcrumb = ref.read(mediaFolderProvider.notifier).getFolderBreadcrumb(
-      ref.watch(currentFolderProvider)
-    );
-    
+    final breadcrumb = ref
+        .read(mediaFolderProvider.notifier)
+        .getFolderBreadcrumb(ref.watch(currentFolderProvider));
+
     return Container(
       height: 50,
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -172,17 +173,19 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
         itemBuilder: (context, index) {
           if (index == 0) {
             return InkWell(
-              onTap: () => ref.read(currentFolderProvider.notifier).state = null,
+              onTap: () =>
+                  ref.read(currentFolderProvider.notifier).state = null,
               child: const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
                 child: Text('Home', style: TextStyle(color: Colors.blue)),
               ),
             );
           }
-          
+
           final folder = breadcrumb[index - 1];
           return InkWell(
-            onTap: () => ref.read(currentFolderProvider.notifier).state = folder.id,
+            onTap: () =>
+                ref.read(currentFolderProvider.notifier).state = folder.id,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
               child: Text(
@@ -196,19 +199,28 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     );
   }
 
-  Widget _buildFolderContent(List<MediaFolder> folders, String? currentFolderId) {
+  Widget _buildFolderContent(
+      List<MediaFolder> folders, String? currentFolderId) {
     // Get current folder's subfolders
-    final subfolders = folders.where((f) => f.parentId == currentFolderId).toList();
-    
+    final subfolders =
+        folders.where((f) => f.parentId == currentFolderId).toList();
+
     // Get all folders from the provider to access media items
     final allFolders = ref.watch(mediaFolderProvider).value ?? [];
     final currentFolder = currentFolderId != null
-        ? allFolders.firstWhere((f) => f.id == currentFolderId, orElse: () => 
-            MediaFolder(id: '', name: '', folderPath: '', createdAt: DateTime.now(), updatedAt: DateTime.now()))
+        ? allFolders.firstWhere((f) => f.id == currentFolderId,
+            orElse: () => MediaFolder(
+                id: '',
+                name: '',
+                folderPath: '',
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now()))
         : null;
-    
-    final mediaItems = currentFolder?.mediaItems.where((item) => !item.isDeleted).toList() ?? [];
-    
+
+    final mediaItems =
+        currentFolder?.mediaItems.where((item) => !item.isDeleted).toList() ??
+            [];
+
     if (subfolders.isEmpty && mediaItems.isEmpty) {
       return Center(
         child: Column(
@@ -223,15 +235,15 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
             Text(
               'This folder is empty',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+                    color: Colors.grey[600],
+                  ),
             ),
             const SizedBox(height: 8),
             Text(
               'Add folders or media to get started',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[500],
-              ),
+                    color: Colors.grey[500],
+                  ),
             ),
           ],
         ),
@@ -265,7 +277,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
           ),
           const SizedBox(height: 24),
         ],
-        
+
         // Show media items
         if (mediaItems.isNotEmpty) ...[
           const Text(
@@ -287,7 +299,8 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
               final mediaItem = mediaItems[index];
               return MediaGridItem(
                 mediaItem: mediaItem,
-                onTap: () => context.push('/media/${mediaItem.id}?folderId=${mediaItem.folderId ?? ''}'),
+                onTap: () => context.push(
+                    '/media/${mediaItem.id}?folderId=${mediaItem.folderId ?? ''}'),
                 onCollect: () => ref
                     .read(mediaProvider.notifier)
                     .toggleCollection(mediaItem.id),
@@ -304,13 +317,15 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     final thumbnailUrl = folder.effectiveThumbnailUrl;
     final permissions = ref.watch(permissionsProvider);
     final isDeleted = folder.isDeleted;
-    
+
     return Card(
       elevation: 2,
       child: InkWell(
-        onTap: isDeleted ? null : () => ref.read(currentFolderProvider.notifier).state = folder.id,
-        onLongPress: permissions.canDeleteFolder(folder.createdBy) 
-            ? () => _showFolderOptions(context, folder) 
+        onTap: isDeleted
+            ? null
+            : () => ref.read(currentFolderProvider.notifier).state = folder.id,
+        onLongPress: permissions.canDeleteFolder(folder.createdBy)
+            ? () => _showFolderOptions(context, folder)
             : null,
         borderRadius: BorderRadius.circular(12),
         child: ClipRRect(
@@ -327,32 +342,42 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
                       flex: 3,
                       child: Stack(
                         children: [
-                          Container(
+                          SizedBox(
                             width: double.infinity,
                             height: double.infinity,
-                            child: thumbnailUrl != null && thumbnailUrl.isNotEmpty
+                            child: thumbnailUrl != null &&
+                                    thumbnailUrl.isNotEmpty
                                 ? Image.network(
                                     thumbnailUrl,
                                     fit: BoxFit.cover,
                                     errorBuilder: (context, error, stackTrace) {
                                       return Container(
-                                        color: isDeleted ? Colors.red[50] : Colors.grey[100],
+                                        color: isDeleted
+                                            ? Colors.red[50]
+                                            : Colors.grey[100],
                                         child: Icon(
                                           Icons.folder,
                                           size: 48,
-                                          color: isDeleted ? Colors.red[300] : Theme.of(context).primaryColor,
+                                          color: isDeleted
+                                              ? Colors.red[300]
+                                              : Theme.of(context).primaryColor,
                                         ),
                                       );
                                     },
-                                    loadingBuilder: (context, child, loadingProgress) {
+                                    loadingBuilder:
+                                        (context, child, loadingProgress) {
                                       if (loadingProgress == null) return child;
                                       return Container(
                                         color: Colors.grey[100],
                                         child: Center(
                                           child: CircularProgressIndicator(
-                                            value: loadingProgress.expectedTotalBytes != null
-                                                ? loadingProgress.cumulativeBytesLoaded /
-                                                    loadingProgress.expectedTotalBytes!
+                                            value: loadingProgress
+                                                        .expectedTotalBytes !=
+                                                    null
+                                                ? loadingProgress
+                                                        .cumulativeBytesLoaded /
+                                                    loadingProgress
+                                                        .expectedTotalBytes!
                                                 : null,
                                           ),
                                         ),
@@ -360,11 +385,15 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
                                     },
                                   )
                                 : Container(
-                                    color: isDeleted ? Colors.red[50] : Colors.grey[100],
+                                    color: isDeleted
+                                        ? Colors.red[50]
+                                        : Colors.grey[100],
                                     child: Icon(
                                       Icons.folder,
                                       size: 48,
-                                      color: isDeleted ? Colors.red[300] : Theme.of(context).primaryColor,
+                                      color: isDeleted
+                                          ? Colors.red[300]
+                                          : Theme.of(context).primaryColor,
                                     ),
                                   ),
                           ),
@@ -384,57 +413,66 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
                         ],
                       ),
                     ),
-                  // Folder info
-                  Expanded(
-                    flex: 2,
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            folder.name,
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          if (folder.description != null) ...[
-                            const SizedBox(height: 2),
+                    // Folder info
+                    Expanded(
+                      flex: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Text(
-                              folder.description!,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.grey[600],
-                              ),
+                              folder.name,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                          ],
-                          const Spacer(),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.photo_library,
-                                size: 14,
-                                color: Colors.grey[500],
-                              ),
-                              const SizedBox(width: 4),
+                            if (folder.description != null) ...[
+                              const SizedBox(height: 2),
                               Text(
-                                '${folder.totalItemCount}',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Colors.grey[500],
-                                ),
+                                folder.description!,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: Colors.grey[600],
+                                    ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
-                          ),
-                        ],
+                            const Spacer(),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.photo_library,
+                                  size: 14,
+                                  color: Colors.grey[500],
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${folder.totalItemCount}',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: Colors.grey[500],
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
               // Admin options button
               if (permissions.canDeleteFolder(folder.createdBy))
                 Positioned(
@@ -464,7 +502,6 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     );
   }
 
-
   void _showFolderOptions(BuildContext context, MediaFolder folder) {
     showModalBottomSheet(
       context: context,
@@ -476,11 +513,10 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
             Text(
               '폴더 관리',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 16),
-            
             if (folder.isDeleted) ...[
               // Options for deleted folders
               ListTile(
@@ -576,28 +612,28 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     );
   }
 
-  Future<void> _deleteFolderSoft(BuildContext context, MediaFolder folder) async {
+  Future<void> _deleteFolderSoft(
+      BuildContext context, MediaFolder folder) async {
     try {
-      
       await ref.read(mediaFolderProvider.notifier).softDeleteFolder(folder.id);
-      
-      
+
       if (context.mounted) {
         final showDeleted = ref.read(showDeletedFoldersProvider);
-        
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(showDeleted 
-              ? '${folder.name} 폴더가 삭제되었습니다 (관리자 모드에서는 계속 보입니다)'
-              : '${folder.name} 폴더가 삭제되었습니다'),
+            content: Text(showDeleted
+                ? '${folder.name} 폴더가 삭제되었습니다 (관리자 모드에서는 계속 보입니다)'
+                : '${folder.name} 폴더가 삭제되었습니다'),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 4),
             action: SnackBarAction(
               label: '되돌리기',
               textColor: Colors.white,
               onPressed: () async {
-                await ref.read(mediaFolderProvider.notifier).restoreFolder(folder.id);
+                await ref
+                    .read(mediaFolderProvider.notifier)
+                    .restoreFolder(folder.id);
               },
             ),
           ),
@@ -615,10 +651,11 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     }
   }
 
-  Future<void> _deleteMediaSoft(BuildContext context, MediaItem mediaItem) async {
+  Future<void> _deleteMediaSoft(
+      BuildContext context, MediaItem mediaItem) async {
     try {
       await ref.read(mediaProvider.notifier).softDeleteMedia(mediaItem.id);
-      
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -628,7 +665,9 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
               label: '되돌리기',
               textColor: Colors.white,
               onPressed: () async {
-                await ref.read(mediaProvider.notifier).restoreMedia(mediaItem.id);
+                await ref
+                    .read(mediaProvider.notifier)
+                    .restoreMedia(mediaItem.id);
               },
             ),
           ),
@@ -649,7 +688,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
   Future<void> _restoreFolder(BuildContext context, MediaFolder folder) async {
     try {
       await ref.read(mediaFolderProvider.notifier).restoreFolder(folder.id);
-      
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -670,7 +709,8 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     }
   }
 
-  void _showPermanentDeleteConfirmation(BuildContext context, MediaFolder folder) {
+  void _showPermanentDeleteConfirmation(
+      BuildContext context, MediaFolder folder) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -728,10 +768,13 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     );
   }
 
-  Future<void> _permanentDeleteFolder(BuildContext context, MediaFolder folder) async {
+  Future<void> _permanentDeleteFolder(
+      BuildContext context, MediaFolder folder) async {
     try {
-      await ref.read(mediaFolderProvider.notifier).permanentDeleteFolder(folder.id);
-      
+      await ref
+          .read(mediaFolderProvider.notifier)
+          .permanentDeleteFolder(folder.id);
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -792,13 +835,13 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
         onCreateFolder: (name, description, folderPath, thumbnailUrl) async {
           try {
             await ref.read(mediaFolderProvider.notifier).createFolder(
-              name: name,
-              description: description,
-              parentId: ref.read(currentFolderProvider),
-              folderPath: folderPath,
-              thumbnailUrl: thumbnailUrl,
-            );
-            
+                  name: name,
+                  description: description,
+                  parentId: ref.read(currentFolderProvider),
+                  folderPath: folderPath,
+                  thumbnailUrl: thumbnailUrl,
+                );
+
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('폴더가 성공적으로 생성되었습니다!')),
@@ -818,7 +861,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
 
   void _showUploadMediaDialog(BuildContext context) {
     final currentFolderId = ref.read(currentFolderProvider);
-    
+
     // Get current folder to determine upload path
     String folderPath = 'root';
     if (currentFolderId != null) {
@@ -844,13 +887,13 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
         onUploadMedia: (mediaItems) async {
           try {
             await ref.read(mediaProvider.notifier).uploadMediaFiles(
-              mediaItems: mediaItems,
-              folderPath: folderPath,
-              folderId: currentFolderId,
-              category: MediaCategory.general,
-              photographer: 'Church Media Team',
-            );
-            
+                  mediaItems: mediaItems,
+                  folderPath: folderPath,
+                  folderId: currentFolderId,
+                  category: MediaCategory.general,
+                  photographer: 'Church Media Team',
+                );
+
             // Refresh folder data to show new media
             await ref.read(mediaFolderProvider.notifier).refresh();
           } catch (e) {
@@ -868,5 +911,4 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
       ),
     );
   }
-
 }

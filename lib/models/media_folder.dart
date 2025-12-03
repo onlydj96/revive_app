@@ -31,7 +31,8 @@ class MediaFolder {
     this.mediaItems = const [],
   });
 
-  factory MediaFolder.fromJson(Map<String, dynamic> json, {
+  factory MediaFolder.fromJson(
+    Map<String, dynamic> json, {
     List<MediaFolder>? subfolders,
     List<MediaItem>? mediaItems,
   }) {
@@ -45,7 +46,9 @@ class MediaFolder {
       createdAt: DateTime.parse(json['created_at'] as String),
       createdBy: json['created_by'] as String?,
       updatedAt: DateTime.parse(json['updated_at'] as String),
-      deletedAt: json['deleted_at'] != null ? DateTime.parse(json['deleted_at'] as String) : null,
+      deletedAt: json['deleted_at'] != null
+          ? DateTime.parse(json['deleted_at'] as String)
+          : null,
       deletedBy: json['deleted_by'] as String?,
       subfolders: subfolders ?? [],
       mediaItems: mediaItems ?? [],
@@ -105,23 +108,25 @@ class MediaFolder {
   bool get hasSubfolders => subfolders.isNotEmpty;
   bool get hasMediaItems => mediaItems.isNotEmpty;
   bool get isDeleted => deletedAt != null;
-  int get totalItemCount => mediaItems.where((item) => !item.isDeleted).length + 
-      subfolders.where((folder) => !folder.isDeleted).fold(0, (sum, folder) => sum + folder.totalItemCount);
-  
+  int get totalItemCount =>
+      mediaItems.where((item) => !item.isDeleted).length +
+      subfolders
+          .where((folder) => !folder.isDeleted)
+          .fold(0, (sum, folder) => sum + folder.totalItemCount);
+
   // Get thumbnail URL with fallback to first image
   String? get effectiveThumbnailUrl {
     if (thumbnailUrl != null && thumbnailUrl!.isNotEmpty) {
       return thumbnailUrl;
     }
-    
+
     // Try to find first image in this folder's media items
-    final firstImage = mediaItems.where((item) => 
-      item.type == MediaType.photo
-    ).firstOrNull;
-    
+    final firstImage =
+        mediaItems.where((item) => item.type == MediaType.photo).firstOrNull;
+
     return firstImage?.thumbnailUrl ?? firstImage?.url;
   }
-  
+
   // Get folder breadcrumb path for navigation
   String get displayPath {
     final parts = folderPath.split('/');

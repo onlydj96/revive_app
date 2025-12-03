@@ -39,7 +39,7 @@ class EventDetailScreen extends ConsumerWidget {
 
     final permissions = ref.watch(permissionsProvider);
     final isSignedUp = ref.watch(userSignedUpEventsProvider).contains(event.id);
-    final isFull = event.maxParticipants != null && 
+    final isFull = event.maxParticipants != null &&
         event.currentParticipants >= event.maxParticipants!;
 
     return Scaffold(
@@ -76,7 +76,6 @@ class EventDetailScreen extends ConsumerWidget {
                   },
                 ),
               ),
-            
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -86,7 +85,8 @@ class EventDetailScreen extends ConsumerWidget {
                     children: [
                       Chip(
                         label: Text(_getEventTypeLabel(event.type)),
-                        backgroundColor: _getEventTypeColor(event.type).withOpacity(0.2),
+                        backgroundColor:
+                            _getEventTypeColor(event.type).withOpacity(0.2),
                       ),
                       const SizedBox(width: 8),
                       if (event.isHighlighted)
@@ -98,15 +98,13 @@ class EventDetailScreen extends ConsumerWidget {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  
                   Text(
                     event.title,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 16),
-                  
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -116,7 +114,8 @@ class EventDetailScreen extends ConsumerWidget {
                             context,
                             Icons.calendar_today,
                             'Date',
-                            DateFormat('EEEE, MMMM d, yyyy').format(event.startTime),
+                            DateFormat('EEEE, MMMM d, yyyy')
+                                .format(event.startTime),
                           ),
                           const Divider(),
                           _buildInfoRow(
@@ -148,24 +147,23 @@ class EventDetailScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
                   Text(
                     'About',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     event.description,
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
-                  
                   if (event.requiresSignup) ...[
                     const SizedBox(height: 24),
                     if (event.maxParticipants != null) ...[
                       LinearProgressIndicator(
-                        value: event.currentParticipants / event.maxParticipants!,
+                        value:
+                            event.currentParticipants / event.maxParticipants!,
                         backgroundColor: Colors.grey[300],
                         valueColor: AlwaysStoppedAnimation<Color>(
                           Theme.of(context).primaryColor,
@@ -175,8 +173,8 @@ class EventDetailScreen extends ConsumerWidget {
                       Text(
                         '${event.currentParticipants} of ${event.maxParticipants} spots filled',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
-                        ),
+                              color: Colors.grey[600],
+                            ),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -184,32 +182,36 @@ class EventDetailScreen extends ConsumerWidget {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: (isFull && !isSignedUp) ? null : () async {
-                          await ref.read(eventsProvider.notifier).toggleEventSignUp(event.id, ref);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  isSignedUp 
-                                    ? 'Cancelled registration for ${event.title}'
-                                    : 'Signed up for ${event.title}!'
-                                ),
-                                backgroundColor: isSignedUp ? Colors.orange : Colors.green,
-                              ),
-                            );
-                          }
-                        },
+                        onPressed: (isFull && !isSignedUp)
+                            ? null
+                            : () async {
+                                await ref
+                                    .read(eventsProvider.notifier)
+                                    .toggleEventSignUp(event.id, ref);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(isSignedUp
+                                          ? 'Cancelled registration for ${event.title}'
+                                          : 'Signed up for ${event.title}!'),
+                                      backgroundColor: isSignedUp
+                                          ? Colors.orange
+                                          : Colors.green,
+                                    ),
+                                  );
+                                }
+                              },
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           backgroundColor: isSignedUp ? Colors.orange : null,
                           foregroundColor: isSignedUp ? Colors.white : null,
                         ),
                         child: Text(
-                          isFull && !isSignedUp 
-                            ? 'Event Full'
-                            : isSignedUp 
-                              ? 'Cancel Registration'
-                              : 'Sign Up for This Event',
+                          isFull && !isSignedUp
+                              ? 'Event Full'
+                              : isSignedUp
+                                  ? 'Cancel Registration'
+                                  : 'Sign Up for This Event',
                           style: const TextStyle(fontSize: 16),
                         ),
                       ),
@@ -242,8 +244,8 @@ class EventDetailScreen extends ConsumerWidget {
               Text(
                 label,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[600],
-                ),
+                      color: Colors.grey[600],
+                    ),
               ),
               Text(
                 value,
@@ -297,7 +299,9 @@ class EventDetailScreen extends ConsumerWidget {
             if (context.mounted) {
               Navigator.of(context).pop();
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Event "${updatedEvent.title}" updated successfully!')),
+                SnackBar(
+                    content: Text(
+                        'Event "${updatedEvent.title}" updated successfully!')),
               );
             }
           } catch (e) {
@@ -315,12 +319,14 @@ class EventDetailScreen extends ConsumerWidget {
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context, WidgetRef ref, Event event) {
+  void _showDeleteConfirmation(
+      BuildContext context, WidgetRef ref, Event event) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Event'),
-        content: Text('Are you sure you want to delete "${event.title}"? This action cannot be undone.'),
+        content: Text(
+            'Are you sure you want to delete "${event.title}"? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),

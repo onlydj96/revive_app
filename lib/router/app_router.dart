@@ -21,16 +21,19 @@ import '../screens/update_detail_screen.dart';
 import '../screens/sermon_detail_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/create_team_screen.dart';
+import '../screens/bulletin_detail_screen.dart';
+import '../screens/bulletin_list_screen.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
-final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> _shellNavigatorKey =
+    GlobalKey<NavigatorState>();
 
 // Create a provider for router refresh
 class RouterNotifier extends ChangeNotifier {
   static final _instance = RouterNotifier._internal();
   factory RouterNotifier() => _instance;
   RouterNotifier._internal();
-  
+
   void notify() => notifyListeners();
 }
 
@@ -45,23 +48,28 @@ final appRouter = GoRouter(
     if (state.matchedLocation == '/splash') {
       return null;
     }
-    
+
     try {
       final container = ProviderScope.containerOf(context);
       final authState = container.read(authProvider);
-      
-      final isAuthRoute = ['/login', '/signup', '/email-verification', '/splash'].contains(state.matchedLocation);
-      
+
+      final isAuthRoute = [
+        '/login',
+        '/signup',
+        '/email-verification',
+        '/splash'
+      ].contains(state.matchedLocation);
+
       // If not authenticated and trying to access protected routes, redirect to login
       if (!authState.isAuthenticated && !isAuthRoute) {
         return '/login';
       }
-      
+
       // If authenticated and trying to access auth routes, redirect to home
       if (authState.isAuthenticated && isAuthRoute) {
         return '/home';
       }
-      
+
       return null;
     } catch (e) {
       // If Supabase is not initialized yet, redirect to splash
@@ -74,7 +82,7 @@ final appRouter = GoRouter(
       path: '/splash',
       builder: (context, state) => const SplashScreen(),
     ),
-    
+
     // Authentication Routes
     GoRoute(
       path: '/login',
@@ -91,7 +99,7 @@ final appRouter = GoRouter(
         return EmailVerificationScreen(email: email);
       },
     ),
-    
+
     // Main App Routes (Protected)
     ShellRoute(
       navigatorKey: _shellNavigatorKey,
@@ -175,6 +183,17 @@ final appRouter = GoRouter(
         final sermonId = state.pathParameters['id']!;
         return SermonDetailScreen(sermonId: sermonId);
       },
+    ),
+    GoRoute(
+      path: '/bulletin/:id',
+      builder: (context, state) {
+        final bulletinId = state.pathParameters['id']!;
+        return BulletinDetailScreen(bulletinId: bulletinId);
+      },
+    ),
+    GoRoute(
+      path: '/bulletins',
+      builder: (context, state) => const BulletinListScreen(),
     ),
   ],
 );

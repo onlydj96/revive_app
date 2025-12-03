@@ -7,7 +7,8 @@ import '../services/storage_service.dart';
 import '../services/supabase_service.dart';
 import '../widgets/upload_media_dialog.dart';
 
-final mediaProvider = StateNotifierProvider<MediaNotifier, AsyncValue<List<MediaItem>>>((ref) {
+final mediaProvider =
+    StateNotifierProvider<MediaNotifier, AsyncValue<List<MediaItem>>>((ref) {
   return MediaNotifier();
 });
 
@@ -15,10 +16,12 @@ final mediaSearchProvider = StateProvider<String>((ref) => '');
 
 final mediaFilterProvider = StateProvider<MediaType?>((ref) => null);
 
-final mediaCategoryFilterProvider = StateProvider<MediaCategory?>((ref) => null);
+final mediaCategoryFilterProvider =
+    StateProvider<MediaCategory?>((ref) => null);
 
 // Grid view toggle for ResourcesScreen
-final resourcesViewModeProvider = StateProvider<bool>((ref) => true); // true = grid, false = list
+final resourcesViewModeProvider =
+    StateProvider<bool>((ref) => true); // true = grid, false = list
 
 final filteredMediaProvider = Provider<List<MediaItem>>((ref) {
   final mediaAsyncValue = ref.watch(mediaProvider);
@@ -31,11 +34,16 @@ final filteredMediaProvider = Provider<List<MediaItem>>((ref) {
       var filtered = media;
 
       if (searchQuery.isNotEmpty) {
-        filtered = filtered.where((item) =>
-            item.title.toLowerCase().contains(searchQuery.toLowerCase()) ||
-            (item.description?.toLowerCase().contains(searchQuery.toLowerCase()) ?? false) ||
-            item.tags.any((tag) => tag.toLowerCase().contains(searchQuery.toLowerCase()))
-        ).toList();
+        filtered = filtered
+            .where((item) =>
+                item.title.toLowerCase().contains(searchQuery.toLowerCase()) ||
+                (item.description
+                        ?.toLowerCase()
+                        .contains(searchQuery.toLowerCase()) ??
+                    false) ||
+                item.tags.any((tag) =>
+                    tag.toLowerCase().contains(searchQuery.toLowerCase())))
+            .toList();
       }
 
       if (typeFilter != null) {
@@ -43,7 +51,8 @@ final filteredMediaProvider = Provider<List<MediaItem>>((ref) {
       }
 
       if (categoryFilter != null) {
-        filtered = filtered.where((item) => item.category == categoryFilter).toList();
+        filtered =
+            filtered.where((item) => item.category == categoryFilter).toList();
       }
 
       return filtered;
@@ -105,7 +114,8 @@ class MediaNotifier extends StateNotifier<AsyncValue<List<MediaItem>>> {
         // Handle delete
         final deletedId = deletedRecord['id'] as String;
         state.whenData((media) {
-          final filteredList = media.where((item) => item.id != deletedId).toList();
+          final filteredList =
+              media.where((item) => item.id != deletedId).toList();
           state = AsyncValue.data(filteredList);
         });
       },
@@ -129,7 +139,8 @@ class MediaNotifier extends StateNotifier<AsyncValue<List<MediaItem>>> {
         'description': description,
         'type': type.name,
         'category': category.name,
-        'url': fileUrl, // Using 'url' instead of 'file_url' to match existing schema
+        'url':
+            fileUrl, // Using 'url' instead of 'file_url' to match existing schema
         'thumbnail_url': thumbnailUrl,
         'photographer': photographer,
         'tags': tags,
@@ -143,7 +154,8 @@ class MediaNotifier extends StateNotifier<AsyncValue<List<MediaItem>>> {
     }
   }
 
-  Future<void> updateMediaItem(String id, {
+  Future<void> updateMediaItem(
+    String id, {
     String? title,
     String? description,
     MediaType? type,
@@ -184,14 +196,15 @@ class MediaNotifier extends StateNotifier<AsyncValue<List<MediaItem>>> {
     try {
       // Get current authenticated user ID
       final currentUser = SupabaseService.currentUser;
-      final currentUserId = currentUser?.id ?? '37494678-2554-4e62-9fd0-c78308e82585'; // Fallback to a valid UUID
-      
+      final currentUserId = currentUser?.id ??
+          '37494678-2554-4e62-9fd0-c78308e82585'; // Fallback to a valid UUID
+
       await DatabaseService.update('media_items', id, {
         'deleted_at': DateTime.now().toIso8601String(),
         'deleted_by': currentUserId,
         'updated_at': DateTime.now().toIso8601String(),
       });
-      
+
       // Refresh the media list to reflect the changes
       await _loadMedia();
     } catch (error) {
@@ -206,7 +219,7 @@ class MediaNotifier extends StateNotifier<AsyncValue<List<MediaItem>>> {
         'deleted_by': null,
         'updated_at': DateTime.now().toIso8601String(),
       });
-      
+
       // Refresh the media list to reflect the changes
       await _loadMedia();
     } catch (error) {
@@ -235,17 +248,16 @@ class MediaNotifier extends StateNotifier<AsyncValue<List<MediaItem>>> {
   }) async {
     try {
       // Debug: Check if user is authenticated
-      
+
       for (int i = 0; i < mediaItems.length; i++) {
         final mediaItem = mediaItems[i];
         final file = File(mediaItem.path);
-        
-        
+
         // Generate unique filename
         final timestamp = DateTime.now().millisecondsSinceEpoch;
         final extension = mediaItem.name.split('.').last;
         final fileName = '${mediaItem.type.name}_${timestamp}_$i.$extension';
-        
+
         // Upload to storage
         final fileUrl = await StorageService.uploadFile(
           bucketName: StorageService.mediaBucket,
@@ -253,8 +265,7 @@ class MediaNotifier extends StateNotifier<AsyncValue<List<MediaItem>>> {
           fileName: fileName,
           file: file,
         );
-        
-        
+
         // Create media item in database
         await createMediaItem(
           title: mediaItem.name.split('.').first,
@@ -265,9 +276,8 @@ class MediaNotifier extends StateNotifier<AsyncValue<List<MediaItem>>> {
           photographer: photographer,
           folderId: folderId,
         );
-        
       }
-      
+
       // Reload media to show new items
       await _loadMedia();
     } catch (error) {

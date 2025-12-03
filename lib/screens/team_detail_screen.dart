@@ -19,11 +19,12 @@ class TeamDetailScreen extends ConsumerWidget {
     final teams = ref.watch(teamsProvider);
     final permissions = ref.watch(permissionsProvider);
     final applicationsState = ref.watch(teamApplicationsProvider);
-    
+    final isMember = ref.watch(isTeamMemberProvider(teamId));
+
     final team = teams.where((t) => t.id == teamId).firstOrNull;
     final hasApplied = applicationsState.appliedTeams.contains(teamId);
     final isLoading = applicationsState.loadingTeams.contains(teamId);
-    
+
     if (team == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Team Not Found')),
@@ -36,42 +37,44 @@ class TeamDetailScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(team.name),
-        actions: permissions.isAdmin ? [
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              switch (value) {
-                case 'edit':
-                  _showEditTeamDialog(context, ref, team);
-                  break;
-                case 'delete':
-                  _showDeleteConfirmation(context, ref, team);
-                  break;
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'edit',
-                child: Row(
-                  children: [
-                    Icon(Icons.edit),
-                    SizedBox(width: 8),
-                    Text('Edit Team'),
+        actions: permissions.isAdmin
+            ? [
+                PopupMenuButton<String>(
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'edit':
+                        _showEditTeamDialog(context, ref, team);
+                        break;
+                      case 'delete':
+                        _showDeleteConfirmation(context, ref, team);
+                        break;
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit),
+                          SizedBox(width: 8),
+                          Text('Edit Team'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('Delete Team'),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-              ),
-              const PopupMenuItem(
-                value: 'delete',
-                child: Row(
-                  children: [
-                    Icon(Icons.delete, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('Delete Team'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ] : null,
+              ]
+            : null,
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -101,12 +104,14 @@ class TeamDetailScreen extends ConsumerWidget {
                 width: double.infinity,
                 color: Theme.of(context).primaryColor.withOpacity(0.1),
                 child: Icon(
-                  team.type == TeamType.connectGroup ? Icons.groups : Icons.celebration,
+                  team.type == TeamType.connectGroup
+                      ? Icons.groups
+                      : Icons.celebration,
                   size: 80,
                   color: Theme.of(context).primaryColor.withOpacity(0.5),
                 ),
               ),
-            
+
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -114,22 +119,25 @@ class TeamDetailScreen extends ConsumerWidget {
                 children: [
                   // Team Type Badge
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: team.type == TeamType.connectGroup 
+                      color: team.type == TeamType.connectGroup
                           ? Theme.of(context).primaryColor.withOpacity(0.1)
                           : Colors.orange.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: team.type == TeamType.connectGroup 
+                        color: team.type == TeamType.connectGroup
                             ? Theme.of(context).primaryColor.withOpacity(0.3)
                             : Colors.orange.withOpacity(0.3),
                       ),
                     ),
                     child: Text(
-                      team.type == TeamType.connectGroup ? 'Connect Group' : 'Hangout',
+                      team.type == TeamType.connectGroup
+                          ? 'Connect Group'
+                          : 'Hangout',
                       style: TextStyle(
-                        color: team.type == TeamType.connectGroup 
+                        color: team.type == TeamType.connectGroup
                             ? Theme.of(context).primaryColor
                             : Colors.orange,
                         fontWeight: FontWeight.bold,
@@ -137,19 +145,19 @@ class TeamDetailScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Team Name
                   Text(
                     team.name,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
-                  
+
                   const SizedBox(height: 8),
-                  
+
                   // Leader
                   Row(
                     children: [
@@ -161,42 +169,43 @@ class TeamDetailScreen extends ConsumerWidget {
                       const SizedBox(width: 8),
                       Text(
                         'Led by ${team.leader}',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Colors.grey[700],
-                        ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  color: Colors.grey[700],
+                                ),
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Description
                   Text(
                     'About This ${team.type == TeamType.connectGroup ? 'Group' : 'Hangout'}',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     team.description,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      height: 1.5,
-                    ),
+                          height: 1.5,
+                        ),
                   ),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Meeting Details
-                  if (team.meetingTime != null || team.meetingLocation != null) ...[
+                  if (team.meetingTime != null ||
+                      team.meetingLocation != null) ...[
                     Text(
                       'Meeting Details',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                     const SizedBox(height: 12),
-                    
                     if (team.meetingTime != null)
                       _buildInfoRow(
                         context,
@@ -204,7 +213,6 @@ class TeamDetailScreen extends ConsumerWidget {
                         'When',
                         '${DateFormat('EEEE').format(team.meetingTime!)}s at ${DateFormat('h:mm a').format(team.meetingTime!)}',
                       ),
-                    
                     if (team.meetingLocation != null)
                       _buildInfoRow(
                         context,
@@ -212,82 +220,88 @@ class TeamDetailScreen extends ConsumerWidget {
                         'Where',
                         team.meetingLocation!,
                       ),
-                    
                     const SizedBox(height: 24),
                   ],
-                  
+
                   // Membership Info
                   Text(
                     'Membership',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 12),
-                  
+
                   _buildInfoRow(
                     context,
                     Icons.group,
                     'Current Members',
                     '${team.currentMembers}${team.maxMembers != null ? ' of ${team.maxMembers}' : ''} members',
                   ),
-                  
+
                   _buildInfoRow(
                     context,
-                    team.requiresApplication ? Icons.assignment : Icons.door_front_door_outlined,
+                    team.requiresApplication
+                        ? Icons.assignment
+                        : Icons.door_front_door_outlined,
                     'Joining',
-                    team.requiresApplication ? 'Application Required' : 'Open to All',
+                    team.requiresApplication
+                        ? 'Application Required'
+                        : 'Open to All',
                   ),
-                  
+
                   // Requirements
                   if (team.requirements.isNotEmpty) ...[
                     const SizedBox(height: 24),
                     Text(
                       'Requirements',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                     const SizedBox(height: 12),
                     ...team.requirements.map((requirement) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            Icons.check_circle,
-                            size: 16,
-                            color: Theme.of(context).primaryColor,
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.check_circle,
+                                size: 16,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  requirement,
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              requirement,
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )),
+                        )),
                   ],
 
                   // Team Members Section
                   const SizedBox(height: 24),
                   _buildMembersSection(context, ref, team),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // Join/Apply Button
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: (team.maxMembers != null && 
-                          team.currentMembers >= team.maxMembers!) || isLoading
+                      onPressed: (team.maxMembers != null &&
+                                  team.currentMembers >= team.maxMembers! &&
+                                  !isMember &&
+                                  !hasApplied) ||
+                              isLoading
                           ? null
                           : () async {
                               if (team.requiresApplication) {
                                 if (hasApplied) {
-                                  // Show optimistic feedback immediately
+                                  // Leave team (cancel application)
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text('Left ${team.name}'),
@@ -295,20 +309,28 @@ class TeamDetailScreen extends ConsumerWidget {
                                       duration: const Duration(seconds: 2),
                                     ),
                                   );
-                                  
+
                                   try {
-                                    await ref.read(teamApplicationsProvider.notifier).cancelApplication(team.id);
+                                    await ref
+                                        .read(teamApplicationsProvider.notifier)
+                                        .cancelApplication(team.id);
+                                    // Refresh membership status and member list
+                                    ref
+                                        .read(teamMembershipProvider.notifier)
+                                        .invalidateMembership(teamId);
+                                    ref.invalidate(teamMembersProvider(teamId));
                                   } catch (e) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text('Failed to leave ${team.name}. Please try again.'),
+                                        content: Text(
+                                            'Failed to leave ${team.name}. Please try again.'),
                                         backgroundColor: Colors.red,
                                         duration: const Duration(seconds: 3),
                                       ),
                                     );
                                   }
                                 } else {
-                                  // Show optimistic feedback immediately
+                                  // Apply to join team
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text('Applied to ${team.name}!'),
@@ -316,13 +338,21 @@ class TeamDetailScreen extends ConsumerWidget {
                                       duration: const Duration(seconds: 2),
                                     ),
                                   );
-                                  
+
                                   try {
-                                    await ref.read(teamApplicationsProvider.notifier).applyToTeam(team.id);
+                                    await ref
+                                        .read(teamApplicationsProvider.notifier)
+                                        .applyToTeam(team.id);
+                                    // Refresh membership status and member list
+                                    ref
+                                        .read(teamMembershipProvider.notifier)
+                                        .invalidateMembership(teamId);
+                                    ref.invalidate(teamMembersProvider(teamId));
                                   } catch (e) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text('Failed to apply to ${team.name}. Please try again.'),
+                                        content: Text(
+                                            'Failed to apply to ${team.name}. Please try again.'),
                                         backgroundColor: Colors.red,
                                         duration: const Duration(seconds: 3),
                                       ),
@@ -330,22 +360,78 @@ class TeamDetailScreen extends ConsumerWidget {
                                   }
                                 }
                               } else {
-                                // Show optimistic feedback immediately
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Joined ${team.name}!'),
-                                    backgroundColor: Colors.green,
-                                    duration: const Duration(seconds: 2),
-                                  ),
-                                );
-                                
-                                ref.read(teamsProvider.notifier).joinTeam(team.id);
+                                // Open team - Join/Leave directly
+                                if (isMember) {
+                                  // Leave team
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Left ${team.name}'),
+                                      backgroundColor: Colors.orange,
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+
+                                  try {
+                                    await ref
+                                        .read(teamsProvider.notifier)
+                                        .leaveTeam(team.id);
+                                    // Refresh membership status and member list
+                                    ref
+                                        .read(teamMembershipProvider.notifier)
+                                        .invalidateMembership(teamId);
+                                    ref.invalidate(teamMembersProvider(teamId));
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                            'Failed to leave ${team.name}. Please try again.'),
+                                        backgroundColor: Colors.red,
+                                        duration: const Duration(seconds: 3),
+                                      ),
+                                    );
+                                  }
+                                } else {
+                                  // Join team
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Joined ${team.name}!'),
+                                      backgroundColor: Colors.green,
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+
+                                  try {
+                                    await ref
+                                        .read(teamsProvider.notifier)
+                                        .joinTeam(team.id);
+                                    // Refresh membership status and member list
+                                    ref
+                                        .read(teamMembershipProvider.notifier)
+                                        .invalidateMembership(teamId);
+                                    ref.invalidate(teamMembersProvider(teamId));
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                            'Failed to join ${team.name}. Please try again.'),
+                                        backgroundColor: Colors.red,
+                                        duration: const Duration(seconds: 3),
+                                      ),
+                                    );
+                                  }
+                                }
                               }
                             },
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: hasApplied && team.requiresApplication ? Colors.orange : null,
-                        foregroundColor: hasApplied && team.requiresApplication ? Colors.white : null,
+                        backgroundColor:
+                            (hasApplied && team.requiresApplication) || isMember
+                                ? Colors.orange
+                                : null,
+                        foregroundColor:
+                            (hasApplied && team.requiresApplication) || isMember
+                                ? Colors.white
+                                : null,
                       ),
                       child: isLoading
                           ? const SizedBox(
@@ -354,12 +440,18 @@ class TeamDetailScreen extends ConsumerWidget {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : Text(
-                              team.maxMembers != null && 
-                                  team.currentMembers >= team.maxMembers!
+                              team.maxMembers != null &&
+                                      team.currentMembers >= team.maxMembers! &&
+                                      !isMember &&
+                                      !hasApplied
                                   ? 'Team Full'
                                   : team.requiresApplication
-                                      ? (hasApplied ? 'Leave Team' : 'Apply to Join')
-                                      : 'Join This ${team.type == TeamType.connectGroup ? 'Group' : 'Hangout'}',
+                                      ? (hasApplied
+                                          ? 'Leave Team'
+                                          : 'Apply to Join')
+                                      : (isMember
+                                          ? 'Leave ${team.type == TeamType.connectGroup ? 'Group' : 'Hangout'}'
+                                          : 'Join This ${team.type == TeamType.connectGroup ? 'Group' : 'Hangout'}'),
                               style: const TextStyle(fontSize: 16),
                             ),
                     ),
@@ -386,20 +478,19 @@ class TeamDetailScreen extends ConsumerWidget {
             Text(
               'Team Members',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             if (permissions.isAdmin)
               Text(
                 '${team.currentMembers} members',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
-                ),
+                      color: Colors.grey[600],
+                    ),
               ),
           ],
         ),
         const SizedBox(height: 12),
-        
         membersAsync.when(
           data: (members) {
             if (members.isEmpty) {
@@ -418,8 +509,8 @@ class TeamDetailScreen extends ConsumerWidget {
                       child: Text(
                         'No members have joined yet',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[600],
-                        ),
+                              color: Colors.grey[600],
+                            ),
                       ),
                     ),
                   ],
@@ -428,7 +519,10 @@ class TeamDetailScreen extends ConsumerWidget {
             }
 
             return Column(
-              children: members.map((member) => _buildMemberCard(context, member, permissions.isAdmin)).toList(),
+              children: members
+                  .map((member) =>
+                      _buildMemberCard(context, member, permissions.isAdmin))
+                  .toList(),
             );
           },
           loading: () => const Center(
@@ -452,8 +546,8 @@ class TeamDetailScreen extends ConsumerWidget {
                   child: Text(
                     'Failed to load members',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.red[700],
-                    ),
+                          color: Colors.red[700],
+                        ),
                   ),
                 ),
               ],
@@ -464,7 +558,8 @@ class TeamDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMemberCard(BuildContext context, TeamMember member, bool isAdmin) {
+  Widget _buildMemberCard(
+      BuildContext context, TeamMember member, bool isAdmin) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
@@ -486,12 +581,14 @@ class TeamDetailScreen extends ConsumerWidget {
           CircleAvatar(
             radius: 20,
             backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-            backgroundImage: member.userAvatar != null 
+            backgroundImage: member.userAvatar != null
                 ? CachedNetworkImageProvider(member.userAvatar!)
                 : null,
             child: member.userAvatar == null
                 ? Text(
-                    member.userName.isNotEmpty ? member.userName[0].toUpperCase() : 'U',
+                    member.userName.isNotEmpty
+                        ? member.userName[0].toUpperCase()
+                        : 'U',
                     style: TextStyle(
                       color: Theme.of(context).primaryColor,
                       fontWeight: FontWeight.bold,
@@ -500,7 +597,7 @@ class TeamDetailScreen extends ConsumerWidget {
                 : null,
           ),
           const SizedBox(width: 12),
-          
+
           // Member info
           Expanded(
             child: Column(
@@ -509,26 +606,26 @@ class TeamDetailScreen extends ConsumerWidget {
                 Text(
                   member.userName,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
+                        fontWeight: FontWeight.w500,
+                      ),
                 ),
                 if (member.userEmail != null && isAdmin)
                   Text(
                     member.userEmail!,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                          color: Colors.grey[600],
+                        ),
                   ),
                 Text(
                   'Joined ${DateFormat('MMM d, yyyy').format(member.joinedAt)}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[500],
-                  ),
+                        color: Colors.grey[500],
+                      ),
                 ),
               ],
             ),
           ),
-          
+
           // Status badge
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -578,7 +675,8 @@ class TeamDetailScreen extends ConsumerWidget {
     }
   }
 
-  Widget _buildInfoRow(BuildContext context, IconData icon, String label, String value) {
+  Widget _buildInfoRow(
+      BuildContext context, IconData icon, String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -595,9 +693,9 @@ class TeamDetailScreen extends ConsumerWidget {
             child: Text(
               label,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[600],
-              ),
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey[600],
+                  ),
             ),
           ),
           Expanded(
@@ -611,65 +709,16 @@ class TeamDetailScreen extends ConsumerWidget {
     );
   }
 
-  void _showApplicationDialog(BuildContext context, WidgetRef ref, Team team) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Apply to ${team.name}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('You are applying to join this ${team.type == TeamType.connectGroup ? 'Connect Group' : 'Hangout'}.'),
-            if (team.requirements.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              const Text('Requirements:', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              ...team.requirements.map((req) => Padding(
-                padding: const EdgeInsets.only(left: 8, bottom: 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('• '),
-                    Expanded(child: Text(req)),
-                  ],
-                ),
-              )),
-            ],
-            const SizedBox(height: 16),
-            const Text('Your application will be reviewed by the team leader.'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Application submitted for ${team.name}!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            },
-            child: const Text('Submit Application'),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showEditTeamDialog(BuildContext context, WidgetRef ref, Team team) {
     final nameController = TextEditingController(text: team.name);
     final descriptionController = TextEditingController(text: team.description);
     final leaderController = TextEditingController(text: team.leader);
-    final locationController = TextEditingController(text: team.meetingLocation ?? '');
+    final locationController =
+        TextEditingController(text: team.meetingLocation ?? '');
     final imageUrlController = TextEditingController(text: team.imageUrl ?? '');
-    final maxMembersController = TextEditingController(text: team.maxMembers?.toString() ?? '');
-    
+    final maxMembersController =
+        TextEditingController(text: team.maxMembers?.toString() ?? '');
+
     TeamType selectedType = team.type;
     bool requiresApplication = team.requiresApplication;
     DateTime? selectedTime = team.meetingTime;
@@ -701,8 +750,11 @@ class TeamDetailScreen extends ConsumerWidget {
                     value: selectedType,
                     decoration: const InputDecoration(labelText: 'Team Type'),
                     items: const [
-                      DropdownMenuItem(value: TeamType.connectGroup, child: Text('Connect Group')),
-                      DropdownMenuItem(value: TeamType.hangout, child: Text('Hangout')),
+                      DropdownMenuItem(
+                          value: TeamType.connectGroup,
+                          child: Text('Connect Group')),
+                      DropdownMenuItem(
+                          value: TeamType.hangout, child: Text('Hangout')),
                     ],
                     onChanged: (value) => setState(() => selectedType = value!),
                   ),
@@ -714,7 +766,8 @@ class TeamDetailScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
                   TextField(
                     controller: locationController,
-                    decoration: const InputDecoration(labelText: 'Meeting Location'),
+                    decoration:
+                        const InputDecoration(labelText: 'Meeting Location'),
                   ),
                   const SizedBox(height: 16),
                   TextField(
@@ -724,14 +777,16 @@ class TeamDetailScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
                   TextField(
                     controller: maxMembersController,
-                    decoration: const InputDecoration(labelText: 'Max Members (optional)'),
+                    decoration: const InputDecoration(
+                        labelText: 'Max Members (optional)'),
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 16),
                   CheckboxListTile(
                     title: const Text('Requires Application'),
                     value: requiresApplication,
-                    onChanged: (value) => setState(() => requiresApplication = value!),
+                    onChanged: (value) =>
+                        setState(() => requiresApplication = value!),
                   ),
                 ],
               ),
@@ -749,17 +804,23 @@ class TeamDetailScreen extends ConsumerWidget {
                   description: descriptionController.text,
                   type: selectedType,
                   leader: leaderController.text,
-                  meetingLocation: locationController.text.isEmpty ? null : locationController.text,
-                  imageUrl: imageUrlController.text.isEmpty ? null : imageUrlController.text,
-                  maxMembers: maxMembersController.text.isEmpty ? null : int.tryParse(maxMembersController.text),
+                  meetingLocation: locationController.text.isEmpty
+                      ? null
+                      : locationController.text,
+                  imageUrl: imageUrlController.text.isEmpty
+                      ? null
+                      : imageUrlController.text,
+                  maxMembers: maxMembersController.text.isEmpty
+                      ? null
+                      : int.tryParse(maxMembersController.text),
                   requiresApplication: requiresApplication,
                   meetingTime: selectedTime,
                   requirements: requirements,
                 );
-                
+
                 ref.read(teamsProvider.notifier).updateTeam(updatedTeam);
                 Navigator.of(context).pop();
-                
+
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Team updated successfully!'),
@@ -780,7 +841,8 @@ class TeamDetailScreen extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Team'),
-        content: Text('Are you sure you want to delete "${team.name}"? This action cannot be undone.'),
+        content: Text(
+            'Are you sure you want to delete "${team.name}"? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -791,7 +853,7 @@ class TeamDetailScreen extends ConsumerWidget {
               ref.read(teamsProvider.notifier).deleteTeam(team.id);
               Navigator.of(context).pop();
               context.pop(); // Go back to teams list
-              
+
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text('${team.name} deleted successfully'),

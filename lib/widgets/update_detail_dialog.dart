@@ -19,7 +19,7 @@ class UpdateDetailDialog extends ConsumerWidget {
     final permissions = ref.watch(permissionsProvider);
     final userPins = ref.watch(userPinsProvider);
     final isUserPinned = userPins.contains(update.id);
-    
+
     return Dialog(
       insetPadding: const EdgeInsets.all(16),
       child: Container(
@@ -32,7 +32,8 @@ class UpdateDetailDialog extends ConsumerWidget {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: _getUpdateTypeColor(update.type).withOpacity(0.1),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(12)),
               ),
               child: Row(
                 children: [
@@ -53,7 +54,8 @@ class UpdateDetailDialog extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: _getUpdateTypeColor(update.type),
                             borderRadius: BorderRadius.circular(12),
@@ -70,9 +72,10 @@ class UpdateDetailDialog extends ConsumerWidget {
                         const SizedBox(height: 4),
                         Text(
                           '${DateFormat('MMM d, yyyy • h:mm a').format(update.createdAt)} • ${update.author}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Colors.grey[600],
+                                  ),
                         ),
                       ],
                     ),
@@ -98,7 +101,9 @@ class UpdateDetailDialog extends ConsumerWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            wasUserPinned ? 'Removed from your pins' : 'Added to your pins',
+                            wasUserPinned
+                                ? 'Removed from your pins'
+                                : 'Added to your pins',
                           ),
                           duration: const Duration(seconds: 1),
                         ),
@@ -106,7 +111,9 @@ class UpdateDetailDialog extends ConsumerWidget {
                     },
                     icon: Icon(
                       isUserPinned ? Icons.bookmark : Icons.bookmark_border,
-                      color: isUserPinned ? Theme.of(context).primaryColor : Colors.grey[600],
+                      color: isUserPinned
+                          ? Theme.of(context).primaryColor
+                          : Colors.grey[600],
                     ),
                     tooltip: isUserPinned ? 'Remove from pins' : 'Add to pins',
                   ),
@@ -118,7 +125,7 @@ class UpdateDetailDialog extends ConsumerWidget {
                 ],
               ),
             ),
-            
+
             // Content
             Flexible(
               child: SingleChildScrollView(
@@ -129,12 +136,13 @@ class UpdateDetailDialog extends ConsumerWidget {
                     // Title
                     Text(
                       update.title,
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                     ),
                     const SizedBox(height: 16),
-                    
+
                     // Image
                     if (update.imageUrl != null)
                       ClipRRect(
@@ -148,7 +156,8 @@ class UpdateDetailDialog extends ConsumerWidget {
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
                                 height: 200,
-                                color: _getUpdateTypeColor(update.type).withOpacity(0.1),
+                                color: _getUpdateTypeColor(update.type)
+                                    .withOpacity(0.1),
                                 child: Center(
                                   child: Icon(
                                     _getUpdateTypeIcon(update.type),
@@ -162,43 +171,50 @@ class UpdateDetailDialog extends ConsumerWidget {
                         ),
                       ),
                     if (update.imageUrl != null) const SizedBox(height: 16),
-                    
+
                     // Content
                     Text(
                       update.content,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        height: 1.6,
-                      ),
+                            height: 1.6,
+                          ),
                     ),
-                    
+
                     // Tags
                     if (update.tags.isNotEmpty) ...[
                       const SizedBox(height: 20),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: update.tags.map((tag) => Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[100],
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.grey[300]!),
-                          ),
-                          child: Text(
-                            '#$tag',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey[700],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        )).toList(),
+                        children: update.tags
+                            .map((tag) => Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[100],
+                                    borderRadius: BorderRadius.circular(16),
+                                    border:
+                                        Border.all(color: Colors.grey[300]!),
+                                  ),
+                                  child: Text(
+                                    '#$tag',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: Colors.grey[700],
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                  ),
+                                ))
+                            .toList(),
                       ),
                     ],
                   ],
                 ),
               ),
             ),
-            
+
             // Action buttons
             if (permissions.canEditContent || permissions.canDeleteContent)
               Container(
@@ -228,7 +244,8 @@ class UpdateDetailDialog extends ConsumerWidget {
                         },
                         icon: const Icon(Icons.delete, size: 18),
                         label: const Text('Delete'),
-                        style: TextButton.styleFrom(foregroundColor: Colors.red),
+                        style:
+                            TextButton.styleFrom(foregroundColor: Colors.red),
                       ),
                   ],
                 ),
@@ -289,7 +306,8 @@ class UpdateDetailDialog extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Edit Update'),
-        content: Text('Edit functionality for "${update.title}" would be implemented here.'),
+        content: Text(
+            'Edit functionality for "${update.title}" would be implemented here.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -321,7 +339,8 @@ class UpdateDetailDialog extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Update'),
-        content: Text('Are you sure you want to delete "${update.title}"? This action cannot be undone.'),
+        content: Text(
+            'Are you sure you want to delete "${update.title}"? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -331,7 +350,9 @@ class UpdateDetailDialog extends ConsumerWidget {
             onPressed: () async {
               Navigator.of(context).pop();
               try {
-                await ref.read(updatesProvider.notifier).deleteUpdate(update.id);
+                await ref
+                    .read(updatesProvider.notifier)
+                    .deleteUpdate(update.id);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Deleted "${update.title}"')),

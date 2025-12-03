@@ -13,7 +13,8 @@ enum EnvironmentFeedback {
 }
 
 final selectedLocationProvider = StateProvider<Offset?>((ref) => null);
-final environmentFeedbackProvider = StateProvider<EnvironmentFeedback?>((ref) => null);
+final environmentFeedbackProvider =
+    StateProvider<EnvironmentFeedback?>((ref) => null);
 final mapSizeProvider = StateProvider<Size?>((ref) => null);
 
 class WorshipFeedbackMapScreen extends ConsumerWidget {
@@ -30,201 +31,124 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
       ),
-      body: Column(
+      body: SafeArea(
+        child: Stack(
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor,
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(20),
-                bottomRight: Radius.circular(20),
-              ),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  'Help Us Improve Your Experience',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+          // Main content with header and map - FIXED SIZE
+          Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor,
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(20),
+                    bottomRight: Radius.circular(20),
                   ),
-                  textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Tap on the map to indicate your approximate location, then share your environmental feedback.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.white70,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-          
-          Expanded(
-            child: Container(
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    spreadRadius: 1,
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Stack(
+                child: Column(
                   children: [
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        // Store map size for relative coordinate calculation
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          ref.read(mapSizeProvider.notifier).state = constraints.biggest;
-                        });
-                        
-                        return GestureDetector(
-                          onTapDown: (details) {
-                            ref.read(selectedLocationProvider.notifier).state = details.localPosition;
-                          },
-                          child: Container(
-                            width: double.infinity,
-                            height: double.infinity,
-                            child: CustomPaint(
-                              painter: WorshipFeedbackMapPainter(selectedLocation: selectedLocation),
-                            ),
+                    Text(
+                      'Help Us Improve Your Experience',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
                           ),
-                        );
-                      },
+                      textAlign: TextAlign.center,
                     ),
-                    
-                    if (selectedLocation != null)
-                      Positioned(
-                        left: selectedLocation.dx - 12,
-                        top: selectedLocation.dy - 24,
-                        child: const Icon(
-                          Icons.location_on,
-                          color: Colors.red,
-                          size: 24,
-                        ),
-                      ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Tap on the map to indicate your approximate location, then share your environmental feedback.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.white70,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
                   ],
                 ),
               ),
-            ),
-          ),
-          
-          if (selectedLocation != null) ...[
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'How\'s the environment?',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      FeedbackChip(
-                        label: 'Too Cold',
-                        icon: Icons.ac_unit,
-                        feedback: EnvironmentFeedback.tooCold,
-                        selectedFeedback: environmentFeedback,
-                        onSelected: (feedback) {
-                          ref.read(environmentFeedbackProvider.notifier).state = feedback;
-                        },
-                      ),
-                      FeedbackChip(
-                        label: 'Too Hot',
-                        icon: Icons.local_fire_department,
-                        feedback: EnvironmentFeedback.tooHot,
-                        selectedFeedback: environmentFeedback,
-                        onSelected: (feedback) {
-                          ref.read(environmentFeedbackProvider.notifier).state = feedback;
-                        },
-                      ),
-                      FeedbackChip(
-                        label: 'Just Right',
-                        icon: Icons.check_circle,
-                        feedback: EnvironmentFeedback.justRight,
-                        selectedFeedback: environmentFeedback,
-                        onSelected: (feedback) {
-                          ref.read(environmentFeedbackProvider.notifier).state = feedback;
-                        },
-                      ),
-                      FeedbackChip(
-                        label: 'Too Loud',
-                        icon: Icons.volume_up,
-                        feedback: EnvironmentFeedback.tooLoud,
-                        selectedFeedback: environmentFeedback,
-                        onSelected: (feedback) {
-                          ref.read(environmentFeedbackProvider.notifier).state = feedback;
-                        },
-                      ),
-                      FeedbackChip(
-                        label: 'Too Quiet',
-                        icon: Icons.volume_down,
-                        feedback: EnvironmentFeedback.tooQuiet,
-                        selectedFeedback: environmentFeedback,
-                        onSelected: (feedback) {
-                          ref.read(environmentFeedbackProvider.notifier).state = feedback;
-                        },
-                      ),
-                      FeedbackChip(
-                        label: 'Lighting Issue',
-                        icon: Icons.lightbulb,
-                        feedback: EnvironmentFeedback.lighting,
-                        selectedFeedback: environmentFeedback,
-                        onSelected: (feedback) {
-                          ref.read(environmentFeedbackProvider.notifier).state = feedback;
-                        },
+              Expanded(
+                child: Container(
+                  margin: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: environmentFeedback != null
-                          ? () {
-                              _submitFeedback(context, ref, selectedLocation, environmentFeedback);
-                            }
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: const Text('Submit Feedback'),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Stack(
+                      children: [
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            // Store map size for relative coordinate calculation
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              ref.read(mapSizeProvider.notifier).state =
+                                  constraints.biggest;
+                            });
+
+                            return GestureDetector(
+                              onTapDown: (details) {
+                                ref.read(selectedLocationProvider.notifier).state =
+                                    details.localPosition;
+                              },
+                              child: SizedBox(
+                                width: double.infinity,
+                                height: double.infinity,
+                                child: CustomPaint(
+                                  painter: WorshipFeedbackMapPainter(
+                                      selectedLocation: selectedLocation),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        if (selectedLocation != null)
+                          Positioned(
+                            left: selectedLocation.dx - 12,
+                            top: selectedLocation.dy - 24,
+                            child: const Icon(
+                              Icons.location_on,
+                              color: Colors.red,
+                              size: 24,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
-          ] else ...[
-            Padding(
-              padding: const EdgeInsets.all(16),
+              // Empty spacer to keep Column size constant
+              const SizedBox(height: 88), // Match instruction hint height
+            ],
+          ),
+          // Instruction hint overlay - positioned at bottom
+          if (selectedLocation == null)
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 16,
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.grey[50],
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.grey[200]!),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 5,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Row(
                   children: [
@@ -237,28 +161,182 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
                       child: Text(
                         'Tap anywhere on the worship area map to indicate your location',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[600],
-                        ),
+                              color: Colors.grey[600],
+                            ),
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-          ],
+          // Feedback popup overlay
+          if (selectedLocation != null)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: GestureDetector(
+                onTap: () {}, // Prevent tap-through to map
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        spreadRadius: 2,
+                        blurRadius: 10,
+                        offset: const Offset(0, -2),
+                      ),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Drag handle indicator
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'How\'s the environment?',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close, size: 20),
+                              onPressed: () {
+                                ref.read(selectedLocationProvider.notifier).state = null;
+                                ref.read(environmentFeedbackProvider.notifier).state = null;
+                              },
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            FeedbackChip(
+                              label: 'Too Cold',
+                              icon: Icons.ac_unit,
+                              feedback: EnvironmentFeedback.tooCold,
+                              selectedFeedback: environmentFeedback,
+                              onSelected: (feedback) {
+                                ref.read(environmentFeedbackProvider.notifier).state =
+                                    feedback;
+                              },
+                            ),
+                            FeedbackChip(
+                              label: 'Too Hot',
+                              icon: Icons.local_fire_department,
+                              feedback: EnvironmentFeedback.tooHot,
+                              selectedFeedback: environmentFeedback,
+                              onSelected: (feedback) {
+                                ref.read(environmentFeedbackProvider.notifier).state =
+                                    feedback;
+                              },
+                            ),
+                            FeedbackChip(
+                              label: 'Just Right',
+                              icon: Icons.check_circle,
+                              feedback: EnvironmentFeedback.justRight,
+                              selectedFeedback: environmentFeedback,
+                              onSelected: (feedback) {
+                                ref.read(environmentFeedbackProvider.notifier).state =
+                                    feedback;
+                              },
+                            ),
+                            FeedbackChip(
+                              label: 'Too Loud',
+                              icon: Icons.volume_up,
+                              feedback: EnvironmentFeedback.tooLoud,
+                              selectedFeedback: environmentFeedback,
+                              onSelected: (feedback) {
+                                ref.read(environmentFeedbackProvider.notifier).state =
+                                    feedback;
+                              },
+                            ),
+                            FeedbackChip(
+                              label: 'Too Quiet',
+                              icon: Icons.volume_down,
+                              feedback: EnvironmentFeedback.tooQuiet,
+                              selectedFeedback: environmentFeedback,
+                              onSelected: (feedback) {
+                                ref.read(environmentFeedbackProvider.notifier).state =
+                                    feedback;
+                              },
+                            ),
+                            FeedbackChip(
+                              label: 'Lighting Issue',
+                              icon: Icons.lightbulb,
+                              feedback: EnvironmentFeedback.lighting,
+                              selectedFeedback: environmentFeedback,
+                              onSelected: (feedback) {
+                                ref.read(environmentFeedbackProvider.notifier).state =
+                                    feedback;
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: environmentFeedback != null
+                                ? () {
+                                    _submitFeedback(context, ref, selectedLocation,
+                                        environmentFeedback);
+                                  }
+                                : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).primaryColor,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            child: const Text('Submit Feedback'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
+        ),
       ),
     );
   }
 
-  void _submitFeedback(BuildContext context, WidgetRef ref, Offset location, EnvironmentFeedback feedback) {
+  void _submitFeedback(BuildContext context, WidgetRef ref, Offset location,
+      EnvironmentFeedback feedback) {
     // Get the map size from provider
     final mapSize = ref.read(mapSizeProvider) ?? Size.zero;
-    
+
     // Calculate relative position (0.0 to 1.0)
     final relativeX = mapSize.width > 0 ? location.dx / mapSize.width : 0.0;
     final relativeY = mapSize.height > 0 ? location.dy / mapSize.height : 0.0;
-    
+
     final notification = AppNotification(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: 'New Worship Feedback',
@@ -275,19 +353,20 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
         },
       },
     );
-    
+
     ref.read(notificationProvider.notifier).addNotification(notification);
-    
+
     ref.read(selectedLocationProvider.notifier).state = null;
     ref.read(environmentFeedbackProvider.notifier).state = null;
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Thank you for your feedback! We\'ll work to improve the experience.'),
+        content: Text(
+            'Thank you for your feedback! We\'ll work to improve the experience.'),
         backgroundColor: Colors.green,
       ),
     );
-    
+
     Navigator.of(context).pop();
   }
 
@@ -328,7 +407,7 @@ class FeedbackChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isSelected = selectedFeedback == feedback;
-    
+
     return FilterChip(
       label: Row(
         mainAxisSize: MainAxisSize.min,
@@ -381,7 +460,8 @@ class WorshipFeedbackMapPainter extends CustomPainter {
       size.width * 0.7,
       size.height * 0.1,
     );
-    canvas.drawRect(stageRect, Paint()..color = const Color(0xFF6B46C1).withOpacity(0.3));
+    canvas.drawRect(
+        stageRect, Paint()..color = const Color(0xFF6B46C1).withOpacity(0.3));
     canvas.drawRect(stageRect, paint);
 
     // Draw text
@@ -414,7 +494,8 @@ class WorshipFeedbackMapPainter extends CustomPainter {
       final y = size.height * 0.3 + (row * size.height * 0.06);
       for (int section = 0; section < 3; section++) {
         final x = size.width * 0.2 + (section * size.width * 0.25);
-        final seatRect = Rect.fromLTWH(x, y, size.width * 0.15, size.height * 0.04);
+        final seatRect =
+            Rect.fromLTWH(x, y, size.width * 0.15, size.height * 0.04);
         canvas.drawRRect(
           RRect.fromRectAndRadius(seatRect, const Radius.circular(4)),
           seatPaint,
@@ -429,7 +510,8 @@ class WorshipFeedbackMapPainter extends CustomPainter {
       size.width * 0.1,
       size.height * 0.05,
     );
-    canvas.drawRect(entranceRect, Paint()..color = Colors.green.withOpacity(0.3));
+    canvas.drawRect(
+        entranceRect, Paint()..color = Colors.green.withOpacity(0.3));
 
     final entranceTextPainter = TextPainter(
       text: TextSpan(

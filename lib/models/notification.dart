@@ -44,9 +44,9 @@ class AppNotification {
 
   // Helper methods for feedback-related notifications
   bool get isFeedbackNotification => type == NotificationType.feedbackSubmitted;
-  
+
   String? get feedbackType => data?['feedback'];
-  
+
   Map<String, double>? get feedbackLocation {
     final location = data?['location'];
     if (location != null && location['x'] != null && location['y'] != null) {
@@ -58,13 +58,15 @@ class AppNotification {
     }
     return null;
   }
-  
+
   Map<String, double>? get feedbackRelativeLocation {
     final location = data?['location'];
-    if (location != null && location['relativeX'] != null && location['relativeY'] != null) {
+    if (location != null &&
+        location['relativeX'] != null &&
+        location['relativeY'] != null) {
       try {
         return {
-          'relativeX': location['relativeX'].toDouble(), 
+          'relativeX': location['relativeX'].toDouble(),
           'relativeY': location['relativeY'].toDouble()
         };
       } catch (e) {
@@ -73,7 +75,7 @@ class AppNotification {
     }
     return null;
   }
-  
+
   bool get hasLocation {
     final hasLoc = feedbackLocation != null || feedbackRelativeLocation != null;
     return hasLoc;

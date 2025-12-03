@@ -18,11 +18,15 @@ class NotificationNotifier extends StateNotifier<List<AppNotification>> {
   }
 
   void markAllAsRead() {
-    state = state.map((notification) => notification.copyWith(isRead: true)).toList();
+    state = state
+        .map((notification) => notification.copyWith(isRead: true))
+        .toList();
   }
 
   void removeNotification(String notificationId) {
-    state = state.where((notification) => notification.id != notificationId).toList();
+    state = state
+        .where((notification) => notification.id != notificationId)
+        .toList();
   }
 
   void clearAllNotifications() {
@@ -30,7 +34,8 @@ class NotificationNotifier extends StateNotifier<List<AppNotification>> {
   }
 }
 
-final notificationProvider = StateNotifierProvider<NotificationNotifier, List<AppNotification>>((ref) {
+final notificationProvider =
+    StateNotifierProvider<NotificationNotifier, List<AppNotification>>((ref) {
   return NotificationNotifier();
 });
 
@@ -46,10 +51,15 @@ final hasUnreadNotificationsProvider = Provider<bool>((ref) {
 
 final feedbackNotificationsProvider = Provider<List<AppNotification>>((ref) {
   final notifications = ref.watch(notificationProvider);
-  return notifications.where((notification) => notification.isFeedbackNotification).toList();
+  return notifications
+      .where((notification) => notification.isFeedbackNotification)
+      .toList();
 });
 
-final feedbackNotificationsWithLocationProvider = Provider<List<AppNotification>>((ref) {
+final feedbackNotificationsWithLocationProvider =
+    Provider<List<AppNotification>>((ref) {
   final feedbackNotifications = ref.watch(feedbackNotificationsProvider);
-  return feedbackNotifications.where((notification) => notification.hasLocation).toList();
+  return feedbackNotifications
+      .where((notification) => notification.hasLocation)
+      .toList();
 });

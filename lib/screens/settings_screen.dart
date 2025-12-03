@@ -15,7 +15,8 @@ class SettingsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Settings'),
       ),
-      body: ListView(
+      body: SafeArea(
+        child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           // Theme Section
@@ -28,27 +29,27 @@ class SettingsScreen extends ConsumerWidget {
                   Text(
                     'Appearance',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Theme Mode Selection
                   Text(
                     'Theme Mode',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                          fontWeight: FontWeight.w600,
+                        ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Current: ${themeSettings.mode.name} | System: ${Theme.of(context).brightness.name}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                          color: Colors.grey[600],
+                        ),
                   ),
                   const SizedBox(height: 12),
-                  
+
                   // Light Mode
                   RadioListTile<AppThemeMode>(
                     title: const Text('Light Mode'),
@@ -63,7 +64,7 @@ class SettingsScreen extends ConsumerWidget {
                     },
                     contentPadding: EdgeInsets.zero,
                   ),
-                  
+
                   // Dark Mode
                   RadioListTile<AppThemeMode>(
                     title: const Text('Dark Mode'),
@@ -78,7 +79,7 @@ class SettingsScreen extends ConsumerWidget {
                     },
                     contentPadding: EdgeInsets.zero,
                   ),
-                  
+
                   // System Mode
                   RadioListTile<AppThemeMode>(
                     title: const Text('System'),
@@ -97,9 +98,9 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // App Info Section
           Card(
             child: Padding(
@@ -110,18 +111,16 @@ class SettingsScreen extends ConsumerWidget {
                   Text(
                     'About',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 16),
-                  
                   ListTile(
                     leading: const Icon(Icons.info_outline),
                     title: const Text('App Version'),
                     subtitle: const Text('1.0.0'),
                     contentPadding: EdgeInsets.zero,
                   ),
-                  
                   ListTile(
                     leading: const Icon(Icons.church),
                     title: const Text('Revive Church'),
@@ -133,6 +132,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
         ],
+        ),
       ),
     );
   }

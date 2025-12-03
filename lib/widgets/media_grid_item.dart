@@ -59,7 +59,6 @@ class MediaGridItem extends ConsumerWidget {
                             ),
                           ),
                   ),
-                  
                   if (mediaItem.type == MediaType.video)
                     const Positioned.fill(
                       child: Center(
@@ -70,12 +69,12 @@ class MediaGridItem extends ConsumerWidget {
                         ),
                       ),
                     ),
-                  
                   Positioned(
                     top: 8,
                     left: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: Colors.black.withOpacity(0.7),
                         borderRadius: BorderRadius.circular(8),
@@ -83,13 +82,12 @@ class MediaGridItem extends ConsumerWidget {
                       child: Text(
                         _getMediaTypeLabel(mediaItem.type),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                     ),
                   ),
-                  
                   Positioned(
                     top: 8,
                     right: 8,
@@ -105,13 +103,18 @@ class MediaGridItem extends ConsumerWidget {
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
-                              mediaItem.isCollected ? Icons.bookmark : Icons.bookmark_border,
+                              mediaItem.isCollected
+                                  ? Icons.bookmark
+                                  : Icons.bookmark_border,
                               size: 20,
-                              color: mediaItem.isCollected ? Colors.yellow : Colors.white,
+                              color: mediaItem.isCollected
+                                  ? Colors.yellow
+                                  : Colors.white,
                             ),
                           ),
                         ),
-                        if (permissions.canDeleteMedia(mediaItem.photographer)) ...[
+                        if (permissions
+                            .canDeleteMedia(mediaItem.photographer)) ...[
                           const SizedBox(width: 4),
                           PopupMenuButton<String>(
                             onSelected: (value) {
@@ -136,9 +139,11 @@ class MediaGridItem extends ConsumerWidget {
                                 value: 'delete',
                                 child: Row(
                                   children: [
-                                    Icon(Icons.delete, size: 18, color: Colors.red),
+                                    Icon(Icons.delete,
+                                        size: 18, color: Colors.red),
                                     SizedBox(width: 8),
-                                    Text('삭제', style: TextStyle(color: Colors.red)),
+                                    Text('삭제',
+                                        style: TextStyle(color: Colors.red)),
                                   ],
                                 ),
                               ),
@@ -151,7 +156,6 @@ class MediaGridItem extends ConsumerWidget {
                 ],
               ),
             ),
-            
             Padding(
               padding: const EdgeInsets.all(8),
               child: Column(
@@ -161,14 +165,15 @@ class MediaGridItem extends ConsumerWidget {
                   Text(
                     mediaItem.title,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: Theme.of(context).primaryColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
@@ -176,17 +181,17 @@ class MediaGridItem extends ConsumerWidget {
                     child: Text(
                       _getMediaCategoryLabel(mediaItem.category),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).primaryColor,
-                        fontWeight: FontWeight.w600,
-                      ),
+                            color: Theme.of(context).primaryColor,
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     DateFormat('MMM d, yyyy').format(mediaItem.createdAt),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                          color: Colors.grey[600],
+                        ),
                   ),
                 ],
               ),
@@ -238,7 +243,8 @@ class MediaGridItem extends ConsumerWidget {
     }
   }
 
-  void _showDeleteDialog(BuildContext context, MediaItem mediaItem, VoidCallback? onDelete) {
+  void _showDeleteDialog(
+      BuildContext context, MediaItem mediaItem, VoidCallback? onDelete) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

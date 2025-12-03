@@ -36,15 +36,17 @@ class WorshipFeedbackMapCard extends StatelessWidget {
                       children: [
                         Text(
                           'Worship Feedback Map',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                         ),
                         Text(
                           'Share your location & feedback',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Colors.grey[600],
+                                  ),
                         ),
                       ],
                     ),
@@ -72,8 +74,8 @@ class WorshipFeedbackMapCard extends StatelessWidget {
                       child: Text(
                         'Help us improve your worship experience',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[700],
-                        ),
+                              color: Colors.grey[700],
+                            ),
                       ),
                     ),
                   ],

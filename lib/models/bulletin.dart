@@ -12,11 +12,24 @@ class BulletinItem {
   });
 }
 
+class WorshipScheduleItem {
+  final String time;
+  final String activity;
+  final String? leader;
+
+  WorshipScheduleItem({
+    required this.time,
+    required this.activity,
+    this.leader,
+  });
+}
+
 class Bulletin {
   final String id;
   final DateTime weekOf;
   final String theme;
   final List<BulletinItem> items;
+  final List<WorshipScheduleItem> schedule;
   final String? bannerImageUrl;
 
   Bulletin({
@@ -24,6 +37,7 @@ class Bulletin {
     required this.weekOf,
     required this.theme,
     required this.items,
+    required this.schedule,
     this.bannerImageUrl,
   });
 
@@ -32,6 +46,7 @@ class Bulletin {
     DateTime? weekOf,
     String? theme,
     List<BulletinItem>? items,
+    List<WorshipScheduleItem>? schedule,
     String? bannerImageUrl,
   }) {
     return Bulletin(
@@ -39,6 +54,7 @@ class Bulletin {
       weekOf: weekOf ?? this.weekOf,
       theme: theme ?? this.theme,
       items: items ?? this.items,
+      schedule: schedule ?? this.schedule,
       bannerImageUrl: bannerImageUrl ?? this.bannerImageUrl,
     );
   }

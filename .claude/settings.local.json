@@ -21,7 +21,13 @@
       "Bash(ping:*)",
       "Bash(del \"C:\\Users\\onlyd\\workspace\\app\\ezer\\lib\\services\\notification_service.dart\")",
       "mcp__ide__getDiagnostics",
-      "Bash(del \"C:\\Users\\onlyd\\workspace\\app\\ezer\\test_pin_functionality.dart\")"
+      "Bash(del \"C:\\Users\\onlyd\\workspace\\app\\ezer\\test_pin_functionality.dart\")",
+      "Bash(npx supabase:*)",
+      "Bash(set SUPABASE_ACCESS_TOKEN=sbp_199e507f49b2f4651e6ac7a3e919651f35cb1ba0)",
+      "Bash($env:SUPABASE_ACCESS_TOKEN=\"sbp_199e507f49b2f4651e6ac7a3e919651f35cb1ba0\")",
+      "Bash(cmd /c \"set SUPABASE_ACCESS_TOKEN=sbp_199e507f49b2f4651e6ac7a3e919651f35cb1ba0 && npx -y @supabase/mcp-server-supabase@latest --project-ref=cxwivzsafohbawhljevq --help\")",
+      "Bash(claude --debug:*)",
+      "Bash(claude mcp list:*)"
     ],
     "deny": []
   },

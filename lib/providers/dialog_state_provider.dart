@@ -63,7 +63,8 @@ class DialogStateNotifier extends StateNotifier<DialogState> {
 }
 
 // Generic dialog provider that can be used by any dialog
-final dialogStateProvider = StateNotifierProvider.family<DialogStateNotifier, DialogState, String>(
+final dialogStateProvider =
+    StateNotifierProvider.family<DialogStateNotifier, DialogState, String>(
   (ref, dialogId) => DialogStateNotifier(),
 );
 
@@ -74,10 +75,11 @@ final createFolderThumbnailUrlProvider = StateProvider<String?>((ref) => null);
 
 final uploadMediaLoadingProvider = StateProvider<bool>((ref) => false);
 final uploadProgressProvider = StateProvider<double>((ref) => 0.0);
-final selectedMediaItemsProvider = StateProvider<List<UploadMediaItem>>((ref) => []);
+final selectedMediaItemsProvider =
+    StateProvider<List<UploadMediaItem>>((ref) => []);
 
 final createAlbumLoadingProvider = StateProvider<bool>((ref) => false);
 final selectedPhotosProvider = StateProvider<List<XFile>>((ref) => []);
 final coverPhotoIndexProvider = StateProvider<int?>((ref) => null);
-final albumCategoryProvider = StateProvider<MediaCategory>((ref) => MediaCategory.general);
-
+final albumCategoryProvider =
+    StateProvider<MediaCategory>((ref) => MediaCategory.general);

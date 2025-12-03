@@ -3,7 +3,7 @@ enum UserRole {
   member('Member');
 
   const UserRole(this.displayName);
-  
+
   final String displayName;
 
   static UserRole fromString(String role) {

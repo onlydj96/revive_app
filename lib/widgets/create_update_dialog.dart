@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/update.dart';
 
 class CreateUpdateDialog extends StatefulWidget {
-  final Function(String title, String content, UpdateType type, String? imageUrl, bool isPinned, List<String> tags) onCreateUpdate;
+  final Function(String title, String content, UpdateType type,
+      String? imageUrl, bool isPinned, List<String> tags) onCreateUpdate;
 
   const CreateUpdateDialog({
     super.key,
@@ -19,7 +20,7 @@ class _CreateUpdateDialogState extends State<CreateUpdateDialog> {
   final _contentController = TextEditingController();
   final _imageUrlController = TextEditingController();
   final _tagsController = TextEditingController();
-  
+
   UpdateType _selectedType = UpdateType.announcement;
   bool _isPinned = false;
   bool _isLoading = false;
@@ -55,7 +56,8 @@ class _CreateUpdateDialogState extends State<CreateUpdateDialog> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(20)),
               ),
               child: Row(
                 children: [
@@ -101,26 +103,28 @@ class _CreateUpdateDialogState extends State<CreateUpdateDialog> {
                 ],
               ),
             ),
-            
+
             // Form content
             Flexible(
-              child: Form(
-                key: _formKey,
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
+              child: SafeArea(
+                child: Form(
+                  key: _formKey,
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Update Type Selection
                       Text(
                         'Update Type',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       const SizedBox(height: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 4),
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.grey[300]!),
                           borderRadius: BorderRadius.circular(12),
@@ -131,27 +135,31 @@ class _CreateUpdateDialogState extends State<CreateUpdateDialog> {
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.zero,
                           ),
-                          items: UpdateType.values.map((type) => DropdownMenuItem(
-                            value: type,
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: _getUpdateTypeColor(type).withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Icon(
-                                    _getUpdateTypeIcon(type),
-                                    size: 16,
-                                    color: _getUpdateTypeColor(type),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Text(_getUpdateTypeLabel(type)),
-                              ],
-                            ),
-                          )).toList(),
+                          items: UpdateType.values
+                              .map((type) => DropdownMenuItem(
+                                    value: type,
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: BoxDecoration(
+                                            color: _getUpdateTypeColor(type)
+                                                .withOpacity(0.1),
+                                            borderRadius:
+                                                BorderRadius.circular(6),
+                                          ),
+                                          child: Icon(
+                                            _getUpdateTypeIcon(type),
+                                            size: 16,
+                                            color: _getUpdateTypeColor(type),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Text(_getUpdateTypeLabel(type)),
+                                      ],
+                                    ),
+                                  ))
+                              .toList(),
                           onChanged: (value) {
                             setState(() {
                               _selectedType = value!;
@@ -160,18 +168,19 @@ class _CreateUpdateDialogState extends State<CreateUpdateDialog> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      
+
                       // Title
                       Text(
                         'Title',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: _titleController,
                         decoration: InputDecoration(
+                          labelText: 'Title *',
                           hintText: 'Enter update title...',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -183,7 +192,8 @@ class _CreateUpdateDialogState extends State<CreateUpdateDialog> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: _getUpdateTypeColor(_selectedType)),
+                            borderSide: BorderSide(
+                                color: _getUpdateTypeColor(_selectedType)),
                           ),
                           contentPadding: const EdgeInsets.all(16),
                         ),
@@ -195,18 +205,19 @@ class _CreateUpdateDialogState extends State<CreateUpdateDialog> {
                         },
                       ),
                       const SizedBox(height: 20),
-                      
+
                       // Content
                       Text(
                         'Content',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: _contentController,
                         decoration: InputDecoration(
+                          labelText: 'Content *',
                           hintText: 'Enter update content...',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -218,7 +229,8 @@ class _CreateUpdateDialogState extends State<CreateUpdateDialog> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: _getUpdateTypeColor(_selectedType)),
+                            borderSide: BorderSide(
+                                color: _getUpdateTypeColor(_selectedType)),
                           ),
                           contentPadding: const EdgeInsets.all(16),
                         ),
@@ -231,13 +243,13 @@ class _CreateUpdateDialogState extends State<CreateUpdateDialog> {
                         },
                       ),
                       const SizedBox(height: 20),
-                      
+
                       // Image URL
                       Text(
                         'Image URL (Optional)',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       const SizedBox(height: 8),
                       TextFormField(
@@ -255,19 +267,20 @@ class _CreateUpdateDialogState extends State<CreateUpdateDialog> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: _getUpdateTypeColor(_selectedType)),
+                            borderSide: BorderSide(
+                                color: _getUpdateTypeColor(_selectedType)),
                           ),
                           contentPadding: const EdgeInsets.all(16),
                         ),
                       ),
                       const SizedBox(height: 20),
-                      
+
                       // Tags
                       Text(
                         'Tags',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       const SizedBox(height: 8),
                       TextFormField(
@@ -285,13 +298,14 @@ class _CreateUpdateDialogState extends State<CreateUpdateDialog> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: _getUpdateTypeColor(_selectedType)),
+                            borderSide: BorderSide(
+                                color: _getUpdateTypeColor(_selectedType)),
                           ),
                           contentPadding: const EdgeInsets.all(16),
                         ),
                       ),
                       const SizedBox(height: 20),
-                      
+
                       // Pin toggle
                       Container(
                         padding: const EdgeInsets.all(16),
@@ -305,12 +319,18 @@ class _CreateUpdateDialogState extends State<CreateUpdateDialog> {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: _isPinned ? Theme.of(context).primaryColor.withOpacity(0.1) : Colors.grey[100],
+                                color: _isPinned
+                                    ? Theme.of(context)
+                                        .primaryColor
+                                        .withOpacity(0.1)
+                                    : Colors.grey[100],
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Icon(
                                 Icons.push_pin,
-                                color: _isPinned ? Theme.of(context).primaryColor : Colors.grey[600],
+                                color: _isPinned
+                                    ? Theme.of(context).primaryColor
+                                    : Colors.grey[600],
                                 size: 20,
                               ),
                             ),
@@ -321,15 +341,21 @@ class _CreateUpdateDialogState extends State<CreateUpdateDialog> {
                                 children: [
                                   Text(
                                     'Pin this update',
-                                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleSmall
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                   ),
                                   Text(
                                     'Pinned updates appear at the top',
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Colors.grey[600],
-                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: Colors.grey[600],
+                                        ),
                                   ),
                                 ],
                               ),
@@ -350,8 +376,9 @@ class _CreateUpdateDialogState extends State<CreateUpdateDialog> {
                   ),
                 ),
               ),
+              ),
             ),
-            
+
             // Action buttons
             Container(
               padding: const EdgeInsets.all(20),
@@ -362,7 +389,8 @@ class _CreateUpdateDialogState extends State<CreateUpdateDialog> {
                 children: [
                   Expanded(
                     child: TextButton(
-                      onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+                      onPressed:
+                          _isLoading ? null : () => Navigator.of(context).pop(),
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -392,13 +420,15 @@ class _CreateUpdateDialogState extends State<CreateUpdateDialog> {
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
                           : Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(_getUpdateTypeIcon(_selectedType), size: 18),
+                                Icon(_getUpdateTypeIcon(_selectedType),
+                                    size: 18),
                                 const SizedBox(width: 8),
                                 const Text('Create Update'),
                               ],
@@ -432,7 +462,9 @@ class _CreateUpdateDialogState extends State<CreateUpdateDialog> {
         _titleController.text.trim(),
         _contentController.text.trim(),
         _selectedType,
-        _imageUrlController.text.trim().isEmpty ? null : _imageUrlController.text.trim(),
+        _imageUrlController.text.trim().isEmpty
+            ? null
+            : _imageUrlController.text.trim(),
         _isPinned,
         tags,
       );

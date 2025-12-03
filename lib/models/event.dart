@@ -4,7 +4,7 @@ enum EventType {
   hangout,
   special,
   training;
-  
+
   static EventType fromString(String value) {
     switch (value) {
       case 'service':
@@ -21,7 +21,7 @@ enum EventType {
         return EventType.service;
     }
   }
-  
+
   String toJson() => name;
 }
 
@@ -83,7 +83,7 @@ class Event {
       currentParticipants: currentParticipants ?? this.currentParticipants,
     );
   }
-  
+
   factory Event.fromJson(Map<String, dynamic> json) {
     return Event(
       id: json['id'] as String,
@@ -100,7 +100,7 @@ class Event {
       currentParticipants: json['current_participants'] as int? ?? 0,
     );
   }
-  
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

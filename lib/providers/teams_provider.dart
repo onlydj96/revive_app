@@ -23,14 +23,13 @@ class TeamsNotifier extends StateNotifier<List<Team>> {
 
   Future<void> loadTeams() async {
     try {
-      final response = await SupabaseService.from('teams')
-          .select()
-          .order('created_at');
-      
+      final response =
+          await SupabaseService.from('teams').select().order('created_at');
+
       final teams = (response as List)
           .map((teamData) => Team.fromJson(teamData))
           .toList();
-      
+
       state = teams;
     } catch (e) {
       print('Error loading teams: $e');
@@ -40,37 +39,88 @@ class TeamsNotifier extends StateNotifier<List<Team>> {
 
   Future<void> joinTeam(String teamId) async {
     try {
+      final userId = SupabaseService.currentUser?.id;
+      if (userId == null) {
+        throw Exception('User not authenticated');
+      }
+
       final team = state.firstWhere((team) => team.id == teamId);
-      final updatedTeam = team.copyWith(currentMembers: team.currentMembers + 1);
-      
-      await SupabaseService.from('teams')
-          .update({'current_members': updatedTeam.currentMembers})
-          .eq('id', teamId);
-      
+
+      // Get user name from metadata
+      final userMeta = SupabaseService.currentUser?.userMetadata;
+      final userName = userMeta?['full_name'] ??
+                      userMeta?['name'] ??
+                      SupabaseService.currentUser?.email?.split('@')[0] ??
+                      'Unknown User';
+
+      // Check if user is already a member
+      final existingMembership = await SupabaseService.from('team_memberships')
+          .select('id')
+          .eq('team_id', teamId)
+          .eq('user_id', userId)
+          .maybeSingle();
+
+      if (existingMembership != null) {
+        // User is already a member, don't join again
+        return;
+      }
+
+      // Add user to team_memberships
+      await SupabaseService.from('team_memberships').insert({
+        'team_id': teamId,
+        'user_id': userId,
+        'user_name': userName,
+        'role': 'member',
+        'status': 'active',
+        'joined_at': DateTime.now().toIso8601String(),
+      });
+
+      // Increment member count
+      final updatedTeam =
+          team.copyWith(currentMembers: team.currentMembers + 1);
+
+      await SupabaseService.from('teams').update(
+          {'current_members': updatedTeam.currentMembers}).eq('id', teamId);
+
       state = state.map((team) {
         return team.id == teamId ? updatedTeam : team;
       }).toList();
     } catch (e) {
       print('Error joining team: $e');
+      rethrow;
     }
   }
 
   Future<void> leaveTeam(String teamId) async {
     try {
+      final userId = SupabaseService.currentUser?.id;
+      if (userId == null) {
+        throw Exception('User not authenticated');
+      }
+
       final team = state.firstWhere((team) => team.id == teamId);
+
+      // Remove user from team_memberships
+      await SupabaseService.from('team_memberships')
+          .delete()
+          .eq('team_id', teamId)
+          .eq('user_id', userId);
+
+      // Decrement member count
       if (team.currentMembers > 0) {
-        final updatedTeam = team.copyWith(currentMembers: team.currentMembers - 1);
-        
-        await SupabaseService.from('teams')
-            .update({'current_members': updatedTeam.currentMembers})
-            .eq('id', teamId);
-        
+        final updatedTeam =
+            team.copyWith(currentMembers: team.currentMembers - 1);
+
+        await SupabaseService.from('teams').update(
+            {'current_members': updatedTeam.currentMembers}).eq('id', teamId);
+
         state = state.map((team) {
           return team.id == teamId ? updatedTeam : team;
         }).toList();
       }
     } catch (e) {
       print('Error leaving team: $e');
+      rethrow;
     }
   }
 
@@ -88,7 +138,7 @@ class TeamsNotifier extends StateNotifier<List<Team>> {
       await SupabaseService.from('teams')
           .update(updatedTeam.toJson())
           .eq('id', updatedTeam.id);
-      
+
       state = state.map((team) {
         return team.id == updatedTeam.id ? updatedTeam : team;
       }).toList();

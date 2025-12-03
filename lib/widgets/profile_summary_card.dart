@@ -20,7 +20,8 @@ class ProfileSummaryCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 30,
-                backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                backgroundColor:
+                    Theme.of(context).primaryColor.withOpacity(0.1),
                 backgroundImage: user.profileImageUrl != null
                     ? NetworkImage(user.profileImageUrl!)
                     : null,
@@ -43,14 +44,14 @@ class ProfileSummaryCard extends StatelessWidget {
                     Text(
                       'Welcome back,',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                            color: Colors.grey[600],
+                          ),
                     ),
                     Text(
                       user.name,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                     const SizedBox(height: 4),
                     Row(
@@ -63,9 +64,10 @@ class ProfileSummaryCard extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           user.role,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Colors.grey[600],
+                                  ),
                         ),
                         const SizedBox(width: 16),
                         Icon(
@@ -76,9 +78,10 @@ class ProfileSummaryCard extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           'Since ${DateFormat('MMM yyyy').format(user.joinDate)}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Colors.grey[600],
+                                  ),
                         ),
                       ],
                     ),

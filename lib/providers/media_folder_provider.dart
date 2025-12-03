@@ -5,9 +5,12 @@ import '../models/media_item.dart';
 import '../services/database_service.dart';
 import '../services/storage_service.dart';
 import '../services/supabase_service.dart';
+import 'error_provider.dart';
 
-final mediaFolderProvider = StateNotifierProvider<MediaFolderNotifier, AsyncValue<List<MediaFolder>>>((ref) {
-  return MediaFolderNotifier();
+final mediaFolderProvider =
+    StateNotifierProvider<MediaFolderNotifier, AsyncValue<List<MediaFolder>>>(
+        (ref) {
+  return MediaFolderNotifier(ref);
 });
 
 final currentFolderProvider = StateProvider<String?>((ref) => null);
@@ -25,15 +28,22 @@ final filteredMediaFoldersProvider = Provider<List<MediaFolder>>((ref) {
   return foldersAsyncValue.when(
     data: (folders) {
       // Filter by current folder (show subfolders of current folder)
-      var filtered = folders.where((folder) => 
-        folder.parentId == currentFolderId && (showDeleted || !folder.isDeleted)).toList();
+      var filtered = folders
+          .where((folder) =>
+              folder.parentId == currentFolderId &&
+              (showDeleted || !folder.isDeleted))
+          .toList();
 
       // Apply search filter
       if (searchQuery.isNotEmpty) {
-        filtered = filtered.where((folder) =>
-            folder.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
-            (folder.description?.toLowerCase().contains(searchQuery.toLowerCase()) ?? false)
-        ).toList();
+        filtered = filtered
+            .where((folder) =>
+                folder.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
+                (folder.description
+                        ?.toLowerCase()
+                        .contains(searchQuery.toLowerCase()) ??
+                    false))
+            .toList();
       }
 
       return filtered;
@@ -44,53 +54,64 @@ final filteredMediaFoldersProvider = Provider<List<MediaFolder>>((ref) {
 });
 
 class MediaFolderNotifier extends StateNotifier<AsyncValue<List<MediaFolder>>> {
-  MediaFolderNotifier() : super(const AsyncValue.loading()) {
+  MediaFolderNotifier(this.ref) : super(const AsyncValue.loading()) {
     _loadMediaFolders();
     _setupRealtimeSubscription();
   }
 
+  final Ref ref;
   RealtimeChannel? _channel;
 
   Future<void> _loadMediaFolders() async {
     try {
       state = const AsyncValue.loading();
-      
+
       // Get all folders including soft deleted ones (filtering happens in UI)
-      final foldersData = await DatabaseService.getAll('media_folders', 
+      final foldersData = await DatabaseService.getAll('media_folders',
           orderBy: 'created_at', ascending: false, excludeSoftDeleted: false);
-      
+
       final folders = <MediaFolder>[];
       final folderMap = <String, MediaFolder>{};
-      
+
       // First pass: Create all folders with their direct media items
       for (final folderData in foldersData) {
         // Get media items for this folder
-        final mediaData = await DatabaseService.getMediaItems(folderId: folderData['id']);
-        final mediaItems = mediaData.map((item) => MediaItem.fromJson(item)).toList();
-        
+        final mediaData =
+            await DatabaseService.getMediaItems(folderId: folderData['id']);
+        final mediaItems =
+            mediaData.map((item) => MediaItem.fromJson(item)).toList();
+
         final folder = MediaFolder.fromJson(folderData, mediaItems: mediaItems);
         folders.add(folder);
         folderMap[folder.id] = folder;
       }
-      
+
       // Second pass: Build subfolder relationships
       for (final folder in folders) {
         if (folder.parentId != null) {
           final parent = folderMap[folder.parentId!];
           if (parent != null) {
-            final updatedParent = parent.copyWith(
-              subfolders: [...parent.subfolders, folder]
-            );
+            final updatedParent =
+                parent.copyWith(subfolders: [...parent.subfolders, folder]);
             folderMap[parent.id] = updatedParent;
           }
         }
       }
-      
+
       // Update the folders list with populated subfolder relationships
-      final updatedFolders = folders.map((folder) => folderMap[folder.id]!).toList();
-      
+      final updatedFolders =
+          folders.map((folder) => folderMap[folder.id]!).toList();
+
       state = AsyncValue.data(updatedFolders);
     } catch (error, stackTrace) {
+      // Log error to error provider
+      ref.read(errorProvider.notifier).addError(
+            message: 'Failed to load media folders',
+            details: error.toString(),
+            severity: ErrorSeverity.warning,
+            source: 'MediaFolderNotifier._loadMediaFolders',
+          );
+
       state = AsyncValue.error(error, stackTrace);
     }
   }
@@ -140,19 +161,46 @@ class MediaFolderNotifier extends StateNotifier<AsyncValue<List<MediaFolder>>> {
 
       // Reload folders to show the new one
       await _loadMediaFolders();
-      
+
       return folderId;
     } catch (error) {
+      // Log error to error provider
+      ref.read(errorProvider.notifier).addError(
+            message: 'Failed to create folder: $name',
+            details: error.toString(),
+            severity: ErrorSeverity.error,
+            source: 'MediaFolderNotifier.createFolder',
+          );
+
       rethrow;
     }
   }
 
-  Future<void> updateFolder(String id, {
+  Future<void> updateFolder(
+    String id, {
     String? name,
     String? description,
     String? folderPath,
   }) async {
+    // Store previous state for rollback
+    final previousState = state;
+
     try {
+      // Optimistic update: Update UI immediately
+      state = state.whenData((folders) {
+        return folders.map((folder) {
+          if (folder.id == id) {
+            return folder.copyWith(
+              name: name ?? folder.name,
+              description: description ?? folder.description,
+              folderPath: folderPath ?? folder.folderPath,
+            );
+          }
+          return folder;
+        }).toList();
+      });
+
+      // Sync with backend
       final data = <String, dynamic>{};
       if (name != null) data['name'] = name;
       if (description != null) data['description'] = description;
@@ -161,6 +209,8 @@ class MediaFolderNotifier extends StateNotifier<AsyncValue<List<MediaFolder>>> {
 
       await DatabaseService.update('media_folders', id, data);
     } catch (error) {
+      // Rollback on error
+      state = previousState;
       rethrow;
     }
   }
@@ -215,24 +265,25 @@ class MediaFolderNotifier extends StateNotifier<AsyncValue<List<MediaFolder>>> {
   // Get folder breadcrumb for navigation
   List<MediaFolder> getFolderBreadcrumb(String? folderId) {
     if (folderId == null) return [];
-    
+
     return state.when(
       data: (folders) {
         final breadcrumb = <MediaFolder>[];
-        var currentFolder = folders.firstWhere((f) => f.id == folderId, 
+        var currentFolder = folders.firstWhere((f) => f.id == folderId,
             orElse: () => folders.first);
-        
+
         while (true) {
           breadcrumb.insert(0, currentFolder);
           if (currentFolder.parentId == null) break;
-          
+
           try {
-            currentFolder = folders.firstWhere((f) => f.id == currentFolder.parentId);
+            currentFolder =
+                folders.firstWhere((f) => f.id == currentFolder.parentId);
           } catch (e) {
             break;
           }
         }
-        
+
         return breadcrumb;
       },
       loading: () => [],
@@ -241,54 +292,90 @@ class MediaFolderNotifier extends StateNotifier<AsyncValue<List<MediaFolder>>> {
   }
 
   Future<void> softDeleteFolder(String id) async {
+    // Store previous state for rollback
+    final previousState = state;
+
     try {
-      
       // Get current authenticated user ID
       final currentUser = SupabaseService.currentUser;
-      final currentUserId = currentUser?.id ?? '37494678-2554-4e62-9fd0-c78308e82585'; // Fallback to a valid UUID
-      
-      
+      final currentUserId =
+          currentUser?.id ?? '37494678-2554-4e62-9fd0-c78308e82585';
+
+      // Optimistic update: Mark as deleted immediately
+      final now = DateTime.now();
+      state = state.whenData((folders) {
+        return folders.map((folder) {
+          if (folder.id == id) {
+            return folder.copyWith(
+              deletedAt: now,
+              deletedBy: currentUserId,
+            );
+          }
+          return folder;
+        }).toList();
+      });
+
+      // Sync with backend
       final updateData = {
-        'deleted_at': DateTime.now().toIso8601String(),
+        'deleted_at': now.toIso8601String(),
         'deleted_by': currentUserId,
-        'updated_at': DateTime.now().toIso8601String(),
+        'updated_at': now.toIso8601String(),
       };
-      
-      
+
       await DatabaseService.update('media_folders', id, updateData);
-      
-      
-      // Refresh the folders list to reflect the changes
-      await _loadMediaFolders();
-      
     } catch (error) {
+      // Rollback on error
+      state = previousState;
       rethrow;
     }
   }
 
   Future<void> restoreFolder(String id) async {
+    // Store previous state for rollback
+    final previousState = state;
+
     try {
+      // Optimistic update: Restore immediately
+      state = state.whenData((folders) {
+        return folders.map((folder) {
+          if (folder.id == id) {
+            return folder.copyWith(
+              deletedAt: null,
+              deletedBy: null,
+            );
+          }
+          return folder;
+        }).toList();
+      });
+
+      // Sync with backend
       await DatabaseService.update('media_folders', id, {
         'deleted_at': null,
         'deleted_by': null,
         'updated_at': DateTime.now().toIso8601String(),
       });
-      
-      // Refresh the folders list to reflect the changes
-      await _loadMediaFolders();
     } catch (error) {
+      // Rollback on error
+      state = previousState;
       rethrow;
     }
   }
 
   Future<void> permanentDeleteFolder(String id) async {
+    // Store previous state for rollback
+    final previousState = state;
+
     try {
-      // Delete from database permanently
+      // Optimistic update: Remove immediately
+      state = state.whenData((folders) {
+        return folders.where((folder) => folder.id != id).toList();
+      });
+
+      // Sync with backend - delete permanently
       await DatabaseService.delete('media_folders', id);
-      
-      // Refresh the folders list
-      await _loadMediaFolders();
     } catch (error) {
+      // Rollback on error
+      state = previousState;
       rethrow;
     }
   }
@@ -303,4 +390,3 @@ class MediaFolderNotifier extends StateNotifier<AsyncValue<List<MediaFolder>>> {
     super.dispose();
   }
 }
-

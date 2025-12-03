@@ -6,7 +6,8 @@ class FormValidators {
     return null;
   }
 
-  static String? validateMinLength(String? value, int minLength, [String? fieldName]) {
+  static String? validateMinLength(String? value, int minLength,
+      [String? fieldName]) {
     if (value == null || value.trim().isEmpty) {
       return '${fieldName ?? '필드'}를 입력해주세요';
     }
@@ -16,7 +17,8 @@ class FormValidators {
     return null;
   }
 
-  static String? validateMaxLength(String? value, int maxLength, [String? fieldName]) {
+  static String? validateMaxLength(String? value, int maxLength,
+      [String? fieldName]) {
     if (value != null && value.trim().length > maxLength) {
       return '${fieldName ?? '필드'}는 최대 $maxLength글자까지 입력 가능합니다';
     }
@@ -27,8 +29,9 @@ class FormValidators {
     if (value == null || value.trim().isEmpty) {
       return '이메일을 입력해주세요';
     }
-    
-    final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+
+    final emailRegex =
+        RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
     if (!emailRegex.hasMatch(value.trim())) {
       return '올바른 이메일 형식을 입력해주세요';
     }
@@ -49,7 +52,7 @@ class FormValidators {
     if (value == null || value.trim().isEmpty) {
       return null; // Optional field
     }
-    
+
     final number = int.tryParse(value.trim());
     if (number == null || number <= 0) {
       return '${fieldName ?? '숫자'}는 양수로 입력해주세요';
@@ -61,7 +64,7 @@ class FormValidators {
     if (value == null || value.trim().isEmpty) {
       return null; // Optional field
     }
-    
+
     try {
       Uri.parse(value.trim());
       return null;
@@ -74,7 +77,7 @@ class FormValidators {
     if (value == null || value.trim().isEmpty) {
       return '전화번호를 입력해주세요';
     }
-    
+
     final phoneRegex = RegExp(r'^[0-9-+\s()]+$');
     if (!phoneRegex.hasMatch(value.trim())) {
       return '올바른 전화번호 형식을 입력해주세요';
@@ -86,13 +89,13 @@ class FormValidators {
     if (value == null || value.trim().isEmpty) {
       return '저장 경로가 필요합니다';
     }
-    
+
     // Check for invalid characters
     final invalidChars = RegExp(r'[<>:"|?*]');
     if (invalidChars.hasMatch(value)) {
       return '경로에 사용할 수 없는 문자가 포함되어 있습니다';
     }
-    
+
     return null;
   }
 
@@ -102,11 +105,11 @@ class FormValidators {
         .replaceAll(RegExp(r'[^a-z0-9가-힣\s-]'), '')
         .replaceAll(RegExp(r'\s+'), '_')
         .trim();
-    
+
     if (parentPath != null) {
       return '$parentPath/$safeName';
     }
-    
+
     return safeName;
   }
 
@@ -114,7 +117,7 @@ class FormValidators {
     if (tagsString == null || tagsString.trim().isEmpty) {
       return [];
     }
-    
+
     return tagsString
         .split(',')
         .map((tag) => tag.trim())

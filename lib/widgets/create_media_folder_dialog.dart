@@ -6,7 +6,8 @@ import '../providers/dialog_state_provider.dart';
 
 class CreateMediaFolderDialog extends ConsumerStatefulWidget {
   final String? parentFolderId;
-  final Function(String name, String? description, String folderPath, String? thumbnailUrl) onCreateFolder;
+  final Function(String name, String? description, String folderPath,
+      String? thumbnailUrl) onCreateFolder;
 
   const CreateMediaFolderDialog({
     super.key,
@@ -15,10 +16,12 @@ class CreateMediaFolderDialog extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<CreateMediaFolderDialog> createState() => _CreateMediaFolderDialogState();
+  ConsumerState<CreateMediaFolderDialog> createState() =>
+      _CreateMediaFolderDialogState();
 }
 
-class _CreateMediaFolderDialogState extends ConsumerState<CreateMediaFolderDialog> {
+class _CreateMediaFolderDialogState
+    extends ConsumerState<CreateMediaFolderDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -52,10 +55,11 @@ class _CreateMediaFolderDialogState extends ConsumerState<CreateMediaFolderDialo
         maxHeight: 1024,
         imageQuality: 85,
       );
-      
+
       if (image != null) {
         ref.read(createFolderThumbnailProvider.notifier).state = image;
-        ref.read(createFolderThumbnailUrlProvider.notifier).state = image.path; // In real app, this would be uploaded to storage
+        ref.read(createFolderThumbnailUrlProvider.notifier).state =
+            image.path; // In real app, this would be uploaded to storage
       }
     } catch (e) {
       if (mounted) {
@@ -78,7 +82,7 @@ class _CreateMediaFolderDialogState extends ConsumerState<CreateMediaFolderDialo
           .replaceAll(RegExp(r'[^a-z0-9가-힣\s-]'), '')
           .replaceAll(RegExp(r'\s+'), '_')
           .trim();
-      
+
       final basePath = widget.parentFolderId != null ? 'subfolder' : 'root';
       _folderPathController.text = '$basePath/$safeName';
     }
@@ -91,14 +95,14 @@ class _CreateMediaFolderDialogState extends ConsumerState<CreateMediaFolderDialo
 
     try {
       final name = _nameController.text.trim();
-      final description = _descriptionController.text.trim().isEmpty 
-          ? null 
+      final description = _descriptionController.text.trim().isEmpty
+          ? null
           : _descriptionController.text.trim();
       final folderPath = _folderPathController.text.trim();
       final thumbnailUrl = ref.read(createFolderThumbnailUrlProvider);
 
       await widget.onCreateFolder(name, description, folderPath, thumbnailUrl);
-      
+
       if (mounted) {
         Navigator.of(context).pop();
       }
@@ -119,13 +123,14 @@ class _CreateMediaFolderDialogState extends ConsumerState<CreateMediaFolderDialo
   Widget build(BuildContext context) {
     final isLoading = ref.watch(createFolderLoadingProvider);
     final selectedThumbnail = ref.watch(createFolderThumbnailProvider);
-    
+
     return AlertDialog(
       title: const Text('새 폴더 만들기'),
-      content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
+      content: SafeArea(
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               // Folder name field
@@ -202,10 +207,12 @@ class _CreateMediaFolderDialogState extends ConsumerState<CreateMediaFolderDialo
                           const Spacer(),
                           TextButton.icon(
                             onPressed: _pickThumbnailImage,
-                            icon: const Icon(Icons.add_photo_alternate, size: 16),
+                            icon:
+                                const Icon(Icons.add_photo_alternate, size: 16),
                             label: const Text('선택'),
                             style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
                             ),
                           ),
                         ],
@@ -225,7 +232,7 @@ class _CreateMediaFolderDialogState extends ConsumerState<CreateMediaFolderDialo
                             ClipRRect(
                               borderRadius: BorderRadius.circular(7),
                               child: Image.file(
-                                File(selectedThumbnail!.path),
+                                File(selectedThumbnail.path),
                                 width: double.infinity,
                                 height: 120,
                                 fit: BoxFit.cover,
@@ -241,8 +248,14 @@ class _CreateMediaFolderDialogState extends ConsumerState<CreateMediaFolderDialo
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(),
                                   onPressed: () {
-                                    ref.read(createFolderThumbnailProvider.notifier).state = null;
-                                    ref.read(createFolderThumbnailUrlProvider.notifier).state = null;
+                                    ref
+                                        .read(createFolderThumbnailProvider
+                                            .notifier)
+                                        .state = null;
+                                    ref
+                                        .read(createFolderThumbnailUrlProvider
+                                            .notifier)
+                                        .state = null;
                                   },
                                   icon: const Icon(
                                     Icons.close,
@@ -263,7 +276,9 @@ class _CreateMediaFolderDialogState extends ConsumerState<CreateMediaFolderDialo
                         decoration: BoxDecoration(
                           color: Colors.grey[50],
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey[200]!, style: BorderStyle.solid),
+                          border: Border.all(
+                              color: Colors.grey[200]!,
+                              style: BorderStyle.solid),
                         ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -322,6 +337,7 @@ class _CreateMediaFolderDialogState extends ConsumerState<CreateMediaFolderDialo
               ),
             ],
           ),
+        ),
         ),
       ),
       actions: [

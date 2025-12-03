@@ -24,13 +24,14 @@ class HangoutJoinsState {
 }
 
 // Provider to track hangout joins for the current user
-final hangoutJoinsProvider = StateNotifierProvider<HangoutJoinsNotifier, HangoutJoinsState>((ref) {
+final hangoutJoinsProvider =
+    StateNotifierProvider<HangoutJoinsNotifier, HangoutJoinsState>((ref) {
   return HangoutJoinsNotifier(ref);
 });
 
 class HangoutJoinsNotifier extends StateNotifier<HangoutJoinsState> {
   final Ref ref;
-  
+
   HangoutJoinsNotifier(this.ref) : super(const HangoutJoinsState()) {
     loadUserJoinedHangouts();
   }
@@ -40,14 +41,14 @@ class HangoutJoinsNotifier extends StateNotifier<HangoutJoinsState> {
       final userId = SupabaseService.currentUser?.id;
       if (userId == null) return;
 
-      final response = await SupabaseService.from('hangout_joins')
+      final response = await SupabaseService.from('team_memberships')
           .select('team_id')
-          .eq('user_id', userId);
-      
-      final joinedHangoutIds = (response as List)
-          .map((join) => join['team_id'] as String)
-          .toSet();
-      
+          .eq('user_id', userId)
+          .eq('status', 'active');
+
+      final joinedHangoutIds =
+          (response as List).map((join) => join['team_id'] as String).toSet();
+
       state = state.copyWith(joinedHangouts: joinedHangoutIds);
     } catch (e) {
       print('Error loading user joined hangouts: $e');
@@ -60,7 +61,8 @@ class HangoutJoinsNotifier extends StateNotifier<HangoutJoinsState> {
     if (userId == null) return;
 
     // Prevent duplicate joins
-    if (state.joinedHangouts.contains(teamId) || state.loadingHangouts.contains(teamId)) {
+    if (state.joinedHangouts.contains(teamId) ||
+        state.loadingHangouts.contains(teamId)) {
       return;
     }
 
@@ -75,28 +77,41 @@ class HangoutJoinsNotifier extends StateNotifier<HangoutJoinsState> {
     ref.read(teamsProvider.notifier).joinTeam(teamId);
 
     try {
+      // Get user name from metadata
+      final userMeta = SupabaseService.currentUser?.userMetadata;
+      final userName = userMeta?['full_name'] ??
+          userMeta?['name'] ??
+          SupabaseService.currentUser?.email?.split('@')[0] ??
+          'Unknown User';
+
       // Then try to update the server
-      await SupabaseService.from('hangout_joins').insert({
+      await SupabaseService.from('team_memberships').insert({
         'user_id': userId,
         'team_id': teamId,
+        'user_name': userName,
+        'role': 'member',
+        'status': 'active',
         'joined_at': DateTime.now().toIso8601String(),
       });
-      
+
       // Remove from loading state on success
       state = state.copyWith(
-        loadingHangouts: Set<String>.from(state.loadingHangouts)..remove(teamId),
+        loadingHangouts: Set<String>.from(state.loadingHangouts)
+          ..remove(teamId),
       );
     } catch (e) {
       print('Error joining hangout: $e');
-      
+
       // Rollback optimistic update on failure
-      final rolledBackJoinedHangouts = Set<String>.from(state.joinedHangouts)..remove(teamId);
+      final rolledBackJoinedHangouts = Set<String>.from(state.joinedHangouts)
+        ..remove(teamId);
       state = state.copyWith(
         joinedHangouts: rolledBackJoinedHangouts,
-        loadingHangouts: Set<String>.from(state.loadingHangouts)..remove(teamId),
+        loadingHangouts: Set<String>.from(state.loadingHangouts)
+          ..remove(teamId),
       );
       ref.read(teamsProvider.notifier).leaveTeam(teamId);
-      
+
       // Re-throw error so UI can handle it
       rethrow;
     }
@@ -107,7 +122,8 @@ class HangoutJoinsNotifier extends StateNotifier<HangoutJoinsState> {
     if (userId == null) return;
 
     // Prevent duplicate leaves
-    if (!state.joinedHangouts.contains(teamId) || state.loadingHangouts.contains(teamId)) {
+    if (!state.joinedHangouts.contains(teamId) ||
+        state.loadingHangouts.contains(teamId)) {
       return;
     }
 
@@ -118,33 +134,36 @@ class HangoutJoinsNotifier extends StateNotifier<HangoutJoinsState> {
 
     // Store original state for rollback
     final originalJoinedHangouts = Set<String>.from(state.joinedHangouts);
-    
+
     // Optimistic update: Update UI immediately
-    final newJoinedHangouts = Set<String>.from(state.joinedHangouts)..remove(teamId);
+    final newJoinedHangouts = Set<String>.from(state.joinedHangouts)
+      ..remove(teamId);
     state = state.copyWith(joinedHangouts: newJoinedHangouts);
     ref.read(teamsProvider.notifier).leaveTeam(teamId);
 
     try {
       // Then try to update the server
-      await SupabaseService.from('hangout_joins')
+      await SupabaseService.from('team_memberships')
           .delete()
           .eq('user_id', userId)
           .eq('team_id', teamId);
-      
+
       // Remove from loading state on success
       state = state.copyWith(
-        loadingHangouts: Set<String>.from(state.loadingHangouts)..remove(teamId),
+        loadingHangouts: Set<String>.from(state.loadingHangouts)
+          ..remove(teamId),
       );
     } catch (e) {
       print('Error leaving hangout: $e');
-      
+
       // Rollback optimistic update on failure
       state = state.copyWith(
         joinedHangouts: originalJoinedHangouts,
-        loadingHangouts: Set<String>.from(state.loadingHangouts)..remove(teamId),
+        loadingHangouts: Set<String>.from(state.loadingHangouts)
+          ..remove(teamId),
       );
       ref.read(teamsProvider.notifier).joinTeam(teamId);
-      
+
       // Re-throw error so UI can handle it
       rethrow;
     }

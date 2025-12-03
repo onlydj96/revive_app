@@ -23,7 +23,7 @@ class BaseDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget dialogContent = content;
-    
+
     if (isScrollable) {
       dialogContent = SingleChildScrollView(child: content);
     }
@@ -35,7 +35,8 @@ class BaseDialog extends StatelessWidget {
         height: maxHeight,
         child: dialogContent,
       ),
-      contentPadding: contentPadding ?? const EdgeInsets.fromLTRB(24, 20, 24, 24),
+      contentPadding:
+          contentPadding ?? const EdgeInsets.fromLTRB(24, 20, 24, 24),
       actions: actions,
     );
   }

@@ -51,7 +51,7 @@ class ImagePickerUtils {
       }
 
       List<XFile> images = [];
-      
+
       try {
         images = await _picker.pickMultiImage(
           imageQuality: imageQuality,
@@ -68,7 +68,7 @@ class ImagePickerUtils {
             content: '여러 사진 선택에 실패했습니다. 한 장씩 선택하시겠습니까?',
             confirmText: '한 장씩 선택',
           );
-          
+
           if (shouldTrySingle == true) {
             final singleImage = await pickSingleImage(context);
             if (singleImage != null) {
@@ -77,7 +77,7 @@ class ImagePickerUtils {
           }
         }
       }
-      
+
       return images;
     } catch (e) {
       if (context.mounted) {
@@ -115,12 +115,13 @@ class ImagePickerUtils {
   ) async {
     if (Platform.isAndroid) {
       final androidVersion = await _getAndroidVersion();
-      
+
       Permission permission;
       if (source == ImageSource.camera) {
         permission = Permission.camera;
       } else {
-        permission = androidVersion >= 33 ? Permission.photos : Permission.storage;
+        permission =
+            androidVersion >= 33 ? Permission.photos : Permission.storage;
       }
 
       var status = await permission.status;
@@ -135,10 +136,9 @@ class ImagePickerUtils {
 
       return status.isGranted;
     } else if (Platform.isIOS) {
-      Permission permission = source == ImageSource.camera 
-          ? Permission.camera 
-          : Permission.photos;
-      
+      Permission permission =
+          source == ImageSource.camera ? Permission.camera : Permission.photos;
+
       var status = await permission.status;
       if (status.isDenied) {
         status = await permission.request();

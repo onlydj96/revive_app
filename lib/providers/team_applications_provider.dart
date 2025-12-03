@@ -24,13 +24,15 @@ class TeamApplicationsState {
 }
 
 // Provider to track team applications for the current user
-final teamApplicationsProvider = StateNotifierProvider<TeamApplicationsNotifier, TeamApplicationsState>((ref) {
+final teamApplicationsProvider =
+    StateNotifierProvider<TeamApplicationsNotifier, TeamApplicationsState>(
+        (ref) {
   return TeamApplicationsNotifier(ref);
 });
 
 class TeamApplicationsNotifier extends StateNotifier<TeamApplicationsState> {
   final Ref ref;
-  
+
   TeamApplicationsNotifier(this.ref) : super(const TeamApplicationsState()) {
     loadUserApplications();
   }
@@ -44,11 +46,10 @@ class TeamApplicationsNotifier extends StateNotifier<TeamApplicationsState> {
           .select('team_id')
           .eq('user_id', userId)
           .eq('status', 'pending'); // Only get pending applications
-      
-      final applicationTeamIds = (response as List)
-          .map((app) => app['team_id'] as String)
-          .toSet();
-      
+
+      final applicationTeamIds =
+          (response as List).map((app) => app['team_id'] as String).toSet();
+
       state = state.copyWith(appliedTeams: applicationTeamIds);
     } catch (e) {
       print('Error loading user applications: $e');
@@ -61,7 +62,8 @@ class TeamApplicationsNotifier extends StateNotifier<TeamApplicationsState> {
     if (userId == null) return;
 
     // Prevent duplicate applications
-    if (state.appliedTeams.contains(teamId) || state.loadingTeams.contains(teamId)) {
+    if (state.appliedTeams.contains(teamId) ||
+        state.loadingTeams.contains(teamId)) {
       return;
     }
 
@@ -83,22 +85,23 @@ class TeamApplicationsNotifier extends StateNotifier<TeamApplicationsState> {
         'status': 'pending',
         'applied_at': DateTime.now().toIso8601String(),
       });
-      
+
       // Remove from loading state on success
       state = state.copyWith(
         loadingTeams: Set<String>.from(state.loadingTeams)..remove(teamId),
       );
     } catch (e) {
       print('Error applying to team: $e');
-      
+
       // Rollback optimistic update on failure
-      final rolledBackAppliedTeams = Set<String>.from(state.appliedTeams)..remove(teamId);
+      final rolledBackAppliedTeams = Set<String>.from(state.appliedTeams)
+        ..remove(teamId);
       state = state.copyWith(
         appliedTeams: rolledBackAppliedTeams,
         loadingTeams: Set<String>.from(state.loadingTeams)..remove(teamId),
       );
       ref.read(teamsProvider.notifier).leaveTeam(teamId);
-      
+
       // Re-throw error so UI can handle it
       rethrow;
     }
@@ -109,7 +112,8 @@ class TeamApplicationsNotifier extends StateNotifier<TeamApplicationsState> {
     if (userId == null) return;
 
     // Prevent duplicate cancellations
-    if (!state.appliedTeams.contains(teamId) || state.loadingTeams.contains(teamId)) {
+    if (!state.appliedTeams.contains(teamId) ||
+        state.loadingTeams.contains(teamId)) {
       return;
     }
 
@@ -120,9 +124,10 @@ class TeamApplicationsNotifier extends StateNotifier<TeamApplicationsState> {
 
     // Store original state for rollback
     final originalAppliedTeams = Set<String>.from(state.appliedTeams);
-    
+
     // Optimistic update: Update UI immediately
-    final newAppliedTeams = Set<String>.from(state.appliedTeams)..remove(teamId);
+    final newAppliedTeams = Set<String>.from(state.appliedTeams)
+      ..remove(teamId);
     state = state.copyWith(appliedTeams: newAppliedTeams);
     ref.read(teamsProvider.notifier).leaveTeam(teamId);
 
@@ -133,21 +138,21 @@ class TeamApplicationsNotifier extends StateNotifier<TeamApplicationsState> {
           .eq('user_id', userId)
           .eq('team_id', teamId)
           .eq('status', 'pending');
-      
+
       // Remove from loading state on success
       state = state.copyWith(
         loadingTeams: Set<String>.from(state.loadingTeams)..remove(teamId),
       );
     } catch (e) {
       print('Error canceling application: $e');
-      
+
       // Rollback optimistic update on failure
       state = state.copyWith(
         appliedTeams: originalAppliedTeams,
         loadingTeams: Set<String>.from(state.loadingTeams)..remove(teamId),
       );
       ref.read(teamsProvider.notifier).joinTeam(teamId);
-      
+
       // Re-throw error so UI can handle it
       rethrow;
     }

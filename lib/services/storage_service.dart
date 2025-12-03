@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'supabase_service.dart';
 
@@ -8,7 +7,7 @@ class StorageService {
   static const String mediaBucket = 'media';
   static const String thumbsBucket = 'media-thumbnails';
   static const String eventsBucket = 'events';
-  
+
   // Initialize storage buckets
   static Future<void> initializeBuckets() async {
     try {
@@ -21,24 +20,22 @@ class StorageService {
       // Check if media bucket exists, create if not
       final buckets = await SupabaseService.storage.listBuckets();
       final mediaBucketExists = buckets.any((b) => b.name == mediaBucket);
-      
+
       if (!mediaBucketExists) {
         await SupabaseService.storage.createBucket(
           mediaBucket,
           const BucketOptions(public: true),
         );
-      } else {
-      }
-      
+      } else {}
+
       final thumbsBucketExists = buckets.any((b) => b.name == thumbsBucket);
       if (!thumbsBucketExists) {
         await SupabaseService.storage.createBucket(
           thumbsBucket,
           const BucketOptions(public: true),
         );
-      } else {
-      }
-      
+      } else {}
+
       final eventsBucketExists = buckets.any((b) => b.name == eventsBucket);
       if (!eventsBucketExists) {
         await SupabaseService.storage.createBucket(
@@ -51,7 +48,7 @@ class StorageService {
       // The buckets might already exist or user might not have permissions
     }
   }
-  
+
   // Upload file to storage with folder structure support
   static Future<String> uploadFile({
     required String bucketName,
@@ -62,22 +59,18 @@ class StorageService {
     try {
       // Construct full path with folder structure
       final fullPath = '$folderPath/$fileName'.replaceAll('//', '/');
-      
+
       // Upload based on file type with upsert to handle duplicates
       if (file is File) {
         final bytes = await file.readAsBytes();
-        await SupabaseService.storage
-            .from(bucketName)
-            .uploadBinary(
-              fullPath, 
+        await SupabaseService.storage.from(bucketName).uploadBinary(
+              fullPath,
               bytes,
               fileOptions: const FileOptions(upsert: true),
             );
       } else if (file is Uint8List) {
-        await SupabaseService.storage
-            .from(bucketName)
-            .uploadBinary(
-              fullPath, 
+        await SupabaseService.storage.from(bucketName).uploadBinary(
+              fullPath,
               file,
               fileOptions: const FileOptions(upsert: true),
             );
@@ -85,64 +78,59 @@ class StorageService {
         // Assume it's a file path
         final fileObj = File(file);
         final bytes = await fileObj.readAsBytes();
-        await SupabaseService.storage
-            .from(bucketName)
-            .uploadBinary(
-              fullPath, 
+        await SupabaseService.storage.from(bucketName).uploadBinary(
+              fullPath,
               bytes,
               fileOptions: const FileOptions(upsert: true),
             );
       }
-      
+
       // Return the public URL
-      final url = SupabaseService.storage
-          .from(bucketName)
-          .getPublicUrl(fullPath);
-      
+      final url =
+          SupabaseService.storage.from(bucketName).getPublicUrl(fullPath);
+
       return url;
     } catch (e) {
       throw Exception('Failed to upload file: $e');
     }
   }
-  
+
   // List files in a folder
   static Future<List<FileObject>> listFiles({
     required String bucketName,
     required String folderPath,
   }) async {
     try {
-      final files = await SupabaseService.storage
-          .from(bucketName)
-          .list(path: folderPath);
-      
+      final files =
+          await SupabaseService.storage.from(bucketName).list(path: folderPath);
+
       return files;
     } catch (e) {
       throw Exception('Failed to list files: $e');
     }
   }
-  
+
   // List folders (directories) in a path
   static Future<List<String>> listFolders({
     required String bucketName,
     String path = '',
   }) async {
     try {
-      final files = await SupabaseService.storage
-          .from(bucketName)
-          .list(path: path);
-      
+      final files =
+          await SupabaseService.storage.from(bucketName).list(path: path);
+
       // Filter for folders (items without file extensions or that end with /)
       final folders = files
           .where((f) => f.name.endsWith('/') || !f.name.contains('.'))
           .map((f) => f.name.replaceAll('/', ''))
           .toList();
-      
+
       return folders;
     } catch (e) {
       throw Exception('Failed to list folders: $e');
     }
   }
-  
+
   // Create a folder structure
   static Future<void> createFolderStructure({
     required String bucketName,
@@ -170,21 +158,19 @@ class StorageService {
       folderPath: folderPath,
     );
   }
-  
+
   // Delete file
   static Future<void> deleteFile({
     required String bucketName,
     required String filePath,
   }) async {
     try {
-      await SupabaseService.storage
-          .from(bucketName)
-          .remove([filePath]);
+      await SupabaseService.storage.from(bucketName).remove([filePath]);
     } catch (e) {
       throw Exception('Failed to delete file: $e');
     }
   }
-  
+
   // Delete entire folder
   static Future<void> deleteFolder({
     required String bucketName,
@@ -196,19 +182,17 @@ class StorageService {
         bucketName: bucketName,
         folderPath: folderPath,
       );
-      
+
       // Delete all files
       if (files.isNotEmpty) {
         final filePaths = files.map((f) => '$folderPath/${f.name}').toList();
-        await SupabaseService.storage
-            .from(bucketName)
-            .remove(filePaths);
+        await SupabaseService.storage.from(bucketName).remove(filePaths);
       }
     } catch (e) {
       throw Exception('Failed to delete folder: $e');
     }
   }
-  
+
   // Move/rename file or folder
   static Future<void> moveFile({
     required String bucketName,
@@ -216,40 +200,35 @@ class StorageService {
     required String toPath,
   }) async {
     try {
-      await SupabaseService.storage
-          .from(bucketName)
-          .move(fromPath, toPath);
+      await SupabaseService.storage.from(bucketName).move(fromPath, toPath);
     } catch (e) {
       throw Exception('Failed to move file: $e');
     }
   }
-  
+
   // Get public URL for a file
   static String getPublicUrl({
     required String bucketName,
     required String filePath,
   }) {
-    return SupabaseService.storage
-        .from(bucketName)
-        .getPublicUrl(filePath);
+    return SupabaseService.storage.from(bucketName).getPublicUrl(filePath);
   }
-  
+
   // Download file
   static Future<Uint8List> downloadFile({
     required String bucketName,
     required String filePath,
   }) async {
     try {
-      final data = await SupabaseService.storage
-          .from(bucketName)
-          .download(filePath);
-      
+      final data =
+          await SupabaseService.storage.from(bucketName).download(filePath);
+
       return data;
     } catch (e) {
       throw Exception('Failed to download file: $e');
     }
   }
-  
+
   // Generate thumbnail URL (if using a transformation service)
   static String getThumbnailUrl({
     required String originalUrl,
@@ -260,7 +239,7 @@ class StorageService {
     // In production, you might use Supabase's image transformation or a CDN service
     return originalUrl;
   }
-  
+
   // Upload multiple files to a folder
   static Future<List<String>> uploadMultipleFiles({
     required String bucketName,
@@ -269,11 +248,11 @@ class StorageService {
     List<String>? fileNames,
   }) async {
     final urls = <String>[];
-    
+
     for (int i = 0; i < files.length; i++) {
       final file = files[i];
       final fileName = fileNames?[i] ?? 'photo_${i + 1}.jpg';
-      
+
       try {
         final url = await uploadFile(
           bucketName: bucketName,
@@ -282,13 +261,12 @@ class StorageService {
           file: file,
         );
         urls.add(url);
-      } catch (e) {
-      }
+      } catch (e) {}
     }
-    
+
     return urls;
   }
-  
+
   // Upload event image
   static Future<String> uploadEventImage({
     required String eventId,
@@ -297,7 +275,7 @@ class StorageService {
   }) async {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final finalFileName = fileName ?? 'event_$timestamp.jpg';
-    
+
     return await uploadFile(
       bucketName: eventsBucket,
       folderPath: eventId,
@@ -305,9 +283,9 @@ class StorageService {
       file: file,
     );
   }
-  
+
   // Get event image URL with default fallback
-  static String getEventImageUrl(String? imageUrl) {
+  static String? getEventImageUrl(String? imageUrl) {
     if (imageUrl != null && imageUrl.isNotEmpty) {
       // If it's already a full URL, return it
       if (imageUrl.startsWith('http')) {
@@ -319,7 +297,7 @@ class StorageService {
         filePath: imageUrl,
       );
     }
-    // Return default event image
-    return 'https://via.placeholder.com/800x400/9c27b0/ffffff?text=Church+Event';
+    // Return null to use error widget instead of external placeholder
+    return null;
   }
 }

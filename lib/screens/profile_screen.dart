@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
-import '../models/auth_state.dart' as app_auth;
+import '../providers/user_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -12,6 +12,8 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
     final user = authState.user;
+    final currentUser = ref.watch(userProvider);
+    final isAdmin = currentUser?.isAdmin ?? false;
 
     if (user == null) {
       return Scaffold(
@@ -34,53 +36,138 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
           children: [
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-                      backgroundImage: user.userMetadata?['avatar_url'] != null
-                          ? NetworkImage(user.userMetadata!['avatar_url'])
-                          : null,
-                      child: user.userMetadata?['avatar_url'] == null
-                          ? Text(
-                              (user.userMetadata?['full_name'] ?? user.email ?? 'U')[0].toUpperCase(),
-                              style: TextStyle(
-                                fontSize: 36,
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).primaryColor,
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        CircleAvatar(
+                          radius: 50,
+                          backgroundColor:
+                              isAdmin
+                                  ? Colors.purple.withOpacity(0.1)
+                                  : Theme.of(context).primaryColor.withOpacity(0.1),
+                          backgroundImage: user.userMetadata?['avatar_url'] != null
+                              ? NetworkImage(user.userMetadata!['avatar_url'])
+                              : null,
+                          child: user.userMetadata?['avatar_url'] == null
+                              ? Text(
+                                  (user.userMetadata?['full_name'] ??
+                                          user.email ??
+                                          'U')[0]
+                                      .toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 36,
+                                    fontWeight: FontWeight.bold,
+                                    color: isAdmin
+                                        ? Colors.purple
+                                        : Theme.of(context).primaryColor,
+                                  ),
+                                )
+                              : null,
+                        ),
+                        if (isAdmin)
+                          Positioned(
+                            bottom: -4,
+                            right: -4,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.purple,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 3,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.purple.withOpacity(0.3),
+                                    spreadRadius: 2,
+                                    blurRadius: 8,
+                                  ),
+                                ],
                               ),
-                            )
-                          : null,
+                              child: const Icon(
+                                Icons.admin_panel_settings,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      user.userMetadata?['full_name'] ?? user.email ?? 'Unknown',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      user.userMetadata?['full_name'] ??
+                          user.email ??
+                          'Unknown',
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                     ),
+                    if (isAdmin) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Colors.purple.shade400, Colors.purple.shade600],
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.purple.withOpacity(0.3),
+                              spreadRadius: 1,
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.verified,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'ADMINISTRATOR',
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.5,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 8),
                     Text(
                       user.email ?? 'No email',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                            color: Colors.grey[600],
+                          ),
                     ),
                   ],
                 ),
               ),
             ),
-            
             const SizedBox(height: 16),
-            
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -90,11 +177,10 @@ class ProfileScreen extends ConsumerWidget {
                     Text(
                       'Church Information',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                     const SizedBox(height: 16),
-                    
                     ProfileInfoRow(
                       icon: Icons.badge,
                       label: 'Role',
@@ -104,15 +190,14 @@ class ProfileScreen extends ConsumerWidget {
                     ProfileInfoRow(
                       icon: Icons.calendar_today,
                       label: 'Member Since',
-                      value: DateFormat('MMMM d, yyyy').format(DateTime.parse(user.createdAt)),
+                      value: DateFormat('MMMM d, yyyy')
+                          .format(DateTime.parse(user.createdAt)),
                     ),
                   ],
                 ),
               ),
             ),
-            
             const SizedBox(height: 16),
-            
             Card(
               child: Column(
                 children: [
@@ -145,9 +230,7 @@ class ProfileScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            
             const SizedBox(height: 16),
-            
             Card(
               child: Column(
                 children: [
@@ -171,7 +254,8 @@ class ProfileScreen extends ConsumerWidget {
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.logout, color: Colors.red),
-                    title: const Text('Sign Out', style: TextStyle(color: Colors.red)),
+                    title: const Text('Sign Out',
+                        style: TextStyle(color: Colors.red)),
                     onTap: () {
                       _showSignOutDialog(context, ref);
                     },
@@ -180,6 +264,7 @@ class ProfileScreen extends ConsumerWidget {
               ),
             ),
           ],
+        ),
         ),
       ),
     );
@@ -234,16 +319,16 @@ class ProfileInfoRow extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Colors.grey[600],
-          ),
+                color: Colors.grey[600],
+              ),
         ),
         const SizedBox(width: 16),
         Expanded(
           child: Text(
             value,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+                  fontWeight: FontWeight.w600,
+                ),
             textAlign: TextAlign.end,
           ),
         ),

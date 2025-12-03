@@ -83,13 +83,15 @@ class MediaItem {
     this.deletedBy,
   });
 
-  factory MediaItem.fromJson(Map<String, dynamic> json, {bool isCollected = false}) {
+  factory MediaItem.fromJson(Map<String, dynamic> json,
+      {bool isCollected = false}) {
     return MediaItem(
       id: json['id'] as String,
       title: json['title'] as String? ?? '',
       description: json['description'] as String?,
       type: MediaType.fromString(json['type'] as String? ?? 'photo'),
-      category: MediaCategory.fromString(json['category'] as String? ?? 'general'),
+      category:
+          MediaCategory.fromString(json['category'] as String? ?? 'general'),
       url: json['url'] as String? ?? json['file_url'] as String? ?? '',
       thumbnailUrl: json['thumbnail_url'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
@@ -98,7 +100,9 @@ class MediaItem {
       isCollected: isCollected,
       albumId: json['album_id'] as String?,
       folderId: json['folder_id'] as String?,
-      deletedAt: json['deleted_at'] != null ? DateTime.parse(json['deleted_at'] as String) : null,
+      deletedAt: json['deleted_at'] != null
+          ? DateTime.parse(json['deleted_at'] as String)
+          : null,
       deletedBy: json['deleted_by'] as String?,
     );
   }
@@ -149,8 +153,8 @@ class MediaItem {
       isCollected: isCollected ?? this.isCollected,
       albumId: albumId ?? this.albumId,
       folderId: folderId ?? this.folderId,
-      deletedAt: deletedAt ?? this.deletedAt,
-      deletedBy: deletedBy ?? this.deletedBy,
+      deletedAt: deletedAt ?? deletedAt,
+      deletedBy: deletedBy ?? deletedBy,
     );
   }
 

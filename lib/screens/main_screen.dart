@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../models/notification.dart';
 import '../providers/notification_provider.dart';
-import '../providers/user_provider.dart';
 import '../widgets/feedback_detail_dialog.dart';
 
 class MainScreen extends ConsumerWidget {
@@ -15,13 +14,13 @@ class MainScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final hasUnreadNotifications = ref.watch(hasUnreadNotificationsProvider);
     final unreadCount = ref.watch(unreadNotificationCountProvider);
-    final user = ref.watch(userProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Ezer'),
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           Stack(
             children: [
@@ -62,7 +61,9 @@ class MainScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: child,
+      body: SafeArea(
+        child: child,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _calculateSelectedIndex(context),
@@ -137,7 +138,7 @@ class MainScreen extends ConsumerWidget {
 
   void _showNotifications(BuildContext context, WidgetRef ref) {
     final notifications = ref.read(notificationProvider);
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -168,8 +169,8 @@ class MainScreen extends ConsumerWidget {
                   Text(
                     'Notifications',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   if (notifications.isNotEmpty)
                     TextButton(
@@ -195,9 +196,12 @@ class MainScreen extends ConsumerWidget {
                             const SizedBox(height: 16),
                             Text(
                               'No notifications',
-                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: Colors.grey[600],
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyLarge
+                                  ?.copyWith(
+                                    color: Colors.grey[600],
+                                  ),
                             ),
                           ],
                         ),
@@ -211,21 +215,21 @@ class MainScreen extends ConsumerWidget {
                             margin: const EdgeInsets.only(bottom: 8),
                             child: ListTile(
                               leading: CircleAvatar(
-                                backgroundColor: notification.isRead 
-                                    ? Colors.grey[300] 
+                                backgroundColor: notification.isRead
+                                    ? Colors.grey[300]
                                     : Theme.of(context).primaryColor,
                                 child: Icon(
                                   _getNotificationIcon(notification.type),
-                                  color: notification.isRead 
-                                      ? Colors.grey[600] 
+                                  color: notification.isRead
+                                      ? Colors.grey[600]
                                       : Colors.white,
                                 ),
                               ),
                               title: Text(
                                 notification.title,
                                 style: TextStyle(
-                                  fontWeight: notification.isRead 
-                                      ? FontWeight.normal 
+                                  fontWeight: notification.isRead
+                                      ? FontWeight.normal
                                       : FontWeight.bold,
                                 ),
                               ),
@@ -239,17 +243,24 @@ class MainScreen extends ConsumerWidget {
                                     runSpacing: 4,
                                     children: [
                                       Text(
-                                        _formatTimestamp(notification.timestamp),
-                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          color: Colors.grey[600],
-                                        ),
+                                        _formatTimestamp(
+                                            notification.timestamp),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              color: Colors.grey[600],
+                                            ),
                                       ),
-                                      if (notification.isFeedbackNotification && notification.hasLocation)
+                                      if (notification.isFeedbackNotification &&
+                                          notification.hasLocation)
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 6, vertical: 2),
                                           decoration: BoxDecoration(
                                             color: Colors.blue[100],
-                                            borderRadius: BorderRadius.circular(10),
+                                            borderRadius:
+                                                BorderRadius.circular(10),
                                           ),
                                           child: Row(
                                             mainAxisSize: MainAxisSize.min,
@@ -262,10 +273,13 @@ class MainScreen extends ConsumerWidget {
                                               const SizedBox(width: 2),
                                               Text(
                                                 'Location',
-                                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                                  color: Colors.blue[700],
-                                                  fontSize: 10,
-                                                ),
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .bodySmall
+                                                    ?.copyWith(
+                                                      color: Colors.blue[700],
+                                                      fontSize: 10,
+                                                    ),
                                               ),
                                             ],
                                           ),
@@ -275,11 +289,14 @@ class MainScreen extends ConsumerWidget {
                                 ],
                               ),
                               onTap: () {
-                                ref.read(notificationProvider.notifier).markAsRead(notification.id);
-                                
+                                ref
+                                    .read(notificationProvider.notifier)
+                                    .markAsRead(notification.id);
+
                                 // Show detailed view for feedback notifications
                                 if (notification.isFeedbackNotification) {
-                                  Navigator.of(context).pop(); // Close the notification bottom sheet
+                                  Navigator.of(context)
+                                      .pop(); // Close the notification bottom sheet
                                   showDialog(
                                     context: context,
                                     builder: (context) => FeedbackDetailDialog(
@@ -291,7 +308,9 @@ class MainScreen extends ConsumerWidget {
                               trailing: IconButton(
                                 icon: const Icon(Icons.close, size: 20),
                                 onPressed: () {
-                                  ref.read(notificationProvider.notifier).removeNotification(notification.id);
+                                  ref
+                                      .read(notificationProvider.notifier)
+                                      .removeNotification(notification.id);
                                 },
                               ),
                             ),
@@ -318,7 +337,7 @@ class MainScreen extends ConsumerWidget {
   String _formatTimestamp(DateTime timestamp) {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
-    
+
     if (difference.inMinutes < 1) {
       return 'Just now';
     } else if (difference.inHours < 1) {

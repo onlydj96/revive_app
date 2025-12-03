@@ -8,10 +8,10 @@ import 'models/theme_mode.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Deep Link Service
   await DeepLinkService.instance.initialize();
-  
+
   runApp(const ProviderScope(child: EzerApp()));
 }
 
@@ -21,7 +21,7 @@ class EzerApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeSettings = ref.watch(themeProvider);
-    
+
     // Convert AppThemeMode to ThemeMode
     ThemeMode themeMode;
     switch (themeSettings.mode) {
@@ -35,8 +35,7 @@ class EzerApp extends ConsumerWidget {
         themeMode = ThemeMode.system;
         break;
     }
-    
-    
+
     return MaterialApp.router(
       title: 'Ezer - Revive Church',
       theme: AppTheme.lightTheme,

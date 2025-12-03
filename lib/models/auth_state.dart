@@ -35,7 +35,8 @@ class AuthState {
     );
   }
 
-  bool get isAuthenticated => status == AuthStatus.authenticated && user != null;
+  bool get isAuthenticated =>
+      status == AuthStatus.authenticated && user != null;
   bool get isLoading => status == AuthStatus.loading;
   bool get hasError => status == AuthStatus.error;
 }

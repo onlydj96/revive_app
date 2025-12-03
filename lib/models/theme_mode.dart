@@ -6,11 +6,11 @@ enum AppThemeMode {
 
 class ThemeSettings {
   final AppThemeMode mode;
-  
+
   const ThemeSettings({
     this.mode = AppThemeMode.system,
   });
-  
+
   ThemeSettings copyWith({
     AppThemeMode? mode,
   }) {

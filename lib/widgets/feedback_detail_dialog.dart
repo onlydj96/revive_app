@@ -28,8 +28,8 @@ class FeedbackDetailDialog extends StatelessWidget {
                   child: Text(
                     notification.title,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                 ),
                 IconButton(
@@ -39,7 +39,7 @@ class FeedbackDetailDialog extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            
+
             // Feedback details
             Container(
               padding: const EdgeInsets.all(12),
@@ -52,13 +52,14 @@ class FeedbackDetailDialog extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.feedback, color: Theme.of(context).primaryColor),
+                      Icon(Icons.feedback,
+                          color: Theme.of(context).primaryColor),
                       const SizedBox(width: 8),
                       Text(
                         'Feedback Type:',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                     ],
                   ),
@@ -70,13 +71,14 @@ class FeedbackDetailDialog extends StatelessWidget {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Icon(Icons.access_time, color: Theme.of(context).primaryColor),
+                      Icon(Icons.access_time,
+                          color: Theme.of(context).primaryColor),
                       const SizedBox(width: 8),
                       Text(
                         'Submitted:',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                     ],
                   ),
@@ -88,19 +90,18 @@ class FeedbackDetailDialog extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Location section
             if (notification.hasLocation) ...[
               Text(
                 'Location on Worship Feedback Map',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               const SizedBox(height: 12),
-              
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
@@ -112,13 +113,14 @@ class FeedbackDetailDialog extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                     child: LayoutBuilder(
                       builder: (context, constraints) {
-                        final relativeLocation = notification.feedbackRelativeLocation;
-                        
+                        final relativeLocation =
+                            notification.feedbackRelativeLocation;
+
                         return Stack(
                           children: [
                             CustomPaint(
                               painter: WorshipFeedbackMapPainter(),
-                              child: Container(
+                              child: SizedBox(
                                 width: double.infinity,
                                 height: double.infinity,
                               ),
@@ -126,8 +128,12 @@ class FeedbackDetailDialog extends StatelessWidget {
                             // Show the feedback location using relative coordinates
                             if (relativeLocation != null)
                               Positioned(
-                                left: (relativeLocation['relativeX']! * constraints.maxWidth) - 12,
-                                top: (relativeLocation['relativeY']! * constraints.maxHeight) - 24,
+                                left: (relativeLocation['relativeX']! *
+                                        constraints.maxWidth) -
+                                    12,
+                                top: (relativeLocation['relativeY']! *
+                                        constraints.maxHeight) -
+                                    24,
                                 child: Container(
                                   decoration: BoxDecoration(
                                     color: Colors.red,
@@ -154,9 +160,7 @@ class FeedbackDetailDialog extends StatelessWidget {
                   ),
                 ),
               ),
-              
               const SizedBox(height: 12),
-              
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -172,8 +176,8 @@ class FeedbackDetailDialog extends StatelessWidget {
                       child: Text(
                         'The red marker shows where the person was sitting when they submitted this feedback.',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.amber[800],
-                        ),
+                              color: Colors.amber[800],
+                            ),
                       ),
                     ),
                   ],
@@ -194,8 +198,8 @@ class FeedbackDetailDialog extends StatelessWidget {
                       Text(
                         'No location data available',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Colors.grey[600],
-                        ),
+                              color: Colors.grey[600],
+                            ),
                       ),
                     ],
                   ),
@@ -210,7 +214,7 @@ class FeedbackDetailDialog extends StatelessWidget {
 
   String _getFeedbackDescription(String? feedbackType) {
     if (feedbackType == null) return 'Unknown';
-    
+
     switch (feedbackType) {
       case 'tooCold':
         return 'Too Cold';
@@ -264,7 +268,8 @@ class WorshipFeedbackMapPainter extends CustomPainter {
       size.width * 0.7,
       size.height * 0.1,
     );
-    canvas.drawRect(stageRect, Paint()..color = const Color(0xFF6B46C1).withOpacity(0.3));
+    canvas.drawRect(
+        stageRect, Paint()..color = const Color(0xFF6B46C1).withOpacity(0.3));
     canvas.drawRect(stageRect, paint);
 
     // Draw text
@@ -297,7 +302,8 @@ class WorshipFeedbackMapPainter extends CustomPainter {
       final y = size.height * 0.3 + (row * size.height * 0.06);
       for (int section = 0; section < 3; section++) {
         final x = size.width * 0.2 + (section * size.width * 0.25);
-        final seatRect = Rect.fromLTWH(x, y, size.width * 0.15, size.height * 0.04);
+        final seatRect =
+            Rect.fromLTWH(x, y, size.width * 0.15, size.height * 0.04);
         canvas.drawRRect(
           RRect.fromRectAndRadius(seatRect, const Radius.circular(4)),
           seatPaint,
@@ -312,7 +318,8 @@ class WorshipFeedbackMapPainter extends CustomPainter {
       size.width * 0.1,
       size.height * 0.05,
     );
-    canvas.drawRect(entranceRect, Paint()..color = Colors.green.withOpacity(0.3));
+    canvas.drawRect(
+        entranceRect, Paint()..color = Colors.green.withOpacity(0.3));
 
     final entranceTextPainter = TextPainter(
       text: TextSpan(

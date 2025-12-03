@@ -38,13 +38,14 @@ class _UploadMediaDialogState extends ConsumerState<UploadMediaDialog> {
     final isUploading = ref.watch(uploadMediaLoadingProvider);
     final uploadProgress = ref.watch(uploadProgressProvider);
     final selectedMedia = ref.watch(selectedMediaItemsProvider);
-    
+
     return AlertDialog(
       title: const Text('미디어 업로드'),
       contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: Column(
+      content: SafeArea(
+        child: SizedBox(
+          width: double.maxFinite,
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // Upload progress indicator
@@ -54,7 +55,7 @@ class _UploadMediaDialogState extends ConsumerState<UploadMediaDialog> {
               Text('업로드 중... ${(uploadProgress * 100).toInt()}%'),
               const SizedBox(height: 16),
             ],
-            
+
             // Media selection buttons
             if (!isUploading) ...[
               Row(
@@ -83,7 +84,7 @@ class _UploadMediaDialogState extends ConsumerState<UploadMediaDialog> {
                 ],
               ),
               const SizedBox(height: 16),
-              
+
               // Camera buttons
               Row(
                 children: [
@@ -111,7 +112,7 @@ class _UploadMediaDialogState extends ConsumerState<UploadMediaDialog> {
                 ],
               ),
             ],
-            
+
             // Selected media preview
             if (selectedMedia.isNotEmpty) ...[
               const SizedBox(height: 16),
@@ -120,8 +121,8 @@ class _UploadMediaDialogState extends ConsumerState<UploadMediaDialog> {
               Text(
                 '선택된 파일 (${selectedMedia.length}개)',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               const SizedBox(height: 8),
               ConstrainedBox(
@@ -138,6 +139,7 @@ class _UploadMediaDialogState extends ConsumerState<UploadMediaDialog> {
             ],
           ],
         ),
+        ),
       ),
       actions: [
         TextButton(
@@ -145,9 +147,8 @@ class _UploadMediaDialogState extends ConsumerState<UploadMediaDialog> {
           child: const Text('취소'),
         ),
         ElevatedButton(
-          onPressed: selectedMedia.isNotEmpty && !isUploading
-              ? _uploadMedia
-              : null,
+          onPressed:
+              selectedMedia.isNotEmpty && !isUploading ? _uploadMedia : null,
           child: Text(isUploading ? '업로드 중...' : '업로드'),
         ),
       ],
@@ -197,7 +198,7 @@ class _UploadMediaDialogState extends ConsumerState<UploadMediaDialog> {
             ? Image.file(
                 File(media.path),
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => 
+                errorBuilder: (context, error, stackTrace) =>
                     const Icon(Icons.photo),
               )
             : const Icon(Icons.videocam),
@@ -208,11 +209,11 @@ class _UploadMediaDialogState extends ConsumerState<UploadMediaDialog> {
   Future<void> _pickImages() async {
     try {
       final List<XFile> images = await _picker.pickMultiImage();
-      
+
       for (final image in images) {
         final file = File(image.path);
         final stats = await file.stat();
-        
+
         final currentMedia = ref.read(selectedMediaItemsProvider);
         final updatedMedia = List<UploadMediaItem>.from(currentMedia);
         updatedMedia.add(UploadMediaItem(
@@ -231,11 +232,11 @@ class _UploadMediaDialogState extends ConsumerState<UploadMediaDialog> {
   Future<void> _pickVideo() async {
     try {
       final XFile? video = await _picker.pickVideo(source: ImageSource.gallery);
-      
+
       if (video != null) {
         final file = File(video.path);
         final stats = await file.stat();
-        
+
         final currentMedia = ref.read(selectedMediaItemsProvider);
         final updatedMedia = List<UploadMediaItem>.from(currentMedia);
         updatedMedia.add(UploadMediaItem(
@@ -254,11 +255,11 @@ class _UploadMediaDialogState extends ConsumerState<UploadMediaDialog> {
   Future<void> _takePhoto() async {
     try {
       final XFile? photo = await _picker.pickImage(source: ImageSource.camera);
-      
+
       if (photo != null) {
         final file = File(photo.path);
         final stats = await file.stat();
-        
+
         final currentMedia = ref.read(selectedMediaItemsProvider);
         final updatedMedia = List<UploadMediaItem>.from(currentMedia);
         updatedMedia.add(UploadMediaItem(
@@ -277,11 +278,11 @@ class _UploadMediaDialogState extends ConsumerState<UploadMediaDialog> {
   Future<void> _recordVideo() async {
     try {
       final XFile? video = await _picker.pickVideo(source: ImageSource.camera);
-      
+
       if (video != null) {
         final file = File(video.path);
         final stats = await file.stat();
-        
+
         final currentMedia = ref.read(selectedMediaItemsProvider);
         final updatedMedia = List<UploadMediaItem>.from(currentMedia);
         updatedMedia.add(UploadMediaItem(
@@ -306,7 +307,7 @@ class _UploadMediaDialogState extends ConsumerState<UploadMediaDialog> {
 
     try {
       await widget.onUploadMedia(selectedMedia);
-      
+
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(

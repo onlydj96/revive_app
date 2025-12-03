@@ -33,10 +33,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   void _handleSignUp() async {
     if (_formKey.currentState!.validate() && _acceptTerms) {
       await ref.read(authProvider.notifier).signUpWithEmail(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-        fullName: _fullNameController.text.trim(),
-      );
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+            fullName: _fullNameController.text.trim(),
+          );
     } else if (!_acceptTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -50,13 +50,14 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
-    
+
     // Listen to auth state changes
     ref.listen<app_auth.AuthState>(authProvider, (previous, next) {
       if (next.errorMessage != null) {
         // If it's a success message about email verification, navigate to verification screen
         if (next.errorMessage!.contains('check your email')) {
-          context.go('/email-verification?email=${Uri.encodeComponent(_emailController.text.trim())}');
+          context.go(
+              '/email-verification?email=${Uri.encodeComponent(_emailController.text.trim())}');
         } else if (next.hasError) {
           // Show error message for actual errors
           ScaffoldMessenger.of(context).showSnackBar(
@@ -100,7 +101,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // Logo and Title
-                    Container(
+                    SizedBox(
                       width: 100,
                       height: 100,
                       child: Image.asset(
@@ -116,7 +117,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                               borderRadius: BorderRadius.circular(20),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withOpacity(0.3),
                                   spreadRadius: 2,
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
@@ -132,28 +136,29 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         },
                       ),
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     Text(
                       'Join Revive Church',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                      style:
+                          Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
                     ),
-                    
+
                     const SizedBox(height: 8),
-                    
+
                     Text(
                       'Create your account to get started',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                            color: Colors.grey[600],
+                          ),
                     ),
-                    
+
                     const SizedBox(height: 32),
-                    
+
                     // Full Name Field
                     TextFormField(
                       controller: _fullNameController,
@@ -178,9 +183,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         return null;
                       },
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // Email Field
                     TextFormField(
                       controller: _emailController,
@@ -199,15 +204,16 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your email';
                         }
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                            .hasMatch(value)) {
                           return 'Please enter a valid email';
                         }
                         return null;
                       },
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // Password Field
                     TextFormField(
                       controller: _passwordController,
@@ -218,7 +224,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         prefixIcon: const Icon(Icons.lock_outline),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                            _obscurePassword
+                                ? Icons.visibility
+                                : Icons.visibility_off,
                           ),
                           onPressed: () {
                             setState(() {
@@ -242,9 +250,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         return null;
                       },
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // Confirm Password Field
                     TextFormField(
                       controller: _confirmPasswordController,
@@ -256,11 +264,14 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         prefixIcon: const Icon(Icons.lock_outline),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
+                            _obscureConfirmPassword
+                                ? Icons.visibility
+                                : Icons.visibility_off,
                           ),
                           onPressed: () {
                             setState(() {
-                              _obscureConfirmPassword = !_obscureConfirmPassword;
+                              _obscureConfirmPassword =
+                                  !_obscureConfirmPassword;
                             });
                           },
                         ),
@@ -280,9 +291,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         return null;
                       },
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // Terms and Conditions
                     Row(
                       children: [
@@ -321,9 +332,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // Sign Up Button
                     SizedBox(
                       width: double.infinity,
@@ -355,9 +366,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                               ),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // Sign In Link
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,

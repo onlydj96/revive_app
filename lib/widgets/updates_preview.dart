@@ -22,8 +22,8 @@ class UpdatesPreview extends StatelessWidget {
                   child: Text(
                     'Recent Updates',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                 ),
                 TextButton(
@@ -33,81 +33,92 @@ class UpdatesPreview extends StatelessWidget {
               ],
             ),
           ),
-          
           ...updates.map((update) => InkWell(
-            onTap: () => context.push('/update/${update.id}'),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: Colors.grey[200]!),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: _getUpdateTypeColor(update.type).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      _getUpdateTypeIcon(update.type),
-                      size: 16,
-                      color: _getUpdateTypeColor(update.type),
+                onTap: () => context.push('/update/${update.id}'),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: Colors.grey[200]!),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color:
+                              _getUpdateTypeColor(update.type).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          _getUpdateTypeIcon(update.type),
+                          size: 16,
+                          color: _getUpdateTypeColor(update.type),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: Text(
-                                update.title,
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    update.title,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                                if (update.isPinned)
+                                  Icon(
+                                    Icons.push_pin,
+                                    size: 14,
+                                    color: Theme.of(context).primaryColor,
+                                  ),
+                              ],
                             ),
-                            if (update.isPinned)
-                              Icon(
-                                Icons.push_pin,
-                                size: 14,
-                                color: Theme.of(context).primaryColor,
-                              ),
+                            const SizedBox(height: 2),
+                            Text(
+                              update.content.length > 80
+                                  ? '${update.content.substring(0, 80)}...'
+                                  : update.content,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: Colors.grey[600],
+                                  ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${DateFormat('MMM d').format(update.createdAt)} • ${update.author}',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: Colors.grey[500],
+                                  ),
+                            ),
                           ],
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          update.content.length > 80
-                              ? '${update.content.substring(0, 80)}...'
-                              : update.content,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${DateFormat('MMM d').format(update.createdAt)} • ${update.author}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[500],
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                      const Icon(Icons.chevron_right,
+                          size: 16, color: Colors.grey),
+                    ],
                   ),
-                  const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
-                ],
-              ),
-            ),
-          )),
+                ),
+              )),
         ],
       ),
     );

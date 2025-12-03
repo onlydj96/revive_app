@@ -9,10 +9,12 @@ class EmailVerificationScreen extends ConsumerStatefulWidget {
   const EmailVerificationScreen({super.key, required this.email});
 
   @override
-  ConsumerState<EmailVerificationScreen> createState() => _EmailVerificationScreenState();
+  ConsumerState<EmailVerificationScreen> createState() =>
+      _EmailVerificationScreenState();
 }
 
-class _EmailVerificationScreenState extends ConsumerState<EmailVerificationScreen>
+class _EmailVerificationScreenState
+    extends ConsumerState<EmailVerificationScreen>
     with TickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -20,12 +22,12 @@ class _EmailVerificationScreenState extends ConsumerState<EmailVerificationScree
   @override
   void initState() {
     super.initState();
-    
+
     _pulseController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
     );
-    
+
     _pulseAnimation = Tween<double>(
       begin: 0.8,
       end: 1.2,
@@ -91,7 +93,8 @@ class _EmailVerificationScreenState extends ConsumerState<EmailVerificationScree
                         color: Theme.of(context).primaryColor.withOpacity(0.1),
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: Theme.of(context).primaryColor.withOpacity(0.3),
+                          color:
+                              Theme.of(context).primaryColor.withOpacity(0.3),
                           width: 2,
                         ),
                       ),
@@ -104,32 +107,33 @@ class _EmailVerificationScreenState extends ConsumerState<EmailVerificationScree
                   );
                 },
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               Text(
                 'Check Your Email',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).primaryColor,
-                ),
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).primaryColor,
+                    ),
                 textAlign: TextAlign.center,
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               Text(
                 'We\'ve sent a verification link to:',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.grey[600],
-                ),
+                      color: Colors.grey[600],
+                    ),
                 textAlign: TextAlign.center,
               ),
-              
+
               const SizedBox(height: 8),
-              
+
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: Theme.of(context).primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
@@ -137,25 +141,25 @@ class _EmailVerificationScreenState extends ConsumerState<EmailVerificationScree
                 child: Text(
                   widget.email,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).primaryColor,
-                  ),
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).primaryColor,
+                      ),
                   textAlign: TextAlign.center,
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               Text(
                 'Click the link in the email to verify your account. Once verified, you\'ll be automatically signed in.',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
-                ),
+                      color: Colors.grey[600],
+                    ),
                 textAlign: TextAlign.center,
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               // Instructions Card
               Container(
                 padding: const EdgeInsets.all(16),
@@ -178,10 +182,11 @@ class _EmailVerificationScreenState extends ConsumerState<EmailVerificationScree
                         const SizedBox(width: 8),
                         Text(
                           'Instructions',
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue,
+                                  ),
                         ),
                       ],
                     ),
@@ -191,15 +196,15 @@ class _EmailVerificationScreenState extends ConsumerState<EmailVerificationScree
                       '2. Click the verification link\n'
                       '3. You\'ll be redirected back to the app automatically',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[700],
-                      ),
+                            color: Colors.grey[700],
+                          ),
                     ),
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               // Resend Email Button
               TextButton.icon(
                 onPressed: _resendEmail,
@@ -209,9 +214,9 @@ class _EmailVerificationScreenState extends ConsumerState<EmailVerificationScree
                   foregroundColor: Theme.of(context).primaryColor,
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Back to Login
               TextButton(
                 onPressed: () => context.go('/login'),

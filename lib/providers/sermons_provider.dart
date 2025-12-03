@@ -1,14 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/sermon.dart';
 
-final sermonsProvider = StateNotifierProvider<SermonsNotifier, List<Sermon>>((ref) {
+final sermonsProvider =
+    StateNotifierProvider<SermonsNotifier, List<Sermon>>((ref) {
   return SermonsNotifier();
 });
 
 final latestSermonProvider = Provider<Sermon?>((ref) {
   final sermons = ref.watch(sermonsProvider);
   if (sermons.isEmpty) return null;
-  
+
   final sortedSermons = [...sermons]..sort((a, b) => b.date.compareTo(a.date));
   return sortedSermons.first;
 });

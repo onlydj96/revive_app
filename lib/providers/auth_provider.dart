@@ -6,7 +6,8 @@ import '../services/supabase_service.dart';
 import '../services/deep_link_service.dart';
 import '../router/app_router.dart';
 
-final authProvider = StateNotifierProvider<AuthNotifier, app_auth.AuthState>((ref) {
+final authProvider =
+    StateNotifierProvider<AuthNotifier, app_auth.AuthState>((ref) {
   return AuthNotifier();
 });
 
@@ -28,7 +29,8 @@ class AuthNotifier extends StateNotifier<app_auth.AuthState> {
         session: session,
       );
     } else {
-      state = const app_auth.AuthState(status: app_auth.AuthStatus.unauthenticated);
+      state =
+          const app_auth.AuthState(status: app_auth.AuthStatus.unauthenticated);
     }
 
     // Listen to auth changes
@@ -42,7 +44,8 @@ class AuthNotifier extends StateNotifier<app_auth.AuthState> {
             session: session,
           );
         } else {
-          state = const app_auth.AuthState(status: app_auth.AuthStatus.unauthenticated);
+          state = const app_auth.AuthState(
+              status: app_auth.AuthStatus.unauthenticated);
         }
         // Notify router to refresh
         routerNotifier.notify();
@@ -71,7 +74,7 @@ class AuthNotifier extends StateNotifier<app_auth.AuthState> {
   }) async {
     try {
       state = state.copyWith(status: app_auth.AuthStatus.loading);
-      
+
       final response = await SupabaseService.signInWithEmail(
         email: email,
         password: password,
@@ -109,22 +112,32 @@ class AuthNotifier extends StateNotifier<app_auth.AuthState> {
   }) async {
     try {
       state = state.copyWith(status: app_auth.AuthStatus.loading);
-      
+
       final response = await SupabaseService.signUpWithEmail(
         email: email,
         password: password,
         data: {
           'full_name': fullName,
-          'role': 'Member',
+          'role': 'member',
         },
       );
 
       if (response.user != null) {
-        // For email confirmation flow
-        state = const app_auth.AuthState(
-          status: app_auth.AuthStatus.unauthenticated,
-          errorMessage: 'Please check your email to confirm your account',
-        );
+        // Check if email confirmation is disabled (session exists immediately)
+        if (response.session != null) {
+          // Auto-login: Email confirmation is disabled
+          state = app_auth.AuthState(
+            status: app_auth.AuthStatus.authenticated,
+            user: response.user,
+            session: response.session,
+          );
+        } else {
+          // Email confirmation required
+          state = const app_auth.AuthState(
+            status: app_auth.AuthStatus.unauthenticated,
+            errorMessage: 'Please check your email to confirm your account',
+          );
+        }
       } else {
         state = const app_auth.AuthState(
           status: app_auth.AuthStatus.error,
@@ -148,7 +161,8 @@ class AuthNotifier extends StateNotifier<app_auth.AuthState> {
     try {
       state = state.copyWith(status: app_auth.AuthStatus.loading);
       await SupabaseService.signOut();
-      state = const app_auth.AuthState(status: app_auth.AuthStatus.unauthenticated);
+      state =
+          const app_auth.AuthState(status: app_auth.AuthStatus.unauthenticated);
       // Notify router to refresh for immediate redirect
       routerNotifier.notify();
     } catch (e) {

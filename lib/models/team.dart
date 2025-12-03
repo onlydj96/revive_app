@@ -64,18 +64,24 @@ class Team {
 
   factory Team.fromJson(Map<String, dynamic> json) {
     return Team(
-      id: json['id'],
-      name: json['name'],
-      description: json['description'],
-      type: json['type'] == 'connectGroup' ? TeamType.connectGroup : TeamType.hangout,
-      imageUrl: json['image_url'],
-      leader: json['leader'],
-      meetingTime: json['meeting_time'] != null ? DateTime.parse(json['meeting_time']) : null,
-      meetingLocation: json['meeting_location'],
-      requiresApplication: json['requires_application'] ?? false,
-      maxMembers: json['max_members'],
-      currentMembers: json['current_members'] ?? 0,
-      requirements: json['requirements'] != null ? List<String>.from(json['requirements']) : [],
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      type: json['type'] == 'connectGroup'
+          ? TeamType.connectGroup
+          : TeamType.hangout,
+      imageUrl: json['image_url'] as String?,
+      leader: json['leader'] as String? ?? '',
+      meetingTime: json['meeting_time'] != null
+          ? DateTime.parse(json['meeting_time'] as String)
+          : null,
+      meetingLocation: json['meeting_location'] as String?,
+      requiresApplication: json['requires_application'] as bool? ?? false,
+      maxMembers: json['max_members'] as int?,
+      currentMembers: json['current_members'] as int? ?? 0,
+      requirements: json['requirements'] != null
+          ? List<String>.from(json['requirements'] as List)
+          : [],
     );
   }
 

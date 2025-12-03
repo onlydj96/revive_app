@@ -19,13 +19,21 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
   final _locationController = TextEditingController();
   final _imageUrlController = TextEditingController();
   final _maxMembersController = TextEditingController();
-  
+
+  // Focus nodes for auto-scroll to invalid fields
+  final _nameFocus = FocusNode();
+  final _descriptionFocus = FocusNode();
+  final _leaderFocus = FocusNode();
+
+  // Scroll controller for auto-scrolling
+  final _scrollController = ScrollController();
+
   TeamType _selectedType = TeamType.hangout;
   bool _requiresApplication = false;
   DateTime? _selectedTime;
   final List<String> _requirements = [];
   final _requirementController = TextEditingController();
-  
+
   bool _isLoading = false;
 
   @override
@@ -37,6 +45,10 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
     _imageUrlController.dispose();
     _maxMembersController.dispose();
     _requirementController.dispose();
+    _nameFocus.dispose();
+    _descriptionFocus.dispose();
+    _leaderFocus.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -48,7 +60,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
         actions: [
           TextButton(
             onPressed: _isLoading ? null : _saveTeam,
-            child: _isLoading 
+            child: _isLoading
                 ? const SizedBox(
                     width: 20,
                     height: 20,
@@ -58,21 +70,24 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
           ),
         ],
       ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
+      body: SafeArea(
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            padding: const EdgeInsets.all(16),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Basic Information Section
               _buildSectionHeader('Basic Information'),
               const SizedBox(height: 16),
-              
+
               TextFormField(
                 controller: _nameController,
+                focusNode: _nameFocus,
                 decoration: const InputDecoration(
-                  labelText: 'Team Name',
+                  labelText: 'Team Name *',
                   hintText: 'Enter the team name',
                   border: OutlineInputBorder(),
                 ),
@@ -83,13 +98,14 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                   return null;
                 },
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               TextFormField(
                 controller: _descriptionController,
+                focusNode: _descriptionFocus,
                 decoration: const InputDecoration(
-                  labelText: 'Description',
+                  labelText: 'Description *',
                   hintText: 'Describe what this team is about',
                   border: OutlineInputBorder(),
                 ),
@@ -101,9 +117,9 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                   return null;
                 },
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               DropdownButtonFormField<TeamType>(
                 value: _selectedType,
                 decoration: const InputDecoration(
@@ -129,17 +145,18 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                   });
                 },
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Leadership Section
               _buildSectionHeader('Leadership'),
               const SizedBox(height: 16),
-              
+
               TextFormField(
                 controller: _leaderController,
+                focusNode: _leaderFocus,
                 decoration: const InputDecoration(
-                  labelText: 'Team Leader',
+                  labelText: 'Team Leader *',
                   hintText: 'Who will lead this team?',
                   border: OutlineInputBorder(),
                 ),
@@ -150,13 +167,13 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                   return null;
                 },
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Meeting Information Section
               _buildSectionHeader('Meeting Information'),
               const SizedBox(height: 16),
-              
+
               TextFormField(
                 controller: _locationController,
                 decoration: const InputDecoration(
@@ -165,9 +182,9 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                   border: OutlineInputBorder(),
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               InkWell(
                 onTap: _selectMeetingTime,
                 child: InputDecorator(
@@ -183,7 +200,8 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                             ? '${_getDayName(_selectedTime!.weekday)} at ${TimeOfDay.fromDateTime(_selectedTime!).format(context)}'
                             : 'Select meeting time',
                         style: TextStyle(
-                          color: _selectedTime != null ? null : Colors.grey[600],
+                          color:
+                              _selectedTime != null ? null : Colors.grey[600],
                         ),
                       ),
                       const Icon(Icons.access_time),
@@ -191,13 +209,13 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Membership Section
               _buildSectionHeader('Membership'),
               const SizedBox(height: 16),
-              
+
               TextFormField(
                 controller: _maxMembersController,
                 decoration: const InputDecoration(
@@ -216,15 +234,15 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                   return null;
                 },
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               CheckboxListTile(
                 title: const Text('Requires Application'),
                 subtitle: const Text('Members need to apply to join this team'),
                 value: _requiresApplication,
-                onChanged: _selectedType == TeamType.connectGroup 
-                    ? null 
+                onChanged: _selectedType == TeamType.connectGroup
+                    ? null
                     : (value) {
                         setState(() {
                           _requiresApplication = value!;
@@ -232,14 +250,13 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                       },
                 controlAffinity: ListTileControlAffinity.leading,
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Requirements Section (only show if requires application)
               if (_requiresApplication) ...[
                 _buildSectionHeader('Requirements'),
                 const SizedBox(height: 16),
-                
                 Row(
                   children: [
                     Expanded(
@@ -264,15 +281,13 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                     ),
                   ],
                 ),
-                
                 const SizedBox(height: 16),
-                
                 if (_requirements.isNotEmpty) ...[
                   Text(
                     'Requirements:',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 8),
                   ..._requirements.asMap().entries.map((entry) {
@@ -280,7 +295,8 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                     final requirement = entry.value;
                     return Card(
                       child: ListTile(
-                        leading: const Icon(Icons.check_circle, color: Colors.green),
+                        leading:
+                            const Icon(Icons.check_circle, color: Colors.green),
                         title: Text(requirement),
                         trailing: IconButton(
                           icon: const Icon(Icons.delete, color: Colors.red),
@@ -292,11 +308,11 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                   const SizedBox(height: 16),
                 ],
               ],
-              
+
               // Image Section
               _buildSectionHeader('Image (optional)'),
               const SizedBox(height: 16),
-              
+
               TextFormField(
                 controller: _imageUrlController,
                 decoration: const InputDecoration(
@@ -314,9 +330,9 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                   return null;
                 },
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               // Create Button
               SizedBox(
                 width: double.infinity,
@@ -337,6 +353,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
           ),
         ),
       ),
+      ),
     );
   }
 
@@ -344,9 +361,9 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
     return Text(
       title,
       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-        fontWeight: FontWeight.bold,
-        color: Theme.of(context).primaryColor,
-      ),
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).primaryColor,
+          ),
     );
   }
 
@@ -378,14 +395,23 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
 
       if (selectedTime != null) {
         setState(() {
-          _selectedTime = DateTime(2024, 1, selectedDay, selectedTime.hour, selectedTime.minute);
+          _selectedTime = DateTime(
+              2024, 1, selectedDay, selectedTime.hour, selectedTime.minute);
         });
       }
     }
   }
 
   String _getDayName(int weekday) {
-    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const days = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday'
+    ];
     return days[weekday - 1];
   }
 
@@ -407,6 +433,29 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
 
   Future<void> _saveTeam() async {
     if (!_formKey.currentState!.validate()) {
+      // Find and scroll to the first invalid field
+      if (_nameController.text.trim().isEmpty) {
+        _nameFocus.requestFocus();
+        await _scrollController.animateTo(
+          0, // Scroll to top where name field is
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      } else if (_descriptionController.text.trim().isEmpty) {
+        _descriptionFocus.requestFocus();
+        await _scrollController.animateTo(
+          100, // Approximate scroll position for description field
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      } else if (_leaderController.text.trim().isEmpty) {
+        _leaderFocus.requestFocus();
+        await _scrollController.animateTo(
+          400, // Approximate scroll position for leader field
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
       return;
     }
 
@@ -421,16 +470,16 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
         description: _descriptionController.text.trim(),
         type: _selectedType,
         leader: _leaderController.text.trim(),
-        meetingLocation: _locationController.text.trim().isNotEmpty 
-            ? _locationController.text.trim() 
+        meetingLocation: _locationController.text.trim().isNotEmpty
+            ? _locationController.text.trim()
             : null,
         meetingTime: _selectedTime,
-        imageUrl: _imageUrlController.text.trim().isNotEmpty 
-            ? _imageUrlController.text.trim() 
+        imageUrl: _imageUrlController.text.trim().isNotEmpty
+            ? _imageUrlController.text.trim()
             : null,
         requiresApplication: _requiresApplication,
-        maxMembers: _maxMembersController.text.trim().isNotEmpty 
-            ? int.tryParse(_maxMembersController.text.trim()) 
+        maxMembers: _maxMembersController.text.trim().isNotEmpty
+            ? int.tryParse(_maxMembersController.text.trim())
             : null,
         currentMembers: 0,
         requirements: _requirements,

@@ -28,15 +28,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   void _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       await ref.read(authProvider.notifier).signInWithEmail(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+          );
     }
   }
 
   void _handleForgotPassword() {
     if (_emailController.text.isNotEmpty) {
-      ref.read(authProvider.notifier).resetPassword(_emailController.text.trim());
+      ref
+          .read(authProvider.notifier)
+          .resetPassword(_emailController.text.trim());
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -50,7 +52,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
-    
+
     // Listen to auth state changes
     ref.listen<app_auth.AuthState>(authProvider, (previous, next) {
       if (next.isAuthenticated) {
@@ -59,8 +61,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.errorMessage!),
-            backgroundColor: next.errorMessage!.contains('check your email') 
-                ? Colors.green 
+            backgroundColor: next.errorMessage!.contains('check your email')
+                ? Colors.green
                 : Colors.red,
           ),
         );
@@ -90,7 +92,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // Logo and Title
-                    Container(
+                    SizedBox(
                       width: 120,
                       height: 120,
                       child: Image.asset(
@@ -106,7 +108,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               borderRadius: BorderRadius.circular(25),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withOpacity(0.3),
                                   spreadRadius: 2,
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
@@ -122,28 +127,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         },
                       ),
                     ),
-                    
+
                     const SizedBox(height: 32),
-                    
+
                     Text(
                       'Welcome to Ezer',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                      style:
+                          Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
                     ),
-                    
+
                     const SizedBox(height: 8),
-                    
+
                     Text(
                       'Sign in to continue',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                            color: Colors.grey[600],
+                          ),
                     ),
-                    
+
                     const SizedBox(height: 48),
-                    
+
                     // Email Field
                     TextFormField(
                       controller: _emailController,
@@ -162,15 +168,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your email';
                         }
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                            .hasMatch(value)) {
                           return 'Please enter a valid email';
                         }
                         return null;
                       },
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // Password Field
                     TextFormField(
                       controller: _passwordController,
@@ -182,7 +189,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         prefixIcon: const Icon(Icons.lock_outline),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                            _obscurePassword
+                                ? Icons.visibility
+                                : Icons.visibility_off,
                           ),
                           onPressed: () {
                             setState(() {
@@ -206,9 +215,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         return null;
                       },
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // Remember Me & Forgot Password
                     Row(
                       children: [
@@ -228,9 +237,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // Login Button
                     SizedBox(
                       width: double.infinity,
@@ -262,9 +271,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // Sign Up Link
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,

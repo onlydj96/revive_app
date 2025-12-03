@@ -3,7 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/update.dart';
 import '../services/database_service.dart';
 
-final updatesProvider = StateNotifierProvider<UpdatesNotifier, AsyncValue<List<Update>>>((ref) {
+final updatesProvider =
+    StateNotifierProvider<UpdatesNotifier, AsyncValue<List<Update>>>((ref) {
   return UpdatesNotifier();
 });
 
@@ -23,7 +24,8 @@ final recentUpdatesProvider = Provider<List<Update>>((ref) {
       final now = DateTime.now();
       return updates
           .where((update) => !update.isPinned)
-          .where((update) => update.createdAt.isAfter(now.subtract(const Duration(days: 30))))
+          .where((update) =>
+              update.createdAt.isAfter(now.subtract(const Duration(days: 30))))
           .toList()
         ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     },
@@ -75,7 +77,8 @@ class UpdatesNotifier extends StateNotifier<AsyncValue<List<Update>>> {
         // Handle delete
         final deletedId = deletedRecord['id'] as String;
         state.whenData((updates) {
-          final filteredList = updates.where((update) => update.id != deletedId).toList();
+          final filteredList =
+              updates.where((update) => update.id != deletedId).toList();
           state = AsyncValue.data(filteredList);
         });
       },
@@ -108,7 +111,8 @@ class UpdatesNotifier extends StateNotifier<AsyncValue<List<Update>>> {
     }
   }
 
-  Future<void> updateUpdate(String id, {
+  Future<void> updateUpdate(
+    String id, {
     String? title,
     String? content,
     UpdateType? type,

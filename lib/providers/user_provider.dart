@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import '../models/user.dart';
-import '../services/supabase_service.dart';
 import '../services/database_service.dart';
 import 'auth_provider.dart';
 
@@ -21,44 +20,49 @@ class UserNotifier extends StateNotifier<User?> {
     if (_supabaseUser != null) {
       try {
         // Try to get user profile from database first
-        final profileData = await DatabaseService.getUserProfile(_supabaseUser!.id);
-        
+        final profileData =
+            await DatabaseService.getUserProfile(_supabaseUser.id);
+
         if (profileData != null) {
           // Use database profile
           state = User(
-            id: profileData['id'] as String? ?? _supabaseUser!.id,
+            id: profileData['id'] as String? ?? _supabaseUser.id,
             name: profileData['full_name'] as String? ?? 'User',
-            email: profileData['email'] as String? ?? _supabaseUser!.email ?? '',
+            email: profileData['email'] as String? ?? _supabaseUser.email ?? '',
             profileImageUrl: profileData['profile_image_url'] as String?,
             role: profileData['role'] as String? ?? 'member',
-            joinDate: profileData['join_date'] != null 
+            joinDate: profileData['join_date'] != null
                 ? DateTime.parse(profileData['join_date'] as String)
-                : DateTime.parse(_supabaseUser!.createdAt),
+                : DateTime.parse(_supabaseUser.createdAt),
           );
         } else {
           // Fallback to auth metadata (for backward compatibility)
-          final metadata = _supabaseUser!.userMetadata ?? {};
-          
+          final metadata = _supabaseUser.userMetadata ?? {};
+
           state = User(
-            id: _supabaseUser!.id,
-            name: (metadata['full_name'] as String?) ?? _supabaseUser!.email?.split('@')[0] ?? 'User',
-            email: _supabaseUser!.email ?? '',
+            id: _supabaseUser.id,
+            name: (metadata['full_name'] as String?) ??
+                _supabaseUser.email?.split('@')[0] ??
+                'User',
+            email: _supabaseUser.email ?? '',
             profileImageUrl: metadata['avatar_url'] as String?,
             role: (metadata['role'] as String?) ?? 'member',
-            joinDate: DateTime.parse(_supabaseUser!.createdAt),
+            joinDate: DateTime.parse(_supabaseUser.createdAt),
           );
         }
       } catch (e) {
         // If database query fails, fall back to auth metadata
-        final metadata = _supabaseUser!.userMetadata ?? {};
-        
+        final metadata = _supabaseUser.userMetadata ?? {};
+
         state = User(
-          id: _supabaseUser!.id,
-          name: (metadata['full_name'] as String?) ?? _supabaseUser!.email?.split('@')[0] ?? 'User',
-          email: _supabaseUser!.email ?? '',
+          id: _supabaseUser.id,
+          name: (metadata['full_name'] as String?) ??
+              _supabaseUser.email?.split('@')[0] ??
+              'User',
+          email: _supabaseUser.email ?? '',
           profileImageUrl: metadata['avatar_url'] as String?,
           role: (metadata['role'] as String?) ?? 'member',
-          joinDate: DateTime.parse(_supabaseUser!.createdAt),
+          joinDate: DateTime.parse(_supabaseUser.createdAt),
         );
       }
     } else {
@@ -79,13 +83,15 @@ class UserNotifier extends StateNotifier<User?> {
         final updateData = <String, dynamic>{};
         if (name != null) updateData['full_name'] = name;
         if (email != null) updateData['email'] = email;
-        if (profileImageUrl != null) updateData['profile_image_url'] = profileImageUrl;
+        if (profileImageUrl != null)
+          updateData['profile_image_url'] = profileImageUrl;
         if (phone != null) updateData['phone'] = phone;
         if (address != null) updateData['address'] = address;
-        if (emergencyContact != null) updateData['emergency_contact'] = emergencyContact;
+        if (emergencyContact != null)
+          updateData['emergency_contact'] = emergencyContact;
 
         // Update database profile
-        await DatabaseService.updateUserProfile(_supabaseUser!.id, updateData);
+        await DatabaseService.updateUserProfile(_supabaseUser.id, updateData);
 
         // Update local state
         state = state!.copyWith(
@@ -104,7 +110,7 @@ class UserNotifier extends StateNotifier<User?> {
   Future<void> updateUserRole(String userId, String role) async {
     try {
       await DatabaseService.updateUserRole(userId, role);
-      
+
       // If updating current user, refresh the profile
       if (userId == _supabaseUser?.id) {
         await _loadUserFromSupabase();

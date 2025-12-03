@@ -47,6 +47,7 @@ class UserPinsNotifier extends StateNotifier<Set<String>> {
   }
 }
 
-final userPinsProvider = StateNotifierProvider<UserPinsNotifier, Set<String>>((ref) {
+final userPinsProvider =
+    StateNotifierProvider<UserPinsNotifier, Set<String>>((ref) {
   return UserPinsNotifier();
 });

@@ -17,7 +17,7 @@ final selectedDateProvider = StateProvider<DateTime>((ref) => DateTime.now());
 final eventsForSelectedDateProvider = Provider<List<Event>>((ref) {
   final events = ref.watch(eventsProvider);
   final selectedDate = ref.watch(selectedDateProvider);
-  
+
   return events.where((event) {
     return isSameDay(event.startTime, selectedDate);
   }).toList();
@@ -25,7 +25,7 @@ final eventsForSelectedDateProvider = Provider<List<Event>>((ref) {
 
 class ScheduleScreen extends ConsumerWidget {
   const ScheduleScreen({super.key});
-  
+
   void _showCreateEventDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
@@ -36,7 +36,9 @@ class ScheduleScreen extends ConsumerWidget {
             if (context.mounted) {
               Navigator.of(context).pop();
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Event "${event.title}" created successfully!')),
+                SnackBar(
+                    content:
+                        Text('Event "${event.title}" created successfully!')),
               );
             }
           } catch (e) {
@@ -65,7 +67,9 @@ class ScheduleScreen extends ConsumerWidget {
             if (context.mounted) {
               Navigator.of(context).pop();
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Event "${updatedEvent.title}" updated successfully!')),
+                SnackBar(
+                    content: Text(
+                        'Event "${updatedEvent.title}" updated successfully!')),
               );
             }
           } catch (e) {
@@ -107,7 +111,7 @@ class ScheduleScreen extends ConsumerWidget {
           children: [
             // Upcoming Events Banner
             if (upcomingEvents.isNotEmpty) ...[
-              Container(
+              SizedBox(
                 height: 200,
                 child: PageView.builder(
                   itemCount: upcomingEvents.length,
@@ -124,7 +128,7 @@ class ScheduleScreen extends ConsumerWidget {
                 ),
               ),
             ],
-            
+
             // Calendar
             Container(
               margin: const EdgeInsets.all(16),
@@ -146,13 +150,17 @@ class ScheduleScreen extends ConsumerWidget {
                 focusedDay: selectedDate,
                 calendarFormat: CalendarFormat.month,
                 eventLoader: (day) {
-                  return events.where((event) => isSameDay(event.startTime, day)).toList();
+                  return events
+                      .where((event) => isSameDay(event.startTime, day))
+                      .toList();
                 },
                 startingDayOfWeek: StartingDayOfWeek.sunday,
                 calendarStyle: CalendarStyle(
                   outsideDaysVisible: false,
-                  weekendTextStyle: TextStyle(color: Theme.of(context).primaryColor),
-                  holidayTextStyle: TextStyle(color: Theme.of(context).primaryColor),
+                  weekendTextStyle:
+                      TextStyle(color: Theme.of(context).primaryColor),
+                  holidayTextStyle:
+                      TextStyle(color: Theme.of(context).primaryColor),
                   markerDecoration: BoxDecoration(
                     color: Theme.of(context).primaryColor,
                     shape: BoxShape.circle,
@@ -169,9 +177,10 @@ class ScheduleScreen extends ConsumerWidget {
                 headerStyle: HeaderStyle(
                   formatButtonVisible: false,
                   titleCentered: true,
-                  titleTextStyle: Theme.of(context).textTheme.titleLarge!.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  titleTextStyle:
+                      Theme.of(context).textTheme.titleLarge!.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                 ),
                 selectedDayPredicate: (day) {
                   return isSameDay(selectedDate, day);
@@ -181,7 +190,7 @@ class ScheduleScreen extends ConsumerWidget {
                 },
               ),
             ),
-            
+
             // Selected Date Events
             if (eventsForDate.isNotEmpty) ...[
               Padding(
@@ -191,20 +200,21 @@ class ScheduleScreen extends ConsumerWidget {
                     Text(
                       'Events for ${DateFormat('MMMM d, yyyy').format(selectedDate)}',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 8),
               ...eventsForDate.map((event) => Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: EventListItem(
-                  event: event,
-                  onEdit: () => _showEditEventDialog(context, ref, event),
-                ),
-              )),
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: EventListItem(
+                      event: event,
+                      onEdit: () => _showEditEventDialog(context, ref, event),
+                    ),
+                  )),
             ] else ...[
               Padding(
                 padding: const EdgeInsets.all(32),
@@ -219,20 +229,20 @@ class ScheduleScreen extends ConsumerWidget {
                     Text(
                       'No events scheduled',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                            color: Colors.grey[600],
+                          ),
                     ),
                     Text(
                       'for ${DateFormat('MMMM d, yyyy').format(selectedDate)}',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[500],
-                      ),
+                            color: Colors.grey[500],
+                          ),
                     ),
                   ],
                 ),
               ),
             ],
-            
+
             const SizedBox(height: 32),
           ],
         ),
@@ -251,7 +261,7 @@ class EventBannerCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final daysUntil = event.startTime.difference(DateTime.now()).inDays;
     final hoursUntil = event.startTime.difference(DateTime.now()).inHours;
-    
+
     String timeUntilText;
     if (daysUntil > 0) {
       timeUntilText = 'In $daysUntil ${daysUntil == 1 ? 'day' : 'days'}';
@@ -278,7 +288,7 @@ class EventBannerCard extends ConsumerWidget {
           color: Colors.transparent,
           child: InkWell(
             onTap: () => context.push('/event/${event.id}'),
-            child: Container(
+            child: SizedBox(
               height: 180,
               child: Stack(
                 children: [
@@ -287,23 +297,30 @@ class EventBannerCard extends ConsumerWidget {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        CachedNetworkImage(
-                          imageUrl: StorageService.getEventImageUrl(event.imageUrl),
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
+                        if (StorageService.getEventImageUrl(event.imageUrl) != null)
+                          CachedNetworkImage(
+                            imageUrl:
+                                StorageService.getEventImageUrl(event.imageUrl)!,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Container(
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                                 colors: [
-                                  Theme.of(context).primaryColor.withOpacity(0.8),
-                                  Theme.of(context).primaryColor.withOpacity(0.4),
+                                  Theme.of(context)
+                                      .primaryColor
+                                      .withOpacity(0.8),
+                                  Theme.of(context)
+                                      .primaryColor
+                                      .withOpacity(0.4),
                                 ],
                               ),
                             ),
                             child: Center(
                               child: CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             ),
                           ),
@@ -314,7 +331,9 @@ class EventBannerCard extends ConsumerWidget {
                                 end: Alignment.bottomRight,
                                 colors: [
                                   Theme.of(context).primaryColor,
-                                  Theme.of(context).primaryColor.withOpacity(0.6),
+                                  Theme.of(context)
+                                      .primaryColor
+                                      .withOpacity(0.6),
                                 ],
                               ),
                             ),
@@ -327,6 +346,29 @@ class EventBannerCard extends ConsumerWidget {
                             ),
                           ),
                         ),
+                        // Default gradient when no image
+                        if (StorageService.getEventImageUrl(event.imageUrl) == null)
+                          Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Theme.of(context).primaryColor,
+                                  Theme.of(context)
+                                      .primaryColor
+                                      .withOpacity(0.6),
+                                ],
+                              ),
+                            ),
+                            child: Center(
+                              child: Icon(
+                                Icons.church,
+                                size: 60,
+                                color: Colors.white.withOpacity(0.3),
+                              ),
+                            ),
+                          ),
                         // Gradient overlay
                         Container(
                           decoration: BoxDecoration(
@@ -343,7 +385,7 @@ class EventBannerCard extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  
+
                   // Top badges
                   Positioned(
                     top: 12,
@@ -353,7 +395,8 @@ class EventBannerCard extends ConsumerWidget {
                       children: [
                         // Time until badge
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.9),
                             borderRadius: BorderRadius.circular(20),
@@ -383,9 +426,11 @@ class EventBannerCard extends ConsumerWidget {
                         if (onEdit != null)
                           Consumer(
                             builder: (context, ref, child) {
-                              final permissions = ref.watch(permissionsProvider);
-                              if (!permissions.isAdmin) return const SizedBox.shrink();
-                              
+                              final permissions =
+                                  ref.watch(permissionsProvider);
+                              if (!permissions.isAdmin)
+                                return const SizedBox.shrink();
+
                               return Container(
                                 margin: const EdgeInsets.only(right: 8),
                                 child: Material(
@@ -412,7 +457,8 @@ class EventBannerCard extends ConsumerWidget {
                           ),
                         if (event.isHighlighted)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [Colors.orange, Colors.deepOrange],
@@ -432,7 +478,7 @@ class EventBannerCard extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  
+
                   // Bottom content
                   Positioned(
                     bottom: 0,
@@ -463,13 +509,14 @@ class EventBannerCard extends ConsumerWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 8),
-                          
+
                           // Info row
                           Row(
                             children: [
                               // Date & Time
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.15),
                                   borderRadius: BorderRadius.circular(8),
@@ -484,7 +531,8 @@ class EventBannerCard extends ConsumerWidget {
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      DateFormat('MMM d, h:mm a').format(event.startTime),
+                                      DateFormat('MMM d, h:mm a')
+                                          .format(event.startTime),
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontSize: 12,
@@ -495,11 +543,12 @@ class EventBannerCard extends ConsumerWidget {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              
+
                               // Location
                               Expanded(
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withOpacity(0.15),
                                     borderRadius: BorderRadius.circular(8),
@@ -528,50 +577,75 @@ class EventBannerCard extends ConsumerWidget {
                                   ),
                                 ),
                               ),
-                              
+
                               // Sign up button if needed
                               if (event.requiresSignup) ...[
                                 const SizedBox(width: 8),
                                 Consumer(
                                   builder: (context, ref, child) {
-                                    final isSignedUp = event.type == EventType.hangout
-                                        ? ref.watch(hangoutJoinsProvider).joinedHangouts.contains(event.id)
-                                        : ref.watch(userSignedUpEventsProvider).contains(event.id);
-                                    final isFull = event.maxParticipants != null && 
-                                        event.currentParticipants >= event.maxParticipants!;
-                                    
-                                    return Container(
+                                    final isSignedUp = event.type ==
+                                            EventType.hangout
+                                        ? ref
+                                            .watch(hangoutJoinsProvider)
+                                            .joinedHangouts
+                                            .contains(event.id)
+                                        : ref
+                                            .watch(userSignedUpEventsProvider)
+                                            .contains(event.id);
+                                    final isFull =
+                                        event.maxParticipants != null &&
+                                            event.currentParticipants >=
+                                                event.maxParticipants!;
+
+                                    return SizedBox(
                                       height: 28,
                                       child: ElevatedButton(
-                                        onPressed: (isFull && !isSignedUp) ? null : () async {
-                                          if (event.type == EventType.hangout) {
-                                            if (isSignedUp) {
-                                              await ref.read(hangoutJoinsProvider.notifier).leaveHangout(event.id);
-                                            } else {
-                                              await ref.read(hangoutJoinsProvider.notifier).joinHangout(event.id);
-                                            }
-                                          } else {
-                                            await ref.read(eventsProvider.notifier).toggleEventSignUp(event.id, ref);
-                                          }
-                                        },
+                                        onPressed: (isFull && !isSignedUp)
+                                            ? null
+                                            : () async {
+                                                if (event.type ==
+                                                    EventType.hangout) {
+                                                  if (isSignedUp) {
+                                                    await ref
+                                                        .read(
+                                                            hangoutJoinsProvider
+                                                                .notifier)
+                                                        .leaveHangout(event.id);
+                                                  } else {
+                                                    await ref
+                                                        .read(
+                                                            hangoutJoinsProvider
+                                                                .notifier)
+                                                        .joinHangout(event.id);
+                                                  }
+                                                } else {
+                                                  await ref
+                                                      .read(eventsProvider
+                                                          .notifier)
+                                                      .toggleEventSignUp(
+                                                          event.id, ref);
+                                                }
+                                              },
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: isSignedUp 
+                                          backgroundColor: isSignedUp
                                               ? Colors.white.withOpacity(0.2)
                                               : Colors.white,
-                                          foregroundColor: isSignedUp 
+                                          foregroundColor: isSignedUp
                                               ? Colors.white
                                               : Theme.of(context).primaryColor,
-                                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 12),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(20),
+                                            borderRadius:
+                                                BorderRadius.circular(20),
                                           ),
                                         ),
                                         child: Text(
-                                          isFull && !isSignedUp 
-                                            ? 'Full'
-                                            : isSignedUp 
-                                              ? 'Joined'
-                                              : 'Join',
+                                          isFull && !isSignedUp
+                                              ? 'Full'
+                                              : isSignedUp
+                                                  ? 'Joined'
+                                                  : 'Join',
                                           style: TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.bold,
@@ -608,7 +682,7 @@ class EventListItem extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final eventTypeIcon = _getEventTypeIcon(event.type);
     final eventTypeColor = _getEventTypeColor(event.type, context);
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -647,7 +721,7 @@ class EventListItem extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                
+
                 // Middle - Event details
                 Expanded(
                   child: Column(
@@ -672,9 +746,11 @@ class EventListItem extends ConsumerWidget {
                           if (onEdit != null)
                             Consumer(
                               builder: (context, ref, child) {
-                                final permissions = ref.watch(permissionsProvider);
-                                if (!permissions.isAdmin) return const SizedBox.shrink();
-                                
+                                final permissions =
+                                    ref.watch(permissionsProvider);
+                                if (!permissions.isAdmin)
+                                  return const SizedBox.shrink();
+
                                 return Container(
                                   margin: const EdgeInsets.only(left: 4),
                                   child: Material(
@@ -698,7 +774,8 @@ class EventListItem extends ConsumerWidget {
                           if (event.isHighlighted)
                             Container(
                               margin: const EdgeInsets.only(left: 8),
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [Colors.orange, Colors.deepOrange],
@@ -717,7 +794,7 @@ class EventListItem extends ConsumerWidget {
                         ],
                       ),
                       const SizedBox(height: 6),
-                      
+
                       // Description
                       Text(
                         event.description,
@@ -730,7 +807,7 @@ class EventListItem extends ConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 10),
-                      
+
                       // Time and location chips
                       Wrap(
                         spacing: 8,
@@ -738,7 +815,8 @@ class EventListItem extends ConsumerWidget {
                         children: [
                           // Time chip
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: Colors.blue.withOpacity(0.08),
                               borderRadius: BorderRadius.circular(8),
@@ -763,10 +841,11 @@ class EventListItem extends ConsumerWidget {
                               ],
                             ),
                           ),
-                          
+
                           // Location chip
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: Colors.green.withOpacity(0.08),
                               borderRadius: BorderRadius.circular(8),
@@ -797,7 +876,7 @@ class EventListItem extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      
+
                       // Sign up section if needed
                       if (event.requiresSignup) ...[
                         const SizedBox(height: 12),
@@ -830,10 +909,13 @@ class EventListItem extends ConsumerWidget {
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(4),
                                       child: LinearProgressIndicator(
-                                        value: event.currentParticipants / event.maxParticipants!,
+                                        value: event.currentParticipants /
+                                            event.maxParticipants!,
                                         backgroundColor: Colors.grey[200],
-                                        valueColor: AlwaysStoppedAnimation<Color>(
-                                          event.currentParticipants >= event.maxParticipants!
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                          event.currentParticipants >=
+                                                  event.maxParticipants!
                                               ? Colors.red
                                               : Theme.of(context).primaryColor,
                                         ),
@@ -847,73 +929,106 @@ class EventListItem extends ConsumerWidget {
                             ],
                             Consumer(
                               builder: (context, ref, child) {
-                                final isSignedUp = event.type == EventType.hangout
-                                    ? ref.watch(hangoutJoinsProvider).joinedHangouts.contains(event.id)
-                                    : ref.watch(userSignedUpEventsProvider).contains(event.id);
-                                final isFull = event.maxParticipants != null && 
-                                    event.currentParticipants >= event.maxParticipants!;
-                                
+                                final isSignedUp =
+                                    event.type == EventType.hangout
+                                        ? ref
+                                            .watch(hangoutJoinsProvider)
+                                            .joinedHangouts
+                                            .contains(event.id)
+                                        : ref
+                                            .watch(userSignedUpEventsProvider)
+                                            .contains(event.id);
+                                final isFull = event.maxParticipants != null &&
+                                    event.currentParticipants >=
+                                        event.maxParticipants!;
+
                                 return Material(
                                   color: Colors.transparent,
                                   child: InkWell(
-                                    onTap: (isFull && !isSignedUp) ? null : () async {
-                                      if (event.type == EventType.hangout) {
-                                        if (isSignedUp) {
-                                          await ref.read(hangoutJoinsProvider.notifier).leaveHangout(event.id);
-                                        } else {
-                                          await ref.read(hangoutJoinsProvider.notifier).joinHangout(event.id);
-                                        }
-                                      } else {
-                                        await ref.read(eventsProvider.notifier).toggleEventSignUp(event.id, ref);
-                                      }
-                                      if (context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              event.type == EventType.hangout
-                                                ? (isSignedUp ? 'Left ${event.title}' : 'Joined ${event.title}!')
-                                                : (isSignedUp ? 'Cancelled registration' : 'Successfully registered!')
-                                            ),
-                                            backgroundColor: isSignedUp ? Colors.orange : Colors.green,
-                                            behavior: SnackBarBehavior.floating,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(10),
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    },
+                                    onTap: (isFull && !isSignedUp)
+                                        ? null
+                                        : () async {
+                                            if (event.type ==
+                                                EventType.hangout) {
+                                              if (isSignedUp) {
+                                                await ref
+                                                    .read(hangoutJoinsProvider
+                                                        .notifier)
+                                                    .leaveHangout(event.id);
+                                              } else {
+                                                await ref
+                                                    .read(hangoutJoinsProvider
+                                                        .notifier)
+                                                    .joinHangout(event.id);
+                                              }
+                                            } else {
+                                              await ref
+                                                  .read(eventsProvider.notifier)
+                                                  .toggleEventSignUp(
+                                                      event.id, ref);
+                                            }
+                                            if (context.mounted) {
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                  content: Text(event.type ==
+                                                          EventType.hangout
+                                                      ? (isSignedUp
+                                                          ? 'Left ${event.title}'
+                                                          : 'Joined ${event.title}!')
+                                                      : (isSignedUp
+                                                          ? 'Cancelled registration'
+                                                          : 'Successfully registered!')),
+                                                  backgroundColor: isSignedUp
+                                                      ? Colors.orange
+                                                      : Colors.green,
+                                                  behavior:
+                                                      SnackBarBehavior.floating,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            10),
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                          },
                                     borderRadius: BorderRadius.circular(12),
                                     child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 8),
                                       decoration: BoxDecoration(
                                         color: isFull && !isSignedUp
                                             ? Colors.grey[300]
-                                            : isSignedUp 
+                                            : isSignedUp
                                                 ? Colors.orange.withOpacity(0.1)
-                                                : Theme.of(context).primaryColor.withOpacity(0.1),
+                                                : Theme.of(context)
+                                                    .primaryColor
+                                                    .withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(
                                           color: isFull && !isSignedUp
                                               ? Colors.grey[400]!
                                               : isSignedUp
                                                   ? Colors.orange
-                                                  : Theme.of(context).primaryColor,
+                                                  : Theme.of(context)
+                                                      .primaryColor,
                                           width: 1.5,
                                         ),
                                       ),
                                       child: Text(
-                                        isFull && !isSignedUp 
-                                          ? 'Full'
-                                          : isSignedUp 
-                                            ? 'Cancel'
-                                            : 'Join',
+                                        isFull && !isSignedUp
+                                            ? 'Full'
+                                            : isSignedUp
+                                                ? 'Cancel'
+                                                : 'Join',
                                         style: TextStyle(
                                           color: isFull && !isSignedUp
                                               ? Colors.grey[600]
                                               : isSignedUp
                                                   ? Colors.orange
-                                                  : Theme.of(context).primaryColor,
+                                                  : Theme.of(context)
+                                                      .primaryColor,
                                           fontSize: 13,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -949,8 +1064,6 @@ class EventListItem extends ConsumerWidget {
         return Icons.star;
       case EventType.training:
         return Icons.school;
-      default:
-        return Icons.event;
     }
   }
 
@@ -966,8 +1079,6 @@ class EventListItem extends ConsumerWidget {
         return Colors.red;
       case EventType.training:
         return Colors.green;
-      default:
-        return Theme.of(context).primaryColor;
     }
   }
 }

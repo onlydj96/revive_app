@@ -12,7 +12,7 @@ class MediaDetailScreen extends ConsumerStatefulWidget {
   final String? folderId;
 
   const MediaDetailScreen({
-    super.key, 
+    super.key,
     required this.mediaId,
     this.folderId,
   });
@@ -140,7 +140,8 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
             right: 0,
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(15),
@@ -166,18 +167,25 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
               FloatingActionButton(
                 heroTag: "collect",
                 mini: true,
-                backgroundColor: (currentIndex < mediaItems.length && mediaItems[currentIndex].isCollected)
-                    ? Colors.red 
+                backgroundColor: (currentIndex < mediaItems.length &&
+                        mediaItems[currentIndex].isCollected)
+                    ? Colors.red
                     : Colors.white.withOpacity(0.9),
-                onPressed: currentIndex < mediaItems.length ? () {
-                  ref.read(mediaProvider.notifier).toggleCollection(mediaItems[currentIndex].id);
-                } : null,
+                onPressed: currentIndex < mediaItems.length
+                    ? () {
+                        ref
+                            .read(mediaProvider.notifier)
+                            .toggleCollection(mediaItems[currentIndex].id);
+                      }
+                    : null,
                 child: Icon(
-                  (currentIndex < mediaItems.length && mediaItems[currentIndex].isCollected)
-                      ? Icons.favorite 
+                  (currentIndex < mediaItems.length &&
+                          mediaItems[currentIndex].isCollected)
+                      ? Icons.favorite
                       : Icons.favorite_border,
-                  color: (currentIndex < mediaItems.length && mediaItems[currentIndex].isCollected)
-                      ? Colors.white 
+                  color: (currentIndex < mediaItems.length &&
+                          mediaItems[currentIndex].isCollected)
+                      ? Colors.white
                       : Colors.red,
                 ),
               ),
@@ -189,7 +197,8 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                 onPressed: () {
                   // TODO: Implement share functionality
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Share functionality coming soon!')),
+                    const SnackBar(
+                        content: Text('Share functionality coming soon!')),
                   );
                 },
                 child: const Icon(Icons.share, color: Colors.grey),
@@ -201,7 +210,8 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
     );
   }
 
-  Widget _buildMediaDetail(BuildContext context, WidgetRef ref, MediaItem mediaItem) {
+  Widget _buildMediaDetail(
+      BuildContext context, WidgetRef ref, MediaItem mediaItem) {
     return Stack(
       children: [
         // Background media
@@ -209,7 +219,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
           _buildPhotoView(mediaItem)
         else
           _buildVideoView(mediaItem),
-        
+
         // Content overlay
         Positioned(
           bottom: 0,
@@ -254,7 +264,9 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                 Row(
                   children: [
                     Icon(
-                      mediaItem.type == MediaType.photo ? Icons.photo : Icons.videocam,
+                      mediaItem.type == MediaType.photo
+                          ? Icons.photo
+                          : Icons.videocam,
                       color: Colors.white70,
                       size: 16,
                     ),
@@ -317,14 +329,16 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                   Wrap(
                     spacing: 8,
                     runSpacing: 4,
-                    children: mediaItem.tags.map((tag) => Chip(
-                      label: Text(
-                        tag,
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      backgroundColor: Colors.white.withOpacity(0.2),
-                      labelStyle: const TextStyle(color: Colors.white),
-                    )).toList(),
+                    children: mediaItem.tags
+                        .map((tag) => Chip(
+                              label: Text(
+                                tag,
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              backgroundColor: Colors.white.withOpacity(0.2),
+                              labelStyle: const TextStyle(color: Colors.white),
+                            ))
+                        .toList(),
                   ),
                 ],
               ],

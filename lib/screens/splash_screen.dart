@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../services/supabase_service.dart';
-import '../services/storage_service.dart';
 import '../router/app_router.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -23,12 +22,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   void initState() {
     super.initState();
-    
+
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
-    
+
     _scaleController = AnimationController(
       duration: const Duration(milliseconds: 1200),
       vsync: this,
@@ -63,10 +62,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     try {
       // Initialize Supabase
       await SupabaseService.initialize();
-      
+
       // Wait for minimum splash duration
       await Future.delayed(const Duration(milliseconds: 2500));
-      
+
       if (mounted) {
         _navigateToNextScreen();
       }
@@ -80,10 +79,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   void _navigateToNextScreen() {
     final authState = ref.read(authProvider);
-    
+
     // Notify router that initialization is complete
     routerNotifier.notify();
-    
+
     if (authState.isAuthenticated) {
       context.go('/home');
     } else {
@@ -164,30 +163,30 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   );
                 },
               ),
-              
               const SizedBox(height: 80),
-              
               FadeTransition(
                 opacity: _fadeAnimation,
                 child: SizedBox(
                   width: 40,
                   height: 40,
                   child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.onPrimary),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                        Theme.of(context).colorScheme.onPrimary),
                     strokeWidth: 3,
                   ),
                 ),
               ),
-              
               const SizedBox(height: 20),
-              
               FadeTransition(
                 opacity: _fadeAnimation,
                 child: Text(
                   'Initializing...',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.8),
-                  ),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withOpacity(0.8),
+                      ),
                 ),
               ),
             ],

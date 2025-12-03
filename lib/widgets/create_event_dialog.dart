@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/event.dart';
@@ -15,16 +14,25 @@ class CreateEventDialog extends StatefulWidget {
   State<CreateEventDialog> createState() => _CreateEventDialogState();
 }
 
-class _CreateEventDialogState extends State<CreateEventDialog> with SingleTickerProviderStateMixin {
+class _CreateEventDialogState extends State<CreateEventDialog>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _formKey = GlobalKey<FormState>();
-  
+
   // Controllers
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _locationController = TextEditingController();
   final _maxParticipantsController = TextEditingController();
-  
+
+  // Focus nodes for auto-scroll
+  final _titleFocus = FocusNode();
+  final _descriptionFocus = FocusNode();
+  final _locationFocus = FocusNode();
+
+  // Scroll controller
+  final _scrollController = ScrollController();
+
   // State variables
   File? _selectedImage;
   String? _uploadedImageUrl;
@@ -34,8 +42,9 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
   DateTime _startDate = DateTime.now();
   TimeOfDay _startTime = TimeOfDay.now();
   DateTime _endDate = DateTime.now();
-  TimeOfDay _endTime = TimeOfDay(hour: TimeOfDay.now().hour + 1, minute: TimeOfDay.now().minute);
-  
+  TimeOfDay _endTime =
+      TimeOfDay(hour: TimeOfDay.now().hour + 1, minute: TimeOfDay.now().minute);
+
   EventType _selectedType = EventType.service;
   bool _isHighlighted = false;
   bool _requiresSignup = false;
@@ -53,6 +62,10 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
     _descriptionController.dispose();
     _locationController.dispose();
     _maxParticipantsController.dispose();
+    _titleFocus.dispose();
+    _descriptionFocus.dispose();
+    _locationFocus.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -126,7 +139,8 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
                     Theme.of(context).primaryColor.withOpacity(0.8),
                   ],
                 ),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: Column(
                 children: [
@@ -187,7 +201,7 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
                 ],
               ),
             ),
-            
+
             // Form Content with Steps
             Expanded(
               child: Form(
@@ -205,13 +219,14 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
                 ),
               ),
             ),
-            
+
             // Modern Action Bar
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: Colors.grey[50],
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+                borderRadius:
+                    const BorderRadius.vertical(bottom: Radius.circular(24)),
               ),
               child: Row(
                 children: [
@@ -239,7 +254,8 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
                       label: const Text('Next'),
                       style: FilledButton.styleFrom(
                         backgroundColor: Theme.of(context).primaryColor,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -254,14 +270,17 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
                               height: 16,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
                           : const Icon(Icons.check),
-                      label: Text(_isUploading ? 'Creating...' : 'Create Event'),
+                      label:
+                          Text(_isUploading ? 'Creating...' : 'Create Event'),
                       style: FilledButton.styleFrom(
                         backgroundColor: Colors.green,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -280,7 +299,7 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
   Widget _buildStepIndicator(int step, String label) {
     final isActive = _currentStep >= step;
     final isCompleted = _currentStep > step;
-    
+
     return Expanded(
       child: Column(
         children: [
@@ -305,8 +324,8 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
                   : Text(
                       '${step + 1}',
                       style: TextStyle(
-                        color: isActive 
-                            ? Theme.of(context).primaryColor 
+                        color: isActive
+                            ? Theme.of(context).primaryColor
                             : Colors.white.withOpacity(0.5),
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
@@ -332,16 +351,16 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
     return Container(
       height: 2,
       width: 40,
-      color: _currentStep > step 
-          ? Colors.white 
-          : Colors.white.withOpacity(0.3),
+      color: _currentStep > step ? Colors.white : Colors.white.withOpacity(0.3),
     );
   }
 
   Widget _buildBasicInfoStep() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
+    return SafeArea(
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        padding: const EdgeInsets.all(20),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Event Type Selection
@@ -382,12 +401,12 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
                             vertical: 12,
                           ),
                           decoration: BoxDecoration(
-                            color: isSelected 
+                            color: isSelected
                                 ? _getEventTypeColor(type).withOpacity(0.1)
                                 : Colors.white,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: isSelected 
+                              color: isSelected
                                   ? _getEventTypeColor(type)
                                   : Colors.grey[300]!,
                               width: isSelected ? 2 : 1,
@@ -397,7 +416,7 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
                             children: [
                               Icon(
                                 _getEventTypeIcon(type),
-                                color: isSelected 
+                                color: isSelected
                                     ? _getEventTypeColor(type)
                                     : Colors.grey[600],
                                 size: 24,
@@ -406,12 +425,12 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
                               Text(
                                 _getEventTypeLabel(type),
                                 style: TextStyle(
-                                  color: isSelected 
+                                  color: isSelected
                                       ? _getEventTypeColor(type)
                                       : Colors.grey[600],
                                   fontSize: 11,
-                                  fontWeight: isSelected 
-                                      ? FontWeight.bold 
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
                                       : FontWeight.normal,
                                 ),
                               ),
@@ -426,14 +445,16 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
             ),
           ),
           const SizedBox(height: 24),
-          
+
           // Event Title
           TextFormField(
             controller: _titleController,
+            focusNode: _titleFocus,
             decoration: InputDecoration(
-              labelText: 'Event Title',
+              labelText: 'Event Title *',
               hintText: 'Enter a catchy event title',
-              prefixIcon: Icon(Icons.title, color: Theme.of(context).primaryColor),
+              prefixIcon:
+                  Icon(Icons.title, color: Theme.of(context).primaryColor),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -453,14 +474,16 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
             },
           ),
           const SizedBox(height: 16),
-          
+
           // Description
           TextFormField(
             controller: _descriptionController,
+            focusNode: _descriptionFocus,
             decoration: InputDecoration(
-              labelText: 'Description',
+              labelText: 'Description *',
               hintText: 'What\'s this event about?',
-              prefixIcon: Icon(Icons.description, color: Theme.of(context).primaryColor),
+              prefixIcon: Icon(Icons.description,
+                  color: Theme.of(context).primaryColor),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -481,14 +504,16 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
             },
           ),
           const SizedBox(height: 16),
-          
+
           // Location
           TextFormField(
             controller: _locationController,
+            focusNode: _locationFocus,
             decoration: InputDecoration(
-              labelText: 'Location',
+              labelText: 'Location *',
               hintText: 'Where will it be held?',
-              prefixIcon: Icon(Icons.location_on, color: Theme.of(context).primaryColor),
+              prefixIcon: Icon(Icons.location_on,
+                  color: Theme.of(context).primaryColor),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -508,6 +533,7 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
             },
           ),
         ],
+      ),
       ),
     );
   }
@@ -557,7 +583,7 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.calendar_today, 
+                        Icon(Icons.calendar_today,
                             color: Theme.of(context).primaryColor, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
@@ -609,7 +635,7 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.access_time, 
+                        Icon(Icons.access_time,
                             color: Theme.of(context).primaryColor, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
@@ -641,7 +667,7 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
             ],
           ),
           const SizedBox(height: 24),
-          
+
           // End DateTime
           Text(
             'End Date & Time',
@@ -678,7 +704,7 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.calendar_today, 
+                        Icon(Icons.calendar_today,
                             color: Theme.of(context).primaryColor, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
@@ -730,7 +756,7 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.access_time, 
+                        Icon(Icons.access_time,
                             color: Theme.of(context).primaryColor, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
@@ -762,7 +788,7 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
             ],
           ),
           const SizedBox(height: 24),
-          
+
           // Duration Display
           Container(
             padding: const EdgeInsets.all(16),
@@ -833,7 +859,9 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).primaryColor.withOpacity(0.1),
+                              color: Theme.of(context)
+                                  .primaryColor
+                                  .withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Icon(
@@ -871,7 +899,8 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: IconButton(
-                              icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                              icon: const Icon(Icons.close,
+                                  color: Colors.white, size: 20),
                               onPressed: _removeImage,
                               padding: const EdgeInsets.all(4),
                             ),
@@ -889,7 +918,7 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
               ),
             ),
           const SizedBox(height: 24),
-          
+
           // Event Options
           Text(
             'Event Options',
@@ -900,7 +929,7 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
             ),
           ),
           const SizedBox(height: 12),
-          
+
           // Featured Event Toggle
           Container(
             decoration: BoxDecoration(
@@ -957,7 +986,7 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
             ),
           ),
           const SizedBox(height: 12),
-          
+
           // Requires Signup Toggle
           Container(
             decoration: BoxDecoration(
@@ -1016,7 +1045,7 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
               activeColor: Colors.blue,
             ),
           ),
-          
+
           // Max Participants (if signup required)
           if (_requiresSignup) ...[
             const SizedBox(height: 16),
@@ -1025,7 +1054,8 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
               decoration: InputDecoration(
                 labelText: 'Maximum Participants',
                 hintText: 'Leave empty for unlimited',
-                prefixIcon: Icon(Icons.group, color: Theme.of(context).primaryColor),
+                prefixIcon:
+                    Icon(Icons.group, color: Theme.of(context).primaryColor),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -1058,11 +1088,11 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
     final start = _combineDateTime(_startDate, _startTime);
     final end = _combineDateTime(_endDate, _endTime);
     final duration = end.difference(start);
-    
+
     if (duration.isNegative) {
       return 'Invalid duration';
     }
-    
+
     if (duration.inDays > 0) {
       return '${duration.inDays} day${duration.inDays > 1 ? 's' : ''} ${duration.inHours % 24} hour${duration.inHours % 24 != 1 ? 's' : ''}';
     } else if (duration.inHours > 0) {
@@ -1076,18 +1106,36 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
     switch (_currentStep) {
       case 0:
         if (_titleController.text.isEmpty) {
+          _titleFocus.requestFocus();
+          _scrollController.animateTo(
+            0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Please enter event title')),
           );
           return false;
         }
         if (_descriptionController.text.isEmpty) {
+          _descriptionFocus.requestFocus();
+          _scrollController.animateTo(
+            100,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Please enter event description')),
           );
           return false;
         }
         if (_locationController.text.isEmpty) {
+          _locationFocus.requestFocus();
+          _scrollController.animateTo(
+            200,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Please enter event location')),
           );
@@ -1166,7 +1214,7 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
       setState(() {
         _isUploading = true;
       });
-      
+
       try {
         final tempEventId = DateTime.now().millisecondsSinceEpoch.toString();
         imageUrl = await StorageService.uploadEventImage(
@@ -1187,7 +1235,7 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
         });
         return;
       }
-      
+
       setState(() {
         _isUploading = false;
       });
@@ -1204,9 +1252,10 @@ class _CreateEventDialogState extends State<CreateEventDialog> with SingleTicker
       imageUrl: imageUrl ?? _uploadedImageUrl,
       isHighlighted: _isHighlighted,
       requiresSignup: _requiresSignup,
-      maxParticipants: _requiresSignup && _maxParticipantsController.text.isNotEmpty
-          ? int.tryParse(_maxParticipantsController.text)
-          : null,
+      maxParticipants:
+          _requiresSignup && _maxParticipantsController.text.isNotEmpty
+              ? int.tryParse(_maxParticipantsController.text)
+              : null,
       currentParticipants: 0,
     );
 

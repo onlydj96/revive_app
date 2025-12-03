@@ -1,0 +1,2 @@
+C:/workspace/mobile/revive_app/android/app/.cxx/RelWithDebInfo/673s6m4r/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/workspace/mobile/revive_app/android/app/.cxx/RelWithDebInfo/673s6m4r/arm64-v8a/CMakeFiles/rebuild_cache.dir

@@ -8,10 +8,12 @@ class AdminUserManagementScreen extends ConsumerStatefulWidget {
   const AdminUserManagementScreen({super.key});
 
   @override
-  ConsumerState<AdminUserManagementScreen> createState() => _AdminUserManagementScreenState();
+  ConsumerState<AdminUserManagementScreen> createState() =>
+      _AdminUserManagementScreenState();
 }
 
-class _AdminUserManagementScreenState extends ConsumerState<AdminUserManagementScreen> {
+class _AdminUserManagementScreenState
+    extends ConsumerState<AdminUserManagementScreen> {
   List<Map<String, dynamic>> _users = [];
   bool _isLoading = true;
   String _searchQuery = '';
@@ -27,9 +29,10 @@ class _AdminUserManagementScreenState extends ConsumerState<AdminUserManagementS
       setState(() {
         _isLoading = true;
       });
-      
-      final users = await DatabaseService.getAll('user_profiles', orderBy: 'full_name');
-      
+
+      final users =
+          await DatabaseService.getAll('user_profiles', orderBy: 'full_name');
+
       setState(() {
         _users = users;
         _isLoading = false;
@@ -38,7 +41,7 @@ class _AdminUserManagementScreenState extends ConsumerState<AdminUserManagementS
       setState(() {
         _isLoading = false;
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to load users: $e')),
@@ -51,12 +54,12 @@ class _AdminUserManagementScreenState extends ConsumerState<AdminUserManagementS
     if (_searchQuery.isEmpty) {
       return _users;
     }
-    
+
     return _users.where((user) {
       final name = (user['full_name'] as String? ?? '').toLowerCase();
       final email = (user['email'] as String? ?? '').toLowerCase();
       final query = _searchQuery.toLowerCase();
-      
+
       return name.contains(query) || email.contains(query);
     }).toList();
   }
@@ -64,7 +67,7 @@ class _AdminUserManagementScreenState extends ConsumerState<AdminUserManagementS
   @override
   Widget build(BuildContext context) {
     final permissions = ref.watch(permissionsProvider);
-    
+
     if (!permissions.canManageUsers) {
       return Scaffold(
         appBar: AppBar(title: const Text('Access Denied')),
@@ -105,7 +108,6 @@ class _AdminUserManagementScreenState extends ConsumerState<AdminUserManagementS
               },
             ),
           ),
-          
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -135,7 +137,7 @@ class _AdminUserManagementScreenState extends ConsumerState<AdminUserManagementS
     try {
       await ref.read(userProvider.notifier).updateUserRole(userId, newRole);
       await _loadUsers(); // Refresh the list
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('User role updated successfully')),
@@ -165,7 +167,7 @@ class UserListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final role = user['role'] as String? ?? 'member';
     final isAdmin = role == 'admin';
-    
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: ListTile(
@@ -181,7 +183,6 @@ class UserListTile extends StatelessWidget {
                 )
               : null,
         ),
-        
         title: Text(
           user['full_name'] as String? ?? 'Unknown User',
           style: TextStyle(
@@ -189,7 +190,6 @@ class UserListTile extends StatelessWidget {
             color: isAdmin ? Colors.purple[800] : null,
           ),
         ),
-        
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -212,7 +212,6 @@ class UserListTile extends StatelessWidget {
             ),
           ],
         ),
-        
         trailing: PopupMenuButton<String>(
           onSelected: (value) {
             if (value != role) {
@@ -233,7 +232,9 @@ class UserListTile extends StatelessWidget {
                   Text(
                     'Member',
                     style: TextStyle(
-                      fontWeight: role == 'member' ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: role == 'member'
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                       color: role == 'member' ? Colors.blue : null,
                     ),
                   ),
@@ -257,7 +258,8 @@ class UserListTile extends StatelessWidget {
                   Text(
                     'Admin',
                     style: TextStyle(
-                      fontWeight: role == 'admin' ? FontWeight.bold : FontWeight.normal,
+                      fontWeight:
+                          role == 'admin' ? FontWeight.bold : FontWeight.normal,
                       color: role == 'admin' ? Colors.purple : null,
                     ),
                   ),
@@ -270,20 +272,21 @@ class UserListTile extends StatelessWidget {
             ),
           ],
         ),
-        
         isThreeLine: true,
       ),
     );
   }
 
-  void _showRoleChangeDialog(BuildContext context, Map<String, dynamic> user, String newRole) {
+  void _showRoleChangeDialog(
+      BuildContext context, Map<String, dynamic> user, String newRole) {
     final userName = user['full_name'] as String? ?? 'Unknown User';
     final isPromotingToAdmin = newRole == 'admin';
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(isPromotingToAdmin ? 'Promote to Admin' : 'Change to Member'),
+        title:
+            Text(isPromotingToAdmin ? 'Promote to Admin' : 'Change to Member'),
         content: Text(
           isPromotingToAdmin
               ? 'Are you sure you want to promote "$userName" to Administrator? They will have full access to create, edit, and delete content.'

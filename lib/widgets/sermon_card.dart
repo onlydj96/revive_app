@@ -19,7 +19,8 @@ class SermonCard extends StatelessWidget {
           children: [
             if (sermon.thumbnailUrl != null)
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(12)),
                 child: Stack(
                   children: [
                     Container(
@@ -41,17 +42,19 @@ class SermonCard extends StatelessWidget {
                       top: 8,
                       right: 8,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.7),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           'LAST WEEK',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                         ),
                       ),
                     ),
@@ -67,7 +70,6 @@ class SermonCard extends StatelessWidget {
                   ],
                 ),
               ),
-            
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -78,30 +80,29 @@ class SermonCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           'Last Week\'s Sermon',
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color: Theme.of(context).primaryColor,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.labelMedium?.copyWith(
+                                    color: Theme.of(context).primaryColor,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                         ),
                       ),
                       Text(
                         DateFormat('MMM d').format(sermon.date),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
-                        ),
+                              color: Colors.grey[600],
+                            ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  
                   Text(
                     sermon.title,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 8),
-                  
                   Row(
                     children: [
                       Icon(
@@ -113,8 +114,8 @@ class SermonCard extends StatelessWidget {
                       Text(
                         sermon.speaker,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[600],
-                        ),
+                              color: Colors.grey[600],
+                            ),
                       ),
                       const SizedBox(width: 16),
                       Icon(
@@ -126,22 +127,24 @@ class SermonCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           sermon.biblePassage,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Colors.grey[600],
+                                  ),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  
                   Row(
                     children: [
                       if (sermon.audioUrl != null) ...[
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).primaryColor.withOpacity(0.1),
+                            color:
+                                Theme.of(context).primaryColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
@@ -155,10 +158,13 @@ class SermonCard extends StatelessWidget {
                               const SizedBox(width: 4),
                               Text(
                                 'Audio',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).primaryColor,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(context).primaryColor,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                               ),
                             ],
                           ),
@@ -167,9 +173,11 @@ class SermonCard extends StatelessWidget {
                       ],
                       if (sermon.videoUrl != null) ...[
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).primaryColor.withOpacity(0.1),
+                            color:
+                                Theme.of(context).primaryColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
@@ -183,10 +191,13 @@ class SermonCard extends StatelessWidget {
                               const SizedBox(width: 4),
                               Text(
                                 'Video',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).primaryColor,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(context).primaryColor,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                               ),
                             ],
                           ),
@@ -195,9 +206,11 @@ class SermonCard extends StatelessWidget {
                       ],
                       if (sermon.transcript != null)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).primaryColor.withOpacity(0.1),
+                            color:
+                                Theme.of(context).primaryColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
@@ -211,10 +224,13 @@ class SermonCard extends StatelessWidget {
                               const SizedBox(width: 4),
                               Text(
                                 'Text',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).primaryColor,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(context).primaryColor,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                               ),
                             ],
                           ),

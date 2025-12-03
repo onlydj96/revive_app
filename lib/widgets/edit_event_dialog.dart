@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/event.dart';
@@ -20,16 +19,17 @@ class EditEventDialog extends StatefulWidget {
   State<EditEventDialog> createState() => _EditEventDialogState();
 }
 
-class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProviderStateMixin {
+class _EditEventDialogState extends State<EditEventDialog>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _formKey = GlobalKey<FormState>();
-  
+
   // Controllers
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _locationController = TextEditingController();
   final _maxParticipantsController = TextEditingController();
-  
+
   // State variables
   File? _selectedImage;
   String? _uploadedImageUrl;
@@ -39,8 +39,9 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
   DateTime _startDate = DateTime.now();
   TimeOfDay _startTime = TimeOfDay.now();
   DateTime _endDate = DateTime.now();
-  TimeOfDay _endTime = TimeOfDay(hour: TimeOfDay.now().hour + 1, minute: TimeOfDay.now().minute);
-  
+  TimeOfDay _endTime =
+      TimeOfDay(hour: TimeOfDay.now().hour + 1, minute: TimeOfDay.now().minute);
+
   EventType _selectedType = EventType.service;
   bool _isHighlighted = false;
   bool _requiresSignup = false;
@@ -49,7 +50,7 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    
+
     // Initialize with existing event data
     _titleController.text = widget.event.title;
     _descriptionController.text = widget.event.description;
@@ -58,11 +59,11 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
     _isHighlighted = widget.event.isHighlighted;
     _requiresSignup = widget.event.requiresSignup;
     _uploadedImageUrl = widget.event.imageUrl;
-    
+
     if (widget.event.maxParticipants != null) {
       _maxParticipantsController.text = widget.event.maxParticipants.toString();
     }
-    
+
     _startDate = DateTime(
       widget.event.startTime.year,
       widget.event.startTime.month,
@@ -72,7 +73,7 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
       hour: widget.event.startTime.hour,
       minute: widget.event.startTime.minute,
     );
-    
+
     _endDate = DateTime(
       widget.event.endTime.year,
       widget.event.endTime.month,
@@ -164,7 +165,8 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
                     Theme.of(context).primaryColor.withOpacity(0.8),
                   ],
                 ),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: Column(
                 children: [
@@ -225,7 +227,7 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
                 ],
               ),
             ),
-            
+
             // Form Content with Steps
             Expanded(
               child: Form(
@@ -243,13 +245,14 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
                 ),
               ),
             ),
-            
+
             // Modern Action Bar
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: Colors.grey[50],
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+                borderRadius:
+                    const BorderRadius.vertical(bottom: Radius.circular(24)),
               ),
               child: Row(
                 children: [
@@ -277,7 +280,8 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
                       label: const Text('Next'),
                       style: FilledButton.styleFrom(
                         backgroundColor: Theme.of(context).primaryColor,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -292,14 +296,17 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
                               height: 16,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
                           : const Icon(Icons.check),
-                      label: Text(_isUploading ? 'Updating...' : 'Update Event'),
+                      label:
+                          Text(_isUploading ? 'Updating...' : 'Update Event'),
                       style: FilledButton.styleFrom(
                         backgroundColor: Colors.green,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -318,7 +325,7 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
   Widget _buildStepIndicator(int step, String label) {
     final isActive = _currentStep >= step;
     final isCompleted = _currentStep > step;
-    
+
     return Expanded(
       child: Column(
         children: [
@@ -343,8 +350,8 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
                   : Text(
                       '${step + 1}',
                       style: TextStyle(
-                        color: isActive 
-                            ? Theme.of(context).primaryColor 
+                        color: isActive
+                            ? Theme.of(context).primaryColor
                             : Colors.white.withOpacity(0.5),
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
@@ -370,16 +377,15 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
     return Container(
       height: 2,
       width: 40,
-      color: _currentStep > step 
-          ? Colors.white 
-          : Colors.white.withOpacity(0.3),
+      color: _currentStep > step ? Colors.white : Colors.white.withOpacity(0.3),
     );
   }
 
   Widget _buildBasicInfoStep() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Event Type Selection
@@ -420,12 +426,12 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
                             vertical: 12,
                           ),
                           decoration: BoxDecoration(
-                            color: isSelected 
+                            color: isSelected
                                 ? _getEventTypeColor(type).withOpacity(0.1)
                                 : Colors.white,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: isSelected 
+                              color: isSelected
                                   ? _getEventTypeColor(type)
                                   : Colors.grey[300]!,
                               width: isSelected ? 2 : 1,
@@ -435,7 +441,7 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
                             children: [
                               Icon(
                                 _getEventTypeIcon(type),
-                                color: isSelected 
+                                color: isSelected
                                     ? _getEventTypeColor(type)
                                     : Colors.grey[600],
                                 size: 24,
@@ -444,12 +450,12 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
                               Text(
                                 _getEventTypeLabel(type),
                                 style: TextStyle(
-                                  color: isSelected 
+                                  color: isSelected
                                       ? _getEventTypeColor(type)
                                       : Colors.grey[600],
                                   fontSize: 11,
-                                  fontWeight: isSelected 
-                                      ? FontWeight.bold 
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
                                       : FontWeight.normal,
                                 ),
                               ),
@@ -464,14 +470,15 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
             ),
           ),
           const SizedBox(height: 24),
-          
+
           // Event Title
           TextFormField(
             controller: _titleController,
             decoration: InputDecoration(
-              labelText: 'Event Title',
+              labelText: 'Event Title *',
               hintText: 'Enter a catchy event title',
-              prefixIcon: Icon(Icons.title, color: Theme.of(context).primaryColor),
+              prefixIcon:
+                  Icon(Icons.title, color: Theme.of(context).primaryColor),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -491,14 +498,15 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
             },
           ),
           const SizedBox(height: 16),
-          
+
           // Description
           TextFormField(
             controller: _descriptionController,
             decoration: InputDecoration(
-              labelText: 'Description',
+              labelText: 'Description *',
               hintText: 'What\'s this event about?',
-              prefixIcon: Icon(Icons.description, color: Theme.of(context).primaryColor),
+              prefixIcon: Icon(Icons.description,
+                  color: Theme.of(context).primaryColor),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -519,14 +527,15 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
             },
           ),
           const SizedBox(height: 16),
-          
+
           // Location
           TextFormField(
             controller: _locationController,
             decoration: InputDecoration(
-              labelText: 'Location',
+              labelText: 'Location *',
               hintText: 'Where will it be held?',
-              prefixIcon: Icon(Icons.location_on, color: Theme.of(context).primaryColor),
+              prefixIcon: Icon(Icons.location_on,
+                  color: Theme.of(context).primaryColor),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -546,6 +555,7 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
             },
           ),
         ],
+      ),
       ),
     );
   }
@@ -595,7 +605,7 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.calendar_today, 
+                        Icon(Icons.calendar_today,
                             color: Theme.of(context).primaryColor, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
@@ -647,7 +657,7 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.access_time, 
+                        Icon(Icons.access_time,
                             color: Theme.of(context).primaryColor, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
@@ -679,7 +689,7 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
             ],
           ),
           const SizedBox(height: 24),
-          
+
           // End DateTime
           Text(
             'End Date & Time',
@@ -716,7 +726,7 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.calendar_today, 
+                        Icon(Icons.calendar_today,
                             color: Theme.of(context).primaryColor, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
@@ -768,7 +778,7 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.access_time, 
+                        Icon(Icons.access_time,
                             color: Theme.of(context).primaryColor, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
@@ -800,7 +810,7 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
             ],
           ),
           const SizedBox(height: 24),
-          
+
           // Duration Display
           Container(
             padding: const EdgeInsets.all(16),
@@ -861,9 +871,12 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
                         image: FileImage(_selectedImage!),
                         fit: BoxFit.cover,
                       )
-                    : _uploadedImageUrl != null
+                    : _uploadedImageUrl != null &&
+                            StorageService.getEventImageUrl(_uploadedImageUrl!) !=
+                                null
                         ? DecorationImage(
-                            image: NetworkImage(StorageService.getEventImageUrl(_uploadedImageUrl!)),
+                            image: NetworkImage(StorageService.getEventImageUrl(
+                                _uploadedImageUrl!)!),
                             fit: BoxFit.cover,
                           )
                         : null,
@@ -876,7 +889,9 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).primaryColor.withOpacity(0.1),
+                              color: Theme.of(context)
+                                  .primaryColor
+                                  .withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Icon(
@@ -914,7 +929,8 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: IconButton(
-                              icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                              icon: const Icon(Icons.close,
+                                  color: Colors.white, size: 20),
                               onPressed: _removeImage,
                               padding: const EdgeInsets.all(4),
                             ),
@@ -932,7 +948,7 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
               ),
             ),
           const SizedBox(height: 24),
-          
+
           // Event Options
           Text(
             'Event Options',
@@ -943,7 +959,7 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
             ),
           ),
           const SizedBox(height: 12),
-          
+
           // Featured Event Toggle
           Container(
             decoration: BoxDecoration(
@@ -1000,7 +1016,7 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
             ),
           ),
           const SizedBox(height: 12),
-          
+
           // Requires Signup Toggle
           Container(
             decoration: BoxDecoration(
@@ -1059,7 +1075,7 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
               activeColor: Colors.blue,
             ),
           ),
-          
+
           // Max Participants (if signup required)
           if (_requiresSignup) ...[
             const SizedBox(height: 16),
@@ -1068,7 +1084,8 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
               decoration: InputDecoration(
                 labelText: 'Maximum Participants',
                 hintText: 'Leave empty for unlimited',
-                prefixIcon: Icon(Icons.group, color: Theme.of(context).primaryColor),
+                prefixIcon:
+                    Icon(Icons.group, color: Theme.of(context).primaryColor),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -1105,11 +1122,11 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
     final start = _combineDateTime(_startDate, _startTime);
     final end = _combineDateTime(_endDate, _endTime);
     final duration = end.difference(start);
-    
+
     if (duration.isNegative) {
       return 'Invalid duration';
     }
-    
+
     if (duration.inDays > 0) {
       return '${duration.inDays} day${duration.inDays > 1 ? 's' : ''} ${duration.inHours % 24} hour${duration.inHours % 24 != 1 ? 's' : ''}';
     } else if (duration.inHours > 0) {
@@ -1213,7 +1230,7 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
       setState(() {
         _isUploading = true;
       });
-      
+
       try {
         imageUrl = await StorageService.uploadEventImage(
           eventId: widget.event.id,
@@ -1233,7 +1250,7 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
         });
         return;
       }
-      
+
       setState(() {
         _isUploading = false;
       });
@@ -1250,9 +1267,10 @@ class _EditEventDialogState extends State<EditEventDialog> with SingleTickerProv
       imageUrl: imageUrl,
       isHighlighted: _isHighlighted,
       requiresSignup: _requiresSignup,
-      maxParticipants: _requiresSignup && _maxParticipantsController.text.isNotEmpty
-          ? int.tryParse(_maxParticipantsController.text)
-          : null,
+      maxParticipants:
+          _requiresSignup && _maxParticipantsController.text.isNotEmpty
+              ? int.tryParse(_maxParticipantsController.text)
+              : null,
       currentParticipants: widget.event.currentParticipants,
     );
 
