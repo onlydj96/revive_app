@@ -68,9 +68,64 @@ final dialogStateProvider =
   (ref, dialogId) => DialogStateNotifier(),
 );
 
-// Convenience providers for backward compatibility
+// Create Folder Dialog State
+class CreateFolderDialogState {
+  final bool isLoading;
+  final XFile? thumbnail;
+  final String? thumbnailUrl;
+
+  const CreateFolderDialogState({
+    this.isLoading = false,
+    this.thumbnail,
+    this.thumbnailUrl,
+  });
+
+  CreateFolderDialogState copyWith({
+    bool? isLoading,
+    XFile? thumbnail,
+    String? thumbnailUrl,
+    bool clearThumbnail = false,
+  }) {
+    return CreateFolderDialogState(
+      isLoading: isLoading ?? this.isLoading,
+      thumbnail: clearThumbnail ? null : (thumbnail ?? this.thumbnail),
+      thumbnailUrl: clearThumbnail ? null : (thumbnailUrl ?? this.thumbnailUrl),
+    );
+  }
+}
+
+class CreateFolderDialogNotifier extends StateNotifier<CreateFolderDialogState> {
+  CreateFolderDialogNotifier() : super(const CreateFolderDialogState());
+
+  void setLoading(bool loading) {
+    state = state.copyWith(isLoading: loading);
+  }
+
+  void setThumbnail(XFile? file, String? url) {
+    state = state.copyWith(thumbnail: file, thumbnailUrl: url);
+  }
+
+  void clearThumbnail() {
+    state = state.copyWith(clearThumbnail: true);
+  }
+
+  void reset() {
+    state = const CreateFolderDialogState();
+  }
+}
+
+final createFolderDialogProvider =
+    StateNotifierProvider<CreateFolderDialogNotifier, CreateFolderDialogState>(
+  (ref) => CreateFolderDialogNotifier(),
+);
+
+// Deprecated: Use createFolderDialogProvider instead
+// Kept for backward compatibility during migration
+@Deprecated('Use createFolderDialogProvider instead')
 final createFolderLoadingProvider = StateProvider<bool>((ref) => false);
+@Deprecated('Use createFolderDialogProvider instead')
 final createFolderThumbnailProvider = StateProvider<XFile?>((ref) => null);
+@Deprecated('Use createFolderDialogProvider instead')
 final createFolderThumbnailUrlProvider = StateProvider<String?>((ref) => null);
 
 final uploadMediaLoadingProvider = StateProvider<bool>((ref) => false);

@@ -6,26 +6,60 @@ class SupabaseService {
   static SupabaseClient get client => Supabase.instance.client;
 
   static Future<void> initialize() async {
-    await Supabase.initialize(
-      url: SupabaseConfig.projectUrl,
-      anonKey: SupabaseConfig.projectAnonKey,
-      authOptions: const FlutterAuthClientOptions(
-        authFlowType: AuthFlowType.pkce,
-      ),
-      debug: kDebugMode,
-    );
-
-    // Clear invalid session if session recovery fails
-    // This handles cases where the project was paused or tokens expired
     try {
-      final session = client.auth.currentSession;
-      if (session != null) {
-        // Try to refresh the session to verify it's still valid
-        await client.auth.refreshSession();
+      print('🚀 [SUPABASE] Starting initialization...');
+      print('   URL: ${SupabaseConfig.projectUrl}');
+      print('   Anon Key: ${SupabaseConfig.projectAnonKey.substring(0, 20)}...');
+
+      await Supabase.initialize(
+        url: SupabaseConfig.projectUrl,
+        anonKey: SupabaseConfig.projectAnonKey,
+        authOptions: const FlutterAuthClientOptions(
+          authFlowType: AuthFlowType.pkce,
+        ),
+        debug: kDebugMode,
+      );
+
+      print('✅ [SUPABASE] Initialization successful');
+
+      // Clear invalid session if session recovery fails
+      // This handles cases where the project was paused or tokens expired
+      try {
+        final session = client.auth.currentSession;
+        if (session != null) {
+          print('🔄 [SUPABASE] Found existing session, attempting refresh...');
+          // Try to refresh the session to verify it's still valid
+          await client.auth.refreshSession();
+          print('✅ [SUPABASE] Session refresh successful');
+        } else {
+          print('ℹ️  [SUPABASE] No existing session found');
+        }
+      } on AuthException catch (e) {
+        // Auth-specific errors should clear the session
+        print('⚠️  [SUPABASE] Auth error during session refresh: ${e.message}');
+        print('   Status: ${e.statusCode}');
+
+        // Clear session only for auth-related errors (401, 403, invalid token, etc.)
+        if (e.statusCode == '401' ||
+            e.statusCode == '403' ||
+            e.message.toLowerCase().contains('invalid') ||
+            e.message.toLowerCase().contains('expired')) {
+          await client.auth.signOut();
+          print('🔄 [SUPABASE] Invalid session cleared');
+        } else {
+          // Other auth errors: log but keep session (might be temporary)
+          print('⚠️  [SUPABASE] Session refresh failed but keeping session for retry');
+        }
+      } catch (e) {
+        // Non-auth errors (network, timeout, etc.) should not clear session
+        print('⚠️  [SUPABASE] Network/system error during refresh: $e');
+        print('   Keeping session for retry when network recovers');
       }
-    } catch (e) {
-      // Clear the invalid session to allow fresh login
-      await client.auth.signOut();
+    } catch (e, stackTrace) {
+      print('❌ [SUPABASE] Initialization FAILED');
+      print('   Error: $e');
+      print('   Stack trace: $stackTrace');
+      rethrow;
     }
   }
 
@@ -39,10 +73,21 @@ class SupabaseService {
     required String email,
     required String password,
   }) async {
-    return await client.auth.signInWithPassword(
-      email: email,
-      password: password,
-    );
+    try {
+      print('🔗 [SUPABASE] Attempting connection to: ${SupabaseConfig.projectUrl}');
+      print('🔑 [SUPABASE] Using anon key: ${SupabaseConfig.projectAnonKey.substring(0, 20)}...');
+
+      final response = await client.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+
+      print('✅ [SUPABASE] Sign in request completed');
+      return response;
+    } catch (e) {
+      print('❌ [SUPABASE] Sign in error: $e');
+      rethrow;
+    }
   }
 
   static Future<AuthResponse> signUpWithEmail({

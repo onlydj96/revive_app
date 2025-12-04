@@ -40,10 +40,6 @@ class _CreateMediaFolderDialogState
     _nameController.dispose();
     _descriptionController.dispose();
     _folderPathController.dispose();
-    // Reset providers when dialog is closed
-    ref.read(createFolderLoadingProvider.notifier).state = false;
-    ref.read(createFolderThumbnailProvider.notifier).state = null;
-    ref.read(createFolderThumbnailUrlProvider.notifier).state = null;
     super.dispose();
   }
 
@@ -57,9 +53,10 @@ class _CreateMediaFolderDialogState
       );
 
       if (image != null) {
-        ref.read(createFolderThumbnailProvider.notifier).state = image;
-        ref.read(createFolderThumbnailUrlProvider.notifier).state =
-            image.path; // In real app, this would be uploaded to storage
+        ref.read(createFolderDialogProvider.notifier).setThumbnail(
+              image,
+              image.path, // In real app, this would be uploaded to storage
+            );
       }
     } catch (e) {
       if (mounted) {
@@ -91,7 +88,8 @@ class _CreateMediaFolderDialogState
   Future<void> _createFolder() async {
     if (!_formKey.currentState!.validate()) return;
 
-    ref.read(createFolderLoadingProvider.notifier).state = true;
+    final notifier = ref.read(createFolderDialogProvider.notifier);
+    notifier.setLoading(true);
 
     try {
       final name = _nameController.text.trim();
@@ -99,11 +97,13 @@ class _CreateMediaFolderDialogState
           ? null
           : _descriptionController.text.trim();
       final folderPath = _folderPathController.text.trim();
-      final thumbnailUrl = ref.read(createFolderThumbnailUrlProvider);
+      final thumbnailUrl = ref.read(createFolderDialogProvider).thumbnailUrl;
 
       await widget.onCreateFolder(name, description, folderPath, thumbnailUrl);
 
       if (mounted) {
+        // Reset state before closing dialog
+        notifier.reset();
         Navigator.of(context).pop();
       }
     } catch (e) {
@@ -114,25 +114,28 @@ class _CreateMediaFolderDialogState
       }
     } finally {
       if (mounted) {
-        ref.read(createFolderLoadingProvider.notifier).state = false;
+        notifier.setLoading(false);
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = ref.watch(createFolderLoadingProvider);
-    final selectedThumbnail = ref.watch(createFolderThumbnailProvider);
+    final dialogState = ref.watch(createFolderDialogProvider);
+    final isLoading = dialogState.isLoading;
+    final selectedThumbnail = dialogState.thumbnail;
 
     return AlertDialog(
       title: const Text('새 폴더 만들기'),
-      content: SafeArea(
-        child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+      content: SizedBox(
+        width: MediaQuery.of(context).size.width * 0.9,
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Form(
+              key: _formKey,
+              child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
               // Folder name field
               TextFormField(
                 controller: _nameController,
@@ -243,19 +246,14 @@ class _CreateMediaFolderDialogState
                               right: 4,
                               child: CircleAvatar(
                                 radius: 12,
-                                backgroundColor: Colors.red.withOpacity(0.8),
+                                backgroundColor: Colors.red.withValues(alpha: 0.8),
                                 child: IconButton(
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(),
                                   onPressed: () {
                                     ref
-                                        .read(createFolderThumbnailProvider
-                                            .notifier)
-                                        .state = null;
-                                    ref
-                                        .read(createFolderThumbnailUrlProvider
-                                            .notifier)
-                                        .state = null;
+                                        .read(createFolderDialogProvider.notifier)
+                                        .clearThumbnail();
                                   },
                                   icon: const Icon(
                                     Icons.close,
@@ -310,7 +308,7 @@ class _CreateMediaFolderDialogState
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
+                  color: Colors.blue.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -338,11 +336,18 @@ class _CreateMediaFolderDialogState
             ],
           ),
         ),
+          ),
         ),
       ),
       actions: [
         TextButton(
-          onPressed: isLoading ? null : () => Navigator.of(context).pop(),
+          onPressed: isLoading
+              ? null
+              : () {
+                  // Reset state before closing dialog
+                  ref.read(createFolderDialogProvider.notifier).reset();
+                  Navigator.of(context).pop();
+                },
           child: const Text('취소'),
         ),
         ElevatedButton(

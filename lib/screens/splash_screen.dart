@@ -60,17 +60,28 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   Future<void> _initializeApp() async {
     try {
-      // Initialize Supabase
-      await SupabaseService.initialize();
+      print('📱 [APP] Starting app initialization...');
 
-      // Wait for minimum splash duration
-      await Future.delayed(const Duration(milliseconds: 2500));
+      // Run initialization and minimum splash duration in parallel
+      // This ensures we show splash for at least animation duration
+      // but don't wait longer than necessary
+      await Future.wait([
+        SupabaseService.initialize(),
+        Future.delayed(const Duration(milliseconds: 1500)), // Minimum for animation
+      ]);
+
+      print('✅ [APP] Supabase initialized successfully');
 
       if (mounted) {
+        print('✅ [APP] Initialization complete, navigating...');
         _navigateToNextScreen();
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       // Handle initialization error
+      print('❌ [APP] Initialization failed');
+      print('   Error: $e');
+      print('   Stack trace: $stackTrace');
+
       if (mounted) {
         _showErrorAndRetry(e.toString());
       }
@@ -95,8 +106,51 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Initialization Error'),
-        content: Text('Failed to initialize app: $error'),
+        title: const Row(
+          children: [
+            Icon(Icons.error_outline, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Initialization Error'),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Failed to initialize app:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: SelectableText(
+                  error,
+                  style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Possible causes:',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                '• No internet connection\n'
+                '• Supabase project is paused\n'
+                '• Invalid API credentials\n'
+                '• Firewall/proxy blocking connection',
+                style: TextStyle(fontSize: 11),
+              ),
+            ],
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () {

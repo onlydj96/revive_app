@@ -32,6 +32,7 @@ class TeamMember {
       userEmail: json['user_email'] ?? json['users']?['email'],
       userAvatar: json['user_avatar'] ?? json['users']?['avatar_url'],
       joinedAt: DateTime.parse(json['applied_at'] ??
+          json['join_date'] ??
           json['joined_at'] ??
           DateTime.now().toIso8601String()),
       status: json['status'] ?? 'member',
@@ -52,7 +53,7 @@ final teamMembersProvider =
           user_name,
           role,
           status,
-          joined_at
+          join_date
         ''').eq('team_id', teamId).eq('status', 'active');
 
     final members = <TeamMember>[];
@@ -66,7 +67,7 @@ final teamMembersProvider =
         userName: membership['user_name'] ?? 'Unknown User',
         userEmail: null, // Not fetched from team_memberships
         userAvatar: null, // Not fetched from team_memberships
-        joinedAt: DateTime.parse(membership['joined_at'] ?? DateTime.now().toIso8601String()),
+        joinedAt: DateTime.parse(membership['join_date'] ?? DateTime.now().toIso8601String()),
         status: membership['status'] ?? 'active',
       ));
     }
@@ -90,27 +91,26 @@ class TeamMembershipNotifier extends StateNotifier<Map<String, bool>> {
         return;
       }
 
-      // Check team_memberships for actual membership
-      final membershipResponse = await SupabaseService.from('team_memberships')
-          .select('id')
-          .eq('team_id', teamId)
-          .eq('user_id', userId)
-          .eq('status', 'active');
+      // Optimize: Run both queries in parallel instead of sequentially
+      final results = await Future.wait([
+        SupabaseService.from('team_memberships')
+            .select('id')
+            .eq('team_id', teamId)
+            .eq('user_id', userId)
+            .eq('status', 'active'),
+        SupabaseService.from('team_applications')
+            .select('id')
+            .eq('team_id', teamId)
+            .eq('user_id', userId)
+            .eq('status', 'pending'),
+      ]);
 
-      if ((membershipResponse as List).isNotEmpty) {
-        state = {...state, teamId: true};
-        return;
-      }
+      final membershipResponse = results[0] as List;
+      final applicationResponse = results[1] as List;
 
-      // Also check team_applications for pending status
-      final applicationResponse =
-          await SupabaseService.from('team_applications')
-              .select('id')
-              .eq('team_id', teamId)
-              .eq('user_id', userId)
-              .eq('status', 'pending');
-
-      state = {...state, teamId: (applicationResponse as List).isNotEmpty};
+      // User is a member if they have active membership OR pending application
+      final isMember = membershipResponse.isNotEmpty || applicationResponse.isNotEmpty;
+      state = {...state, teamId: isMember};
     } catch (e) {
       print('Error checking team membership: $e');
       state = {...state, teamId: false};

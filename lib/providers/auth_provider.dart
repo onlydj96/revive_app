@@ -12,7 +12,7 @@ final authProvider =
 });
 
 class AuthNotifier extends StateNotifier<app_auth.AuthState> {
-  late final StreamSubscription<AuthState> _authSubscription;
+  StreamSubscription<AuthState>? _authSubscription;
 
   AuthNotifier() : super(const app_auth.AuthState()) {
     _initialize();
@@ -32,6 +32,9 @@ class AuthNotifier extends StateNotifier<app_auth.AuthState> {
       state =
           const app_auth.AuthState(status: app_auth.AuthStatus.unauthenticated);
     }
+
+    // Cancel any existing subscription to prevent memory leaks
+    _authSubscription?.cancel();
 
     // Listen to auth changes
     _authSubscription = SupabaseService.client.auth.onAuthStateChange.listen(
@@ -75,10 +78,22 @@ class AuthNotifier extends StateNotifier<app_auth.AuthState> {
     try {
       state = state.copyWith(status: app_auth.AuthStatus.loading);
 
+      print('🔐 [AUTH] Starting sign in for: $email');
+
       final response = await SupabaseService.signInWithEmail(
         email: email,
         password: password,
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          print('❌ [AUTH] Sign in timeout after 30 seconds');
+          throw TimeoutException('Login request timed out');
+        },
       );
+
+      print('✅ [AUTH] Sign in response received');
+      print('   User: ${response.user?.email}');
+      print('   Session: ${response.session != null ? "Valid" : "Null"}');
 
       if (response.user != null && response.session != null) {
         state = app_auth.AuthState(
@@ -86,21 +101,31 @@ class AuthNotifier extends StateNotifier<app_auth.AuthState> {
           user: response.user,
           session: response.session,
         );
+        print('✅ [AUTH] Authentication successful');
       } else {
+        print('❌ [AUTH] Sign in failed - no user or session');
         state = const app_auth.AuthState(
           status: app_auth.AuthStatus.error,
           errorMessage: 'Sign in failed',
         );
       }
+    } on TimeoutException catch (e) {
+      print('❌ [AUTH] Timeout: $e');
+      state = const app_auth.AuthState(
+        status: app_auth.AuthStatus.error,
+        errorMessage: 'Login request timed out. Please check your internet connection.',
+      );
     } on AuthException catch (e) {
+      print('❌ [AUTH] AuthException: ${e.message}');
       state = app_auth.AuthState(
         status: app_auth.AuthStatus.error,
         errorMessage: e.message,
       );
     } catch (e) {
+      print('❌ [AUTH] Unexpected error: $e');
       state = app_auth.AuthState(
         status: app_auth.AuthStatus.error,
-        errorMessage: 'An unexpected error occurred',
+        errorMessage: 'An unexpected error occurred: ${e.toString()}',
       );
     }
   }
@@ -200,7 +225,7 @@ class AuthNotifier extends StateNotifier<app_auth.AuthState> {
 
   @override
   void dispose() {
-    _authSubscription.cancel();
+    _authSubscription?.cancel();
     super.dispose();
   }
 }

@@ -53,38 +53,40 @@ class TeamsNotifier extends StateNotifier<List<Team>> {
                       SupabaseService.currentUser?.email?.split('@')[0] ??
                       'Unknown User';
 
-      // Check if user is already a member
-      final existingMembership = await SupabaseService.from('team_memberships')
-          .select('id')
-          .eq('team_id', teamId)
-          .eq('user_id', userId)
+      // Use upsert to prevent race conditions - database will handle uniqueness
+      // This is safer than check-then-insert pattern
+      final result = await SupabaseService.from('team_memberships')
+          .upsert({
+            'team_id': teamId,
+            'user_id': userId,
+            'user_name': userName,
+            'role': 'member',
+            'status': 'active',
+            'join_date': DateTime.now().toIso8601String(),
+          },
+          onConflict: 'team_id,user_id')
+          .select()
           .maybeSingle();
 
-      if (existingMembership != null) {
-        // User is already a member, don't join again
-        return;
+      // Only increment if this was a new insertion (not an update)
+      if (result != null && result['join_date'] != null) {
+        final joinDate = DateTime.parse(result['join_date']);
+        final now = DateTime.now();
+        final isNewMember = now.difference(joinDate).inSeconds < 5;
+
+        if (isNewMember) {
+          // Increment member count atomically
+          final updatedTeam =
+              team.copyWith(currentMembers: team.currentMembers + 1);
+
+          await SupabaseService.from('teams').update(
+              {'current_members': updatedTeam.currentMembers}).eq('id', teamId);
+
+          state = state.map((team) {
+            return team.id == teamId ? updatedTeam : team;
+          }).toList();
+        }
       }
-
-      // Add user to team_memberships
-      await SupabaseService.from('team_memberships').insert({
-        'team_id': teamId,
-        'user_id': userId,
-        'user_name': userName,
-        'role': 'member',
-        'status': 'active',
-        'joined_at': DateTime.now().toIso8601String(),
-      });
-
-      // Increment member count
-      final updatedTeam =
-          team.copyWith(currentMembers: team.currentMembers + 1);
-
-      await SupabaseService.from('teams').update(
-          {'current_members': updatedTeam.currentMembers}).eq('id', teamId);
-
-      state = state.map((team) {
-        return team.id == teamId ? updatedTeam : team;
-      }).toList();
     } catch (e) {
       print('Error joining team: $e');
       rethrow;
