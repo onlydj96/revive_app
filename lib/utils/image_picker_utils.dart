@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
-import 'dialog_utils.dart';
+import 'ui_utils.dart';
 
 class ImagePickerUtils {
   static final ImagePicker _picker = ImagePicker();
@@ -28,7 +28,7 @@ class ImagePickerUtils {
       );
     } catch (e) {
       if (context.mounted) {
-        DialogUtils.showErrorSnackBar(context, '이미지 선택 중 오류가 발생했습니다: $e');
+        UIUtils.showError(context, '이미지 선택 중 오류가 발생했습니다: $e');
       }
       return null;
     }
@@ -47,7 +47,7 @@ class ImagePickerUtils {
       }
 
       if (context.mounted) {
-        DialogUtils.showInfoSnackBar(context, '사진을 선택하는 중...');
+        UIUtils.showInfo(context, '사진을 선택하는 중...');
       }
 
       List<XFile> images = [];
@@ -62,7 +62,7 @@ class ImagePickerUtils {
       } catch (platformException) {
         // Fallback to single image picker
         if (context.mounted) {
-          final shouldTrySingle = await DialogUtils.showConfirmationDialog(
+          final shouldTrySingle = await UIUtils.showConfirmation(
             context,
             title: '다중 선택 실패',
             content: '여러 사진 선택에 실패했습니다. 한 장씩 선택하시겠습니까?',
@@ -81,7 +81,7 @@ class ImagePickerUtils {
       return images;
     } catch (e) {
       if (context.mounted) {
-        DialogUtils.showErrorSnackBar(context, '사진 선택 중 오류가 발생했습니다: $e');
+        UIUtils.showError(context, '사진 선택 중 오류가 발생했습니다: $e');
       }
       return [];
     }
@@ -103,7 +103,7 @@ class ImagePickerUtils {
       );
     } catch (e) {
       if (context.mounted) {
-        DialogUtils.showErrorSnackBar(context, '동영상 선택 중 오류가 발생했습니다: $e');
+        UIUtils.showError(context, '동영상 선택 중 오류가 발생했습니다: $e');
       }
       return null;
     }
@@ -166,14 +166,14 @@ class ImagePickerUtils {
   }
 
   static void _showPermissionSettingsDialog(BuildContext context) {
-    DialogUtils.showConfirmationDialog(
+    UIUtils.showConfirmation(
       context,
       title: '권한 필요',
       content: '기능을 사용하려면 권한이 필요합니다. 설정에서 권한을 허용해주세요.',
       confirmText: '설정으로 이동',
       cancelText: '취소',
     ).then((result) {
-      if (result == true) {
+      if (result) {
         openAppSettings();
       }
     });

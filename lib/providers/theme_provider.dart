@@ -30,7 +30,10 @@ class ThemeNotifier extends StateNotifier<ThemeSettings> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_themeKey, mode.index);
       state = state.copyWith(mode: mode);
-    } catch (e) {}
+    } catch (e) {
+      // Silent fail for theme preference save - no action needed
+      // Theme will default to system preference on next app launch
+    }
   }
 
   ThemeMode get themeMode {

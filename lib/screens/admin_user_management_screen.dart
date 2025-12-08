@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/database_service.dart';
+import '../services/supabase_service.dart';
 import '../providers/permissions_provider.dart';
 import '../providers/user_provider.dart';
 
@@ -31,7 +31,7 @@ class _AdminUserManagementScreenState
       });
 
       final users =
-          await DatabaseService.getAll('user_profiles', orderBy: 'full_name');
+          await SupabaseService.getAll('user_profiles', orderBy: 'full_name');
 
       setState(() {
         _users = users;

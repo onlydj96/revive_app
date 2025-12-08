@@ -144,7 +144,7 @@ class _EditEventDialogState extends State<EditEventDialog>
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -162,7 +162,7 @@ class _EditEventDialogState extends State<EditEventDialog>
                   end: Alignment.bottomRight,
                   colors: [
                     Theme.of(context).primaryColor,
-                    Theme.of(context).primaryColor.withOpacity(0.8),
+                    Theme.of(context).primaryColor.withValues(alpha: 0.8),
                   ],
                 ),
                 borderRadius:
@@ -175,7 +175,7 @@ class _EditEventDialogState extends State<EditEventDialog>
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
@@ -200,7 +200,7 @@ class _EditEventDialogState extends State<EditEventDialog>
                             Text(
                               'Update event details',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
+                                color: Colors.white.withValues(alpha: 0.8),
                                 fontSize: 12,
                               ),
                             ),
@@ -333,10 +333,10 @@ class _EditEventDialogState extends State<EditEventDialog>
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: isActive ? Colors.white : Colors.white.withOpacity(0.3),
+              color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: Colors.white.withOpacity(0.5),
+                color: Colors.white.withValues(alpha: 0.5),
                 width: 2,
               ),
             ),
@@ -352,7 +352,7 @@ class _EditEventDialogState extends State<EditEventDialog>
                       style: TextStyle(
                         color: isActive
                             ? Theme.of(context).primaryColor
-                            : Colors.white.withOpacity(0.5),
+                            : Colors.white.withValues(alpha: 0.5),
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
@@ -363,7 +363,7 @@ class _EditEventDialogState extends State<EditEventDialog>
           Text(
             label,
             style: TextStyle(
-              color: Colors.white.withOpacity(isActive ? 1 : 0.6),
+              color: Colors.white.withValues(alpha: isActive ? 1 : 0.6),
               fontSize: 10,
               fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
             ),
@@ -377,7 +377,7 @@ class _EditEventDialogState extends State<EditEventDialog>
     return Container(
       height: 2,
       width: 40,
-      color: _currentStep > step ? Colors.white : Colors.white.withOpacity(0.3),
+      color: _currentStep > step ? Colors.white : Colors.white.withValues(alpha: 0.3),
     );
   }
 
@@ -427,7 +427,7 @@ class _EditEventDialogState extends State<EditEventDialog>
                           ),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? _getEventTypeColor(type).withOpacity(0.1)
+                                ? _getEventTypeColor(type).withValues(alpha: 0.1)
                                 : Colors.white,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
@@ -815,7 +815,7 @@ class _EditEventDialogState extends State<EditEventDialog>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
+              color: Colors.blue.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -891,7 +891,7 @@ class _EditEventDialogState extends State<EditEventDialog>
                             decoration: BoxDecoration(
                               color: Theme.of(context)
                                   .primaryColor
-                                  .withOpacity(0.1),
+                                  .withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Icon(
@@ -925,7 +925,7 @@ class _EditEventDialogState extends State<EditEventDialog>
                           right: 8,
                           child: Container(
                             decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.5),
+                              color: Colors.black.withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: IconButton(
@@ -973,7 +973,7 @@ class _EditEventDialogState extends State<EditEventDialog>
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.1),
+                      color: Colors.orange.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(
@@ -1030,7 +1030,7 @@ class _EditEventDialogState extends State<EditEventDialog>
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
+                      color: Colors.blue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(

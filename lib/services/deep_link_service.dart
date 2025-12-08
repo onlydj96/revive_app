@@ -25,7 +25,9 @@ class DeepLinkService {
       if (initialLink != null) {
         await _handleDeepLink(initialLink);
       }
-    } on PlatformException {}
+    } on PlatformException {
+      // Platform doesn't support deep links - no action needed
+    }
 
     // Handle deep links when app is already running
     _linkSubscription = _appLinks.uriLinkStream.listen(

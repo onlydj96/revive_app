@@ -1,9 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/team.dart';
 import '../services/supabase_service.dart';
+import '../utils/logger.dart';
+import 'team_members_provider.dart';
+
+final _logger = Logger('TeamsProvider');
 
 final teamsProvider = StateNotifierProvider<TeamsNotifier, List<Team>>((ref) {
-  return TeamsNotifier();
+  return TeamsNotifier(ref);
 });
 
 final connectGroupsProvider = Provider<List<Team>>((ref) {
@@ -17,9 +21,14 @@ final hangoutsProvider = Provider<List<Team>>((ref) {
 });
 
 class TeamsNotifier extends StateNotifier<List<Team>> {
-  TeamsNotifier() : super([]) {
+  final Ref ref;
+  final Set<String> _loadingTeams = {};
+
+  TeamsNotifier(this.ref) : super([]) {
     loadTeams();
   }
+
+  bool isLoading(String teamId) => _loadingTeams.contains(teamId);
 
   Future<void> loadTeams() async {
     try {
@@ -32,12 +41,22 @@ class TeamsNotifier extends StateNotifier<List<Team>> {
 
       state = teams;
     } catch (e) {
-      print('Error loading teams: $e');
+      _logger.error('Errorloading teams: $e');
       state = [];
     }
   }
 
   Future<void> joinTeam(String teamId) async {
+    _logger.debug('🟢 joinTeam START: teamId=$teamId');
+
+    // Prevent duplicate requests
+    if (_loadingTeams.contains(teamId)) {
+      _logger.debug('⚠️ joinTeam BLOCKED: Already loading');
+      return;
+    }
+
+    _loadingTeams.add(teamId);
+
     try {
       final userId = SupabaseService.currentUser?.id;
       if (userId == null) {
@@ -45,6 +64,10 @@ class TeamsNotifier extends StateNotifier<List<Team>> {
       }
 
       final team = state.firstWhere((team) => team.id == teamId);
+
+      // OPTIMISTIC UPDATE: Immediately update UI state
+      _logger.debug('🟢 joinTeam: Calling setMembershipOptimistic(true)');
+      ref.read(teamMembershipProvider.notifier).setMembershipOptimistic(teamId, true);
 
       // Get user name from metadata
       final userMeta = SupabaseService.currentUser?.userMetadata;
@@ -87,13 +110,30 @@ class TeamsNotifier extends StateNotifier<List<Team>> {
           }).toList();
         }
       }
+
+      _logger.debug('🟢 joinTeam SUCCESS');
     } catch (e) {
-      print('Error joining team: $e');
+      _logger.error('❌joinTeam ERROR: $e');
+      // ROLLBACK: Revert optimistic update on failure
+      ref.read(teamMembershipProvider.notifier).setMembershipOptimistic(teamId, false);
       rethrow;
+    } finally {
+      _loadingTeams.remove(teamId);
+      _logger.debug('🟢 joinTeam END: Loading removed');
     }
   }
 
   Future<void> leaveTeam(String teamId) async {
+    _logger.debug('🔴 leaveTeam START: teamId=$teamId');
+
+    // Prevent duplicate requests
+    if (_loadingTeams.contains(teamId)) {
+      _logger.debug('⚠️ leaveTeam BLOCKED: Already loading');
+      return;
+    }
+
+    _loadingTeams.add(teamId);
+
     try {
       final userId = SupabaseService.currentUser?.id;
       if (userId == null) {
@@ -101,6 +141,10 @@ class TeamsNotifier extends StateNotifier<List<Team>> {
       }
 
       final team = state.firstWhere((team) => team.id == teamId);
+
+      // OPTIMISTIC UPDATE: Immediately update UI state
+      _logger.debug('🔴 leaveTeam: Calling setMembershipOptimistic(false)');
+      ref.read(teamMembershipProvider.notifier).setMembershipOptimistic(teamId, false);
 
       // Remove user from team_memberships
       await SupabaseService.from('team_memberships')
@@ -120,9 +164,16 @@ class TeamsNotifier extends StateNotifier<List<Team>> {
           return team.id == teamId ? updatedTeam : team;
         }).toList();
       }
+
+      _logger.debug('🔴 leaveTeam SUCCESS');
     } catch (e) {
-      print('Error leaving team: $e');
+      _logger.error('❌leaveTeam ERROR: $e');
+      // ROLLBACK: Revert optimistic update on failure
+      ref.read(teamMembershipProvider.notifier).setMembershipOptimistic(teamId, true);
       rethrow;
+    } finally {
+      _loadingTeams.remove(teamId);
+      _logger.debug('🔴 leaveTeam END: Loading removed');
     }
   }
 
@@ -131,7 +182,7 @@ class TeamsNotifier extends StateNotifier<List<Team>> {
       await SupabaseService.from('teams').insert(team.toJson());
       await loadTeams(); // Reload to get the team with server-generated id
     } catch (e) {
-      print('Error adding team: $e');
+      _logger.error('Erroradding team: $e');
     }
   }
 
@@ -145,7 +196,7 @@ class TeamsNotifier extends StateNotifier<List<Team>> {
         return team.id == updatedTeam.id ? updatedTeam : team;
       }).toList();
     } catch (e) {
-      print('Error updating team: $e');
+      _logger.error('Errorupdating team: $e');
     }
   }
 
@@ -154,7 +205,7 @@ class TeamsNotifier extends StateNotifier<List<Team>> {
       await SupabaseService.from('teams').delete().eq('id', teamId);
       state = state.where((team) => team.id != teamId).toList();
     } catch (e) {
-      print('Error deleting team: $e');
+      _logger.error('Errordeleting team: $e');
     }
   }
 }

@@ -106,9 +106,10 @@ class ScheduleScreen extends ConsumerWidget {
             ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
             // Upcoming Events Banner
             if (upcomingEvents.isNotEmpty) ...[
               SizedBox(
@@ -137,7 +138,7 @@ class ScheduleScreen extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
+                    color: Colors.grey.withValues(alpha: 0.1),
                     spreadRadius: 1,
                     blurRadius: 10,
                     offset: const Offset(0, 2),
@@ -170,7 +171,7 @@ class ScheduleScreen extends ConsumerWidget {
                     shape: BoxShape.circle,
                   ),
                   todayDecoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor.withOpacity(0.5),
+                    color: Theme.of(context).primaryColor.withValues(alpha: 0.5),
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -245,6 +246,7 @@ class ScheduleScreen extends ConsumerWidget {
 
             const SizedBox(height: 32),
           ],
+          ),
         ),
       ),
     );
@@ -276,7 +278,7 @@ class EventBannerCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.15),
+            color: Colors.black.withValues(alpha: 0.15),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -310,10 +312,10 @@ class EventBannerCard extends ConsumerWidget {
                                 colors: [
                                   Theme.of(context)
                                       .primaryColor
-                                      .withOpacity(0.8),
+                                      .withValues(alpha: 0.8),
                                   Theme.of(context)
                                       .primaryColor
-                                      .withOpacity(0.4),
+                                      .withValues(alpha: 0.4),
                                 ],
                               ),
                             ),
@@ -333,7 +335,7 @@ class EventBannerCard extends ConsumerWidget {
                                   Theme.of(context).primaryColor,
                                   Theme.of(context)
                                       .primaryColor
-                                      .withOpacity(0.6),
+                                      .withValues(alpha: 0.6),
                                 ],
                               ),
                             ),
@@ -341,7 +343,7 @@ class EventBannerCard extends ConsumerWidget {
                               child: Icon(
                                 Icons.church,
                                 size: 60,
-                                color: Colors.white.withOpacity(0.3),
+                                color: Colors.white.withValues(alpha: 0.3),
                               ),
                             ),
                           ),
@@ -357,7 +359,7 @@ class EventBannerCard extends ConsumerWidget {
                                   Theme.of(context).primaryColor,
                                   Theme.of(context)
                                       .primaryColor
-                                      .withOpacity(0.6),
+                                      .withValues(alpha: 0.6),
                                 ],
                               ),
                             ),
@@ -365,7 +367,7 @@ class EventBannerCard extends ConsumerWidget {
                               child: Icon(
                                 Icons.church,
                                 size: 60,
-                                color: Colors.white.withOpacity(0.3),
+                                color: Colors.white.withValues(alpha: 0.3),
                               ),
                             ),
                           ),
@@ -376,8 +378,8 @@ class EventBannerCard extends ConsumerWidget {
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: [
-                                Colors.black.withOpacity(0.1),
-                                Colors.black.withOpacity(0.8),
+                                Colors.black.withValues(alpha: 0.1),
+                                Colors.black.withValues(alpha: 0.8),
                               ],
                             ),
                           ),
@@ -398,7 +400,7 @@ class EventBannerCard extends ConsumerWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Row(
@@ -428,8 +430,9 @@ class EventBannerCard extends ConsumerWidget {
                             builder: (context, ref, child) {
                               final permissions =
                                   ref.watch(permissionsProvider);
-                              if (!permissions.isAdmin)
+                              if (!permissions.isAdmin) {
                                 return const SizedBox.shrink();
+                              }
 
                               return Container(
                                 margin: const EdgeInsets.only(right: 8),
@@ -441,7 +444,7 @@ class EventBannerCard extends ConsumerWidget {
                                     child: Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.9),
+                                        color: Colors.white.withValues(alpha: 0.9),
                                         borderRadius: BorderRadius.circular(20),
                                       ),
                                       child: Icon(
@@ -501,7 +504,7 @@ class EventBannerCard extends ConsumerWidget {
                                 Shadow(
                                   offset: Offset(0, 2),
                                   blurRadius: 4,
-                                  color: Colors.black.withOpacity(0.5),
+                                  color: Colors.black.withValues(alpha: 0.5),
                                 ),
                               ],
                             ),
@@ -518,7 +521,7 @@ class EventBannerCard extends ConsumerWidget {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.15),
+                                  color: Colors.white.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Row(
@@ -550,7 +553,7 @@ class EventBannerCard extends ConsumerWidget {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.15),
+                                    color: Colors.white.withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Row(
@@ -628,7 +631,7 @@ class EventBannerCard extends ConsumerWidget {
                                               },
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: isSignedUp
-                                              ? Colors.white.withOpacity(0.2)
+                                              ? Colors.white.withValues(alpha: 0.2)
                                               : Colors.white,
                                           foregroundColor: isSignedUp
                                               ? Colors.white
@@ -690,7 +693,7 @@ class EventListItem extends ConsumerWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
+            color: Colors.grey.withValues(alpha: 0.08),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -711,7 +714,7 @@ class EventListItem extends ConsumerWidget {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: eventTypeColor.withOpacity(0.1),
+                    color: eventTypeColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -748,8 +751,9 @@ class EventListItem extends ConsumerWidget {
                               builder: (context, ref, child) {
                                 final permissions =
                                     ref.watch(permissionsProvider);
-                                if (!permissions.isAdmin)
+                                if (!permissions.isAdmin) {
                                   return const SizedBox.shrink();
+                                }
 
                                 return Container(
                                   margin: const EdgeInsets.only(left: 4),
@@ -818,7 +822,7 @@ class EventListItem extends ConsumerWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: Colors.blue.withOpacity(0.08),
+                              color: Colors.blue.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
@@ -847,7 +851,7 @@ class EventListItem extends ConsumerWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.08),
+                              color: Colors.green.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
@@ -1001,10 +1005,10 @@ class EventListItem extends ConsumerWidget {
                                         color: isFull && !isSignedUp
                                             ? Colors.grey[300]
                                             : isSignedUp
-                                                ? Colors.orange.withOpacity(0.1)
+                                                ? Colors.orange.withValues(alpha: 0.1)
                                                 : Theme.of(context)
                                                     .primaryColor
-                                                    .withOpacity(0.1),
+                                                    .withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(
                                           color: isFull && !isSignedUp

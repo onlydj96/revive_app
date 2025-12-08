@@ -1,14 +1,20 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/media_provider.dart';
 import '../providers/media_folder_provider.dart';
 import '../providers/permissions_provider.dart';
+import '../providers/dialog_state_provider.dart';
 import '../models/media_item.dart';
 import '../models/media_folder.dart';
 import '../widgets/media_grid_item.dart';
 import '../widgets/create_media_folder_dialog.dart';
 import '../widgets/upload_media_dialog.dart';
+import '../services/storage_service.dart';
+import '../utils/ui_utils.dart';
 
 class ResourcesScreen extends ConsumerStatefulWidget {
   const ResourcesScreen({super.key});
@@ -18,12 +24,32 @@ class ResourcesScreen extends ConsumerStatefulWidget {
 }
 
 class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+
+  void _onScroll() {
+    // Optimized trigger at 65% for smoother UX - loads next page before user reaches end
+    // Prevents scroll stuttering on slow networks while balancing memory usage
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.65) {
+      ref.read(mediaProvider.notifier).loadMoreMedia();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // CRITICAL: Watch mediaProvider at top level to ensure MediaNotifier initializes
+    // Without this, media items are never loaded from Supabase
+    ref.watch(mediaProvider);
+
     final foldersAsyncValue = ref.watch(mediaFolderProvider);
     final filteredFolders = ref.watch(filteredMediaFoldersProvider);
     final currentFolderId = ref.watch(currentFolderProvider);
-    final searchQuery = ref.watch(mediaFolderSearchProvider);
     final permissions = ref.watch(permissionsProvider);
     final isGridView = ref.watch(resourcesViewModeProvider);
 
@@ -56,6 +82,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
               },
             ),
           ],
+          // Grid/List view toggle
           IconButton(
             icon: Icon(isGridView ? Icons.list : Icons.grid_view),
             onPressed: () {
@@ -202,119 +229,141 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
   Widget _buildFolderContent(
       List<MediaFolder> folders, String? currentFolderId) {
     // Get current folder's subfolders
-    final subfolders =
-        folders.where((f) => f.parentId == currentFolderId).toList();
+    final subfolders = folders
+        .where((f) => f.parentId == currentFolderId && !f.isDeleted)
+        .toList();
 
-    // Get all folders from the provider to access media items
-    final allFolders = ref.watch(mediaFolderProvider).value ?? [];
-    final currentFolder = currentFolderId != null
-        ? allFolders.firstWhere((f) => f.id == currentFolderId,
-            orElse: () => MediaFolder(
-                id: '',
-                name: '',
-                folderPath: '',
-                createdAt: DateTime.now(),
-                updatedAt: DateTime.now()))
-        : null;
-
-    final mediaItems =
-        currentFolder?.mediaItems.where((item) => !item.isDeleted).toList() ??
-            [];
+    // Get media items for current folder directly from mediaProvider
+    // This ensures realtime updates work correctly
+    final mediaItems = ref.watch(mediaByFolderProvider(currentFolderId));
 
     if (subfolders.isEmpty && mediaItems.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.folder_open,
-              size: 64,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'This folder is empty',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.grey[600],
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Add folders or media to get started',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[500],
-                  ),
-            ),
-          ],
-        ),
-      );
+      return _buildEmptyState();
     }
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        // Show subfolders first
-        if (subfolders.isNotEmpty) ...[
-          const Text(
-            'Folders',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 0.8,
-            ),
-            itemCount: subfolders.length,
-            itemBuilder: (context, index) {
-              final folder = subfolders[index];
-              return _buildFolderCard(folder);
-            },
-          ),
-          const SizedBox(height: 24),
-        ],
+    return SafeArea(
+      child: CustomScrollView(
+        controller: _scrollController,
+        slivers: [
+          // Padding at top
+          const SliverPadding(padding: EdgeInsets.only(top: 16)),
 
-        // Show media items
-        if (mediaItems.isNotEmpty) ...[
-          const Text(
-            'Media',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 0.8,
+          // Show subfolders first
+          if (subfolders.isNotEmpty) ...[
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverToBoxAdapter(
+                child: _buildSectionHeader(
+                  title: 'Folders',
+                  count: subfolders.length,
+                  isFolder: true,
+                ),
+              ),
             ),
-            itemCount: mediaItems.length,
-            itemBuilder: (context, index) {
-              final mediaItem = mediaItems[index];
-              return MediaGridItem(
-                mediaItem: mediaItem,
-                onTap: () => context.push(
-                    '/media/${mediaItem.id}?folderId=${mediaItem.folderId ?? ''}'),
-                onCollect: () => ref
-                    .read(mediaProvider.notifier)
-                    .toggleCollection(mediaItem.id),
-                onDelete: () => _deleteMediaSoft(context, mediaItem),
-              );
-            },
-          ),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.8,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final folder = subfolders[index];
+                    return _buildFolderCard(folder);
+                  },
+                  childCount: subfolders.length,
+                ),
+              ),
+            ),
+            const SliverPadding(padding: EdgeInsets.only(bottom: 24)),
+          ],
+
+          // Show media items
+          if (mediaItems.isNotEmpty) ...[
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverToBoxAdapter(
+                child: _buildSectionHeader(
+                  title: 'Media',
+                  count: mediaItems.length,
+                  isFolder: false,
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.8,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final mediaItem = mediaItems[index];
+                    return MediaGridItem(
+                      mediaItem: mediaItem,
+                      onTap: () => context.push(
+                          '/media/${mediaItem.id}?folderId=${mediaItem.folderId ?? ''}'),
+                      onCollect: () => ref
+                          .read(mediaProvider.notifier)
+                          .toggleCollection(mediaItem.id),
+                      onDelete: () => _deleteMediaSoft(context, mediaItem),
+                    );
+                  },
+                  childCount: mediaItems.length,
+                ),
+              ),
+            ),
+          ],
+
+          // Loading indicator at bottom when loading more - enhanced UX
+          if (ref.read(mediaProvider.notifier).isLoadingMore)
+            SliverToBoxAdapter(
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                alignment: Alignment.center,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2.5),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Loading more media...',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          // Padding at bottom
+          const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
         ],
-      ],
+      ),
     );
   }
 
   Widget _buildFolderCard(MediaFolder folder) {
-    final thumbnailUrl = folder.effectiveThumbnailUrl;
+    // Get thumbnail URL from folder or first media item in this folder
+    final folderMediaItems = ref.watch(mediaByFolderProvider(folder.id));
+    final thumbnailUrl = folder.thumbnailUrl ??
+        folderMediaItems.where((item) => item.type == MediaType.photo).firstOrNull?.thumbnailUrl;
+
+    // Get actual media count from database (accurate even with pagination)
+    final mediaCountAsync = ref.watch(folderMediaCountProvider(folder.id));
+
     final permissions = ref.watch(permissionsProvider);
     final isDeleted = folder.isDeleted;
 
@@ -347,10 +396,39 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
                             height: double.infinity,
                             child: thumbnailUrl != null &&
                                     thumbnailUrl.isNotEmpty
-                                ? Image.network(
-                                    thumbnailUrl,
+                                ? CachedNetworkImage(
+                                    imageUrl: thumbnailUrl,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
+                                    memCacheWidth: 400,
+                                    memCacheHeight: 400,
+                                    maxWidthDiskCache: 600,
+                                    maxHeightDiskCache: 600,
+                                    // Progressive loading with smooth fade-in
+                                    fadeInDuration: const Duration(milliseconds: 300),
+                                    fadeOutDuration: const Duration(milliseconds: 100),
+                                    // Shimmer-like placeholder for better UX
+                                    placeholder: (context, url) => Container(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: [
+                                            Colors.grey[200]!,
+                                            Colors.grey[100]!,
+                                            Colors.grey[200]!,
+                                          ],
+                                          stops: const [0.0, 0.5, 1.0],
+                                        ),
+                                      ),
+                                      child: Center(
+                                        child: Icon(
+                                          Icons.image,
+                                          size: 32,
+                                          color: Colors.grey[400],
+                                        ),
+                                      ),
+                                    ),
+                                    errorWidget: (context, url, error) {
                                       return Container(
                                         color: isDeleted
                                             ? Colors.red[50]
@@ -361,25 +439,6 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
                                           color: isDeleted
                                               ? Colors.red[300]
                                               : Theme.of(context).primaryColor,
-                                        ),
-                                      );
-                                    },
-                                    loadingBuilder:
-                                        (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return Container(
-                                        color: Colors.grey[100],
-                                        child: Center(
-                                          child: CircularProgressIndicator(
-                                            value: loadingProgress
-                                                        .expectedTotalBytes !=
-                                                    null
-                                                ? loadingProgress
-                                                        .cumulativeBytesLoaded /
-                                                    loadingProgress
-                                                        .expectedTotalBytes!
-                                                : null,
-                                          ),
                                         ),
                                       );
                                     },
@@ -400,7 +459,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
                           if (isDeleted)
                             Positioned.fill(
                               child: Container(
-                                color: Colors.red.withOpacity(0.2),
+                                color: Colors.red.withValues(alpha: 0.2),
                                 child: Center(
                                   child: Icon(
                                     Icons.delete_forever,
@@ -455,14 +514,38 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
                                   color: Colors.grey[500],
                                 ),
                                 const SizedBox(width: 4),
-                                Text(
-                                  '${folder.totalItemCount}',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: Colors.grey[500],
-                                      ),
+                                mediaCountAsync.when(
+                                  data: (count) {
+                                    // Show direct media count from database
+                                    // This is accurate even with pagination
+                                    return Text(
+                                      '$count',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: Colors.grey[500],
+                                          ),
+                                    );
+                                  },
+                                  loading: () => Text(
+                                    '...',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: Colors.grey[500],
+                                        ),
+                                  ),
+                                  error: (_, __) => Text(
+                                    '0',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: Colors.grey[500],
+                                        ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -480,7 +563,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
                   right: 8,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: IconButton(
@@ -498,6 +581,245 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader({
+    required String title,
+    required int count,
+    required bool isFolder,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8, top: 8),
+      child: Row(
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '$count',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).primaryColor,
+              ),
+            ),
+          ),
+          const Spacer(),
+          // Sort button for this section
+          PopupMenuButton<String>(
+            icon: Icon(
+              Icons.sort,
+              size: 20,
+              color: Colors.grey[700],
+            ),
+            tooltip: isFolder ? '폴더 정렬' : '미디어 정렬',
+            offset: const Offset(0, 40),
+            onSelected: (value) {
+              if (isFolder) {
+                // Folder sorting
+                if (value == 'toggle_order') {
+                  ref.read(folderSortAscendingProvider.notifier).state =
+                      !ref.read(folderSortAscendingProvider);
+                } else {
+                  final option = FolderSortOption.values.firstWhere(
+                    (e) => e.name == value,
+                  );
+                  ref.read(folderSortOptionProvider.notifier).state = option;
+                }
+              } else {
+                // Media sorting
+                final option = MediaSortOption.values.firstWhere(
+                  (e) => e.name == value,
+                );
+                ref.read(mediaSortOptionProvider.notifier).state = option;
+              }
+            },
+            itemBuilder: (context) {
+              if (isFolder) {
+                // Folder sort menu
+                final currentSort = ref.watch(folderSortOptionProvider);
+                final sortAscending = ref.watch(folderSortAscendingProvider);
+
+                return [
+                  ...FolderSortOption.values.map((option) => PopupMenuItem(
+                        value: option.name,
+                        child: Row(
+                          children: [
+                            if (currentSort == option)
+                              Icon(Icons.check, size: 16, color: Theme.of(context).primaryColor),
+                            if (currentSort == option) const SizedBox(width: 8),
+                            Text(option.label),
+                          ],
+                        ),
+                      )),
+                  const PopupMenuDivider(),
+                  PopupMenuItem(
+                    value: 'toggle_order',
+                    child: Row(
+                      children: [
+                        Icon(
+                          sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(sortAscending ? '오름차순' : '내림차순'),
+                      ],
+                    ),
+                  ),
+                ];
+              } else {
+                // Media sort menu
+                final currentSort = ref.watch(mediaSortOptionProvider);
+
+                return MediaSortOption.values
+                    .map((option) => PopupMenuItem(
+                          value: option.name,
+                          child: Row(
+                            children: [
+                              if (currentSort == option)
+                                Icon(Icons.check, size: 16, color: Theme.of(context).primaryColor),
+                              if (currentSort == option) const SizedBox(width: 8),
+                              Text(option.label),
+                            ],
+                          ),
+                        ))
+                    .toList();
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    final searchQuery = ref.watch(mediaFolderSearchProvider);
+    final permissions = ref.watch(permissionsProvider);
+
+    // Case 1: Search results are empty
+    if (searchQuery.isNotEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search_off,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '검색 결과가 없습니다',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '"$searchQuery"에 대한 폴더나 미디어를 찾을 수 없습니다',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey[500],
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            OutlinedButton.icon(
+              onPressed: () {
+                ref.read(mediaFolderSearchProvider.notifier).state = '';
+              },
+              icon: const Icon(Icons.clear),
+              label: const Text('검색 초기화'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Case 2: Folder is empty - User has create permissions
+    if (permissions.canCreateContent) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.folder_open,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '폴더가 비어있습니다',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '새 폴더를 만들거나 미디어를 업로드하세요',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey[500],
+                  ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () => _showCreateFolderDialog(context),
+                  icon: const Icon(Icons.create_new_folder),
+                  label: const Text('폴더 만들기'),
+                ),
+                const SizedBox(width: 16),
+                OutlinedButton.icon(
+                  onPressed: () => _showUploadMediaDialog(context),
+                  icon: const Icon(Icons.upload_file),
+                  label: const Text('미디어 업로드'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Case 3: Folder is empty - User does not have create permissions
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.folder_open,
+            size: 64,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '폴더가 비어있습니다',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '아직 콘텐츠가 업로드되지 않았습니다',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.grey[500],
+                ),
+          ),
+        ],
       ),
     );
   }
@@ -540,6 +862,17 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
             ] else ...[
               // Options for active folders
               ListTile(
+                leading: const Icon(Icons.image, color: Colors.blue),
+                title: const Text('썸네일 수정'),
+                subtitle: Text(folder.thumbnailUrl == null
+                    ? '폴더 썸네일을 추가합니다'
+                    : '폴더 썸네일을 변경합니다'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _updateFolderThumbnail(context, folder);
+                },
+              ),
+              ListTile(
                 leading: const Icon(Icons.delete_outline, color: Colors.red),
                 title: const Text('폴더 삭제'),
                 subtitle: Text('${folder.name} 폴더를 삭제합니다'),
@@ -569,9 +902,9 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
+                color: Colors.orange.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
@@ -617,36 +950,34 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     try {
       await ref.read(mediaFolderProvider.notifier).softDeleteFolder(folder.id);
 
+      // Invalidate folder count provider to refresh counts
+      ref.invalidate(folderMediaCountProvider);
+
       if (context.mounted) {
         final showDeleted = ref.read(showDeletedFoldersProvider);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(showDeleted
-                ? '${folder.name} 폴더가 삭제되었습니다 (관리자 모드에서는 계속 보입니다)'
-                : '${folder.name} 폴더가 삭제되었습니다'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 4),
-            action: SnackBarAction(
-              label: '되돌리기',
-              textColor: Colors.white,
-              onPressed: () async {
-                await ref
-                    .read(mediaFolderProvider.notifier)
-                    .restoreFolder(folder.id);
-              },
-            ),
+        UIUtils.showSuccess(
+          context,
+          showDeleted
+              ? '${folder.name} 폴더가 삭제되었습니다 (관리자 모드에서는 계속 보입니다)'
+              : '${folder.name} 폴더가 삭제되었습니다',
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: '되돌리기',
+            textColor: Colors.white,
+            onPressed: () async {
+              await ref
+                  .read(mediaFolderProvider.notifier)
+                  .restoreFolder(folder.id);
+              // Invalidate folder count provider to refresh counts
+              ref.invalidate(folderMediaCountProvider);
+            },
           ),
         );
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('폴더 삭제 실패: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        UIUtils.showError(context, '폴더 삭제 실패: $e');
       }
     }
   }
@@ -656,31 +987,29 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     try {
       await ref.read(mediaProvider.notifier).softDeleteMedia(mediaItem.id);
 
+      // Invalidate folder count provider to refresh counts
+      ref.invalidate(folderMediaCountProvider);
+
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${mediaItem.title}이(가) 삭제되었습니다'),
-            backgroundColor: Colors.green,
-            action: SnackBarAction(
-              label: '되돌리기',
-              textColor: Colors.white,
-              onPressed: () async {
-                await ref
-                    .read(mediaProvider.notifier)
-                    .restoreMedia(mediaItem.id);
-              },
-            ),
+        UIUtils.showSuccess(
+          context,
+          '${mediaItem.title}이(가) 삭제되었습니다',
+          action: SnackBarAction(
+            label: '되돌리기',
+            textColor: Colors.white,
+            onPressed: () async {
+              await ref
+                  .read(mediaProvider.notifier)
+                  .restoreMedia(mediaItem.id);
+              // Invalidate folder count provider to refresh counts
+              ref.invalidate(folderMediaCountProvider);
+            },
           ),
         );
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('미디어 삭제 실패: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        UIUtils.showError(context, '미디어 삭제 실패: $e');
       }
     }
   }
@@ -689,22 +1018,64 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     try {
       await ref.read(mediaFolderProvider.notifier).restoreFolder(folder.id);
 
+      // Invalidate folder count provider to refresh counts
+      ref.invalidate(folderMediaCountProvider);
+
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${folder.name} 폴더가 복구되었습니다'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        UIUtils.showSuccess(context, '${folder.name} 폴더가 복구되었습니다');
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('폴더 복구 실패: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        UIUtils.showError(context, '폴더 복구 실패: $e');
+      }
+    }
+  }
+
+  Future<void> _updateFolderThumbnail(
+      BuildContext context, MediaFolder folder) async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
+
+      if (image == null) return;
+
+      if (context.mounted) {
+        // Show loading indicator
+        UIUtils.showLoading(context, '썸네일 업로드 중...');
+      }
+
+      // Upload to Supabase Storage
+      final file = File(image.path);
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final fileName = '${folder.id}_$timestamp.jpg';
+
+      final thumbnailUrl = await StorageService.uploadFile(
+        bucketName: 'media-thumbnails',
+        folderPath: 'folder_thumbnails',
+        fileName: fileName,
+        file: file,
+      );
+
+      // Update folder with new thumbnail URL
+      await ref.read(mediaFolderProvider.notifier).updateFolder(
+        folder.id,
+        thumbnailUrl: thumbnailUrl,
+      );
+
+      if (context.mounted) {
+        UIUtils.clearSnackBars(context);
+        UIUtils.showSuccess(
+            context, '${folder.name} 폴더의 썸네일이 업데이트되었습니다');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        UIUtils.clearSnackBars(context);
+        UIUtils.showError(context, '썸네일 업데이트 실패: $e');
       }
     }
   }
@@ -724,9 +1095,9 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+                color: Colors.red.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.red.withOpacity(0.3)),
+                border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
@@ -776,21 +1147,11 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
           .permanentDeleteFolder(folder.id);
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${folder.name} 폴더가 영구적으로 삭제되었습니다'),
-            backgroundColor: Colors.red[700],
-          ),
-        );
+        UIUtils.showError(context, '${folder.name} 폴더가 영구적으로 삭제되었습니다');
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('영구 삭제 실패: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        UIUtils.showError(context, '영구 삭제 실패: $e');
       }
     }
   }
@@ -843,15 +1204,11 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
                 );
 
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('폴더가 성공적으로 생성되었습니다!')),
-              );
+              UIUtils.showSuccess(context, '폴더가 성공적으로 생성되었습니다!');
             }
           } catch (e) {
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('폴더 생성 실패: $e')),
-              );
+              UIUtils.showError(context, '폴더 생성 실패: $e');
             }
           }
         },
@@ -892,23 +1249,36 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
                   folderId: currentFolderId,
                   category: MediaCategory.general,
                   photographer: 'Church Media Team',
+                  onProgress: (progress) {
+                    // Update progress provider as files are uploaded
+                    ref.read(uploadProgressProvider.notifier).state = progress;
+                  },
                 );
+
+            // Invalidate folder count provider to refresh counts
+            ref.invalidate(folderMediaCountProvider);
 
             // Refresh folder data to show new media
             await ref.read(mediaFolderProvider.notifier).refresh();
           } catch (e) {
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('업로드 실패: $e'),
-                  backgroundColor: Colors.red,
-                ),
-              );
+              UIUtils.showError(context, '업로드 실패: $e');
             }
             rethrow;
           }
         },
       ),
     );
+  }
+
+  // NOTE: _calculateTotalMediaCount and _mediaCountCache are no longer used
+  // We now use folderMediaCountProvider which gets accurate counts from database
+  // This ensures correct counts even with pagination
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
   }
 }

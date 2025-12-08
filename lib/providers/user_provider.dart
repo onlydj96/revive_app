@@ -1,8 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import '../models/user.dart';
-import '../services/database_service.dart';
+import '../services/supabase_service.dart';
+import '../utils/logger.dart';
 import 'auth_provider.dart';
+
+final _logger = Logger('UserProvider');
 
 final userProvider = StateNotifierProvider<UserNotifier, User?>((ref) {
   final authState = ref.watch(authProvider);
@@ -21,7 +24,7 @@ class UserNotifier extends StateNotifier<User?> {
       try {
         // Try to get user profile from database first
         final profileData =
-            await DatabaseService.getUserProfile(_supabaseUser.id);
+            await SupabaseService.getById('user_profiles', _supabaseUser.id);
 
         if (profileData != null) {
           // Use database profile
@@ -81,17 +84,27 @@ class UserNotifier extends StateNotifier<User?> {
     if (state != null && _supabaseUser != null) {
       try {
         final updateData = <String, dynamic>{};
-        if (name != null) updateData['full_name'] = name;
-        if (email != null) updateData['email'] = email;
-        if (profileImageUrl != null)
+        if (name != null) {
+          updateData['full_name'] = name;
+        }
+        if (email != null) {
+          updateData['email'] = email;
+        }
+        if (profileImageUrl != null) {
           updateData['profile_image_url'] = profileImageUrl;
-        if (phone != null) updateData['phone'] = phone;
-        if (address != null) updateData['address'] = address;
-        if (emergencyContact != null)
+        }
+        if (phone != null) {
+          updateData['phone'] = phone;
+        }
+        if (address != null) {
+          updateData['address'] = address;
+        }
+        if (emergencyContact != null) {
           updateData['emergency_contact'] = emergencyContact;
+        }
 
         // Update database profile
-        await DatabaseService.updateUserProfile(_supabaseUser.id, updateData);
+        await SupabaseService.update('user_profiles', _supabaseUser.id, updateData);
 
         // Update local state
         state = state!.copyWith(
@@ -101,7 +114,7 @@ class UserNotifier extends StateNotifier<User?> {
         );
       } catch (e) {
         // Handle error - could emit to an error provider
-        print('Error updating profile: $e');
+        _logger.error('Error updating profile', e);
         rethrow;
       }
     }
@@ -109,14 +122,14 @@ class UserNotifier extends StateNotifier<User?> {
 
   Future<void> updateUserRole(String userId, String role) async {
     try {
-      await DatabaseService.updateUserRole(userId, role);
+      await SupabaseService.update('user_profiles', userId, {'role': role});
 
       // If updating current user, refresh the profile
       if (userId == _supabaseUser?.id) {
         await _loadUserFromSupabase();
       }
     } catch (e) {
-      print('Error updating user role: $e');
+      _logger.error('Error updating user role', e);
       rethrow;
     }
   }

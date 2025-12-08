@@ -60,38 +60,76 @@ class StorageService {
       // Construct full path with folder structure
       final fullPath = '$folderPath/$fileName'.replaceAll('//', '/');
 
+      print('📤 [STORAGE] Uploading to: $bucketName/$fullPath');
+
+      // Determine MIME type from file extension
+      final String contentType = _getMimeType(fileName);
+      print('   Content-Type: $contentType');
+
       // Upload based on file type with upsert to handle duplicates
       if (file is File) {
         final bytes = await file.readAsBytes();
-        await SupabaseService.storage.from(bucketName).uploadBinary(
+        print('   File size: ${(bytes.length / 1024).toStringAsFixed(2)} KB');
+
+        final response = await SupabaseService.storage.from(bucketName).uploadBinary(
               fullPath,
               bytes,
-              fileOptions: const FileOptions(upsert: true),
+              fileOptions: FileOptions(
+                upsert: true,
+                contentType: contentType,
+              ),
             );
+        print('✅ [STORAGE] Upload successful: $response');
       } else if (file is Uint8List) {
-        await SupabaseService.storage.from(bucketName).uploadBinary(
+        print('   File size: ${(file.length / 1024).toStringAsFixed(2)} KB');
+
+        final response = await SupabaseService.storage.from(bucketName).uploadBinary(
               fullPath,
               file,
-              fileOptions: const FileOptions(upsert: true),
+              fileOptions: FileOptions(
+                upsert: true,
+                contentType: contentType,
+              ),
             );
+        print('✅ [STORAGE] Upload successful: $response');
       } else if (file is String) {
         // Assume it's a file path
         final fileObj = File(file);
         final bytes = await fileObj.readAsBytes();
-        await SupabaseService.storage.from(bucketName).uploadBinary(
+        print('   File size: ${(bytes.length / 1024).toStringAsFixed(2)} KB');
+
+        final response = await SupabaseService.storage.from(bucketName).uploadBinary(
               fullPath,
               bytes,
-              fileOptions: const FileOptions(upsert: true),
+              fileOptions: FileOptions(
+                upsert: true,
+                contentType: contentType,
+              ),
             );
+        print('✅ [STORAGE] Upload successful: $response');
       }
 
       // Return the public URL
       final url =
           SupabaseService.storage.from(bucketName).getPublicUrl(fullPath);
 
+      print('🔗 [STORAGE] Public URL: $url');
+
+      // Verify the URL format is correct
+      if (!url.contains(bucketName) || !url.contains(fullPath)) {
+        print('⚠️  [STORAGE] Warning: Generated URL might be incorrect!');
+        print('   Expected bucket: $bucketName, path: $fullPath');
+        print('   Got URL: $url');
+      }
+
       return url;
-    } catch (e) {
-      throw Exception('Failed to upload file: $e');
+    } catch (e, stackTrace) {
+      print('❌ [STORAGE] Upload failed!');
+      print('   Bucket: $bucketName');
+      print('   Path: $folderPath/$fileName');
+      print('   Error: $e');
+      print('   Stack: $stackTrace');
+      throw Exception('Failed to upload file to $bucketName/$folderPath/$fileName: $e');
     }
   }
 
@@ -261,7 +299,9 @@ class StorageService {
           file: file,
         );
         urls.add(url);
-      } catch (e) {}
+      } catch (e) {
+        // Skip failed uploads and continue with next file
+      }
     }
 
     return urls;
@@ -299,5 +339,29 @@ class StorageService {
     }
     // Return null to use error widget instead of external placeholder
     return null;
+  }
+
+  // Helper function to determine MIME type from file extension
+  static String _getMimeType(String fileName) {
+    final extension = fileName.split('.').last.toLowerCase();
+
+    // Video types (specific MIME types required)
+    if (extension == 'mp4') return 'video/mp4';
+    if (extension == 'mov') return 'video/quicktime';
+    if (extension == 'avi') return 'video/x-msvideo';
+    if (extension == 'mkv') return 'video/x-matroska';
+    if (extension == 'webm') return 'video/webm';
+
+    // Audio types (specific MIME types required)
+    if (extension == 'mp3') return 'audio/mpeg';
+    if (extension == 'm4a') return 'audio/mp4';
+    if (extension == 'wav') return 'audio/wav';
+    if (extension == 'ogg') return 'audio/ogg';
+    if (extension == 'flac') return 'audio/flac';
+
+    // All image types (including RAW) use image/jpeg for maximum compatibility
+    // Supabase Storage has strict MIME type restrictions
+    // The actual file extension is preserved in the filename
+    return 'image/jpeg';
   }
 }

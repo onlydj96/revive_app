@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/supabase_service.dart';
+import '../utils/logger.dart';
+
+final _logger = Logger('TeamMembersProvider');
 
 // Team member model
 class TeamMember {
@@ -31,9 +34,8 @@ class TeamMember {
       userName: json['user_name'] ?? json['users']?['name'] ?? 'Unknown User',
       userEmail: json['user_email'] ?? json['users']?['email'],
       userAvatar: json['user_avatar'] ?? json['users']?['avatar_url'],
-      joinedAt: DateTime.parse(json['applied_at'] ??
-          json['join_date'] ??
-          json['joined_at'] ??
+      joinedAt: DateTime.parse(json['join_date'] ??
+          json['applied_at'] ??
           DateTime.now().toIso8601String()),
       status: json['status'] ?? 'member',
     );
@@ -74,7 +76,7 @@ final teamMembersProvider =
 
     return members;
   } catch (e) {
-    print('Error loading team members: $e');
+    _logger.debug('Error loading team members: $e');
     return [];
   }
 });
@@ -91,37 +93,36 @@ class TeamMembershipNotifier extends StateNotifier<Map<String, bool>> {
         return;
       }
 
-      // Optimize: Run both queries in parallel instead of sequentially
-      final results = await Future.wait([
-        SupabaseService.from('team_memberships')
-            .select('id')
-            .eq('team_id', teamId)
-            .eq('user_id', userId)
-            .eq('status', 'active'),
-        SupabaseService.from('team_applications')
-            .select('id')
-            .eq('team_id', teamId)
-            .eq('user_id', userId)
-            .eq('status', 'pending'),
-      ]);
+      // Check for active membership only
+      // FIXED P0-1: Separated isMember from hasApplied logic
+      // Pending applications are tracked separately by team_applications_provider
+      final membershipResponse = await SupabaseService.from('team_memberships')
+          .select('id')
+          .eq('team_id', teamId)
+          .eq('user_id', userId)
+          .eq('status', 'active');
 
-      final membershipResponse = results[0] as List;
-      final applicationResponse = results[1] as List;
-
-      // User is a member if they have active membership OR pending application
-      final isMember = membershipResponse.isNotEmpty || applicationResponse.isNotEmpty;
+      final isMember = (membershipResponse as List).isNotEmpty;
       state = {...state, teamId: isMember};
     } catch (e) {
-      print('Error checking team membership: $e');
+      _logger.debug('Error checking team membership: $e');
       state = {...state, teamId: false};
     }
   }
 
-  void invalidateMembership(String teamId) {
+  Future<void> invalidateMembership(String teamId) async {
     final newState = Map<String, bool>.from(state);
     newState.remove(teamId);
     state = newState;
-    checkMembership(teamId);
+    await checkMembership(teamId);
+  }
+
+  // Optimistic update: Set membership status immediately without DB check
+  void setMembershipOptimistic(String teamId, bool isMember) {
+    _logger.debug('🔵 OPTIMISTIC UPDATE: teamId=$teamId, isMember=$isMember');
+    _logger.debug('🔵 State BEFORE: ${state[teamId]}');
+    state = {...state, teamId: isMember};
+    _logger.debug('🔵 State AFTER: ${state[teamId]}');
   }
 }
 

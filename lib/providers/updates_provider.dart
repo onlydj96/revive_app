@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/update.dart';
-import '../services/database_service.dart';
+import '../services/supabase_service.dart';
 
 final updatesProvider =
     StateNotifierProvider<UpdatesNotifier, AsyncValue<List<Update>>>((ref) {
@@ -45,7 +45,8 @@ class UpdatesNotifier extends StateNotifier<AsyncValue<List<Update>>> {
   Future<void> _loadUpdates() async {
     try {
       state = const AsyncValue.loading();
-      final data = await DatabaseService.getUpdates(limit: 50);
+      final data = await SupabaseService.getAll('updates',
+          orderBy: 'created_at', ascending: false, limit: 50);
       final updates = data.map((item) => Update.fromJson(item)).toList();
       state = AsyncValue.data(updates);
     } catch (error, stackTrace) {
@@ -54,7 +55,7 @@ class UpdatesNotifier extends StateNotifier<AsyncValue<List<Update>>> {
   }
 
   void _setupRealtimeSubscription() {
-    _channel = DatabaseService.subscribeToTable(
+    _channel = SupabaseService.subscribeToTable(
       'updates',
       (newRecord) {
         // Handle insert
@@ -103,7 +104,7 @@ class UpdatesNotifier extends StateNotifier<AsyncValue<List<Update>>> {
         'tags': tags,
       };
 
-      await DatabaseService.createUpdate(data);
+      await SupabaseService.create('updates', data);
       // The real-time subscription will handle updating the state
     } catch (error) {
       // Handle error appropriately
@@ -129,7 +130,7 @@ class UpdatesNotifier extends StateNotifier<AsyncValue<List<Update>>> {
       if (isPinned != null) data['is_pinned'] = isPinned;
       if (tags != null) data['tags'] = tags;
 
-      await DatabaseService.update('updates', id, data);
+      await SupabaseService.update('updates', id, data);
       // The real-time subscription will handle updating the state
     } catch (error) {
       rethrow;
@@ -138,7 +139,7 @@ class UpdatesNotifier extends StateNotifier<AsyncValue<List<Update>>> {
 
   Future<void> deleteUpdate(String id) async {
     try {
-      await DatabaseService.delete('updates', id);
+      await SupabaseService.delete('updates', id);
       // The real-time subscription will handle updating the state
     } catch (error) {
       rethrow;

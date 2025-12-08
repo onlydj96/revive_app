@@ -5,6 +5,9 @@ import '../models/auth_state.dart' as app_auth;
 import '../services/supabase_service.dart';
 import '../services/deep_link_service.dart';
 import '../router/app_router.dart';
+import '../utils/logger.dart';
+
+final _logger = Logger('AuthProvider');
 
 final authProvider =
     StateNotifierProvider<AuthNotifier, app_auth.AuthState>((ref) {
@@ -78,7 +81,7 @@ class AuthNotifier extends StateNotifier<app_auth.AuthState> {
     try {
       state = state.copyWith(status: app_auth.AuthStatus.loading);
 
-      print('🔐 [AUTH] Starting sign in for: $email');
+      _logger.debug('🔐 [AUTH] Starting sign in for: $email');
 
       final response = await SupabaseService.signInWithEmail(
         email: email,
@@ -86,14 +89,14 @@ class AuthNotifier extends StateNotifier<app_auth.AuthState> {
       ).timeout(
         const Duration(seconds: 30),
         onTimeout: () {
-          print('❌ [AUTH] Sign in timeout after 30 seconds');
+          _logger.debug('❌ [AUTH] Sign in timeout after 30 seconds');
           throw TimeoutException('Login request timed out');
         },
       );
 
-      print('✅ [AUTH] Sign in response received');
-      print('   User: ${response.user?.email}');
-      print('   Session: ${response.session != null ? "Valid" : "Null"}');
+      _logger.debug('✅ [AUTH] Sign in response received');
+      _logger.debug('   User: ${response.user?.email}');
+      _logger.debug('   Session: ${response.session != null ? "Valid" : "Null"}');
 
       if (response.user != null && response.session != null) {
         state = app_auth.AuthState(
@@ -101,28 +104,28 @@ class AuthNotifier extends StateNotifier<app_auth.AuthState> {
           user: response.user,
           session: response.session,
         );
-        print('✅ [AUTH] Authentication successful');
+        _logger.debug('✅ [AUTH] Authentication successful');
       } else {
-        print('❌ [AUTH] Sign in failed - no user or session');
+        _logger.debug('❌ [AUTH] Sign in failed - no user or session');
         state = const app_auth.AuthState(
           status: app_auth.AuthStatus.error,
           errorMessage: 'Sign in failed',
         );
       }
     } on TimeoutException catch (e) {
-      print('❌ [AUTH] Timeout: $e');
+      _logger.debug('❌ [AUTH] Timeout: $e');
       state = const app_auth.AuthState(
         status: app_auth.AuthStatus.error,
         errorMessage: 'Login request timed out. Please check your internet connection.',
       );
     } on AuthException catch (e) {
-      print('❌ [AUTH] AuthException: ${e.message}');
+      _logger.debug('❌ [AUTH] AuthException: ${e.message}');
       state = app_auth.AuthState(
         status: app_auth.AuthStatus.error,
         errorMessage: e.message,
       );
     } catch (e) {
-      print('❌ [AUTH] Unexpected error: $e');
+      _logger.debug('❌ [AUTH] Unexpected error: $e');
       state = app_auth.AuthState(
         status: app_auth.AuthStatus.error,
         errorMessage: 'An unexpected error occurred: ${e.toString()}',

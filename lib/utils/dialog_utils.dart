@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+@Deprecated('Use UIUtils instead. This will be removed in a future version.')
 class DialogUtils {
   static void showSuccessSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
