@@ -29,6 +29,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
   final _scrollController = ScrollController();
 
   TeamType _selectedType = TeamType.hangout;
+  TeamCategory _selectedCategory = TeamCategory.fellowship;
   bool _requiresApplication = false;
   DateTime? _selectedTime;
   final List<String> _requirements = [];
@@ -142,6 +143,47 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                     if (value == TeamType.connectGroup) {
                       _requiresApplication = true;
                     }
+                  });
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              DropdownButtonFormField<TeamCategory>(
+                value: _selectedCategory,
+                decoration: const InputDecoration(
+                  labelText: 'Category',
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: TeamCategory.worship,
+                    child: Text('Worship'),
+                  ),
+                  DropdownMenuItem(
+                    value: TeamCategory.outreach,
+                    child: Text('Outreach'),
+                  ),
+                  DropdownMenuItem(
+                    value: TeamCategory.youth,
+                    child: Text('Youth'),
+                  ),
+                  DropdownMenuItem(
+                    value: TeamCategory.children,
+                    child: Text('Children'),
+                  ),
+                  DropdownMenuItem(
+                    value: TeamCategory.admin,
+                    child: Text('Admin'),
+                  ),
+                  DropdownMenuItem(
+                    value: TeamCategory.fellowship,
+                    child: Text('Fellowship'),
+                  ),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _selectedCategory = value!;
                   });
                 },
               ),
@@ -469,6 +511,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
         type: _selectedType,
+        category: _selectedCategory,
         leader: _leaderController.text.trim(),
         meetingLocation: _locationController.text.trim().isNotEmpty
             ? _locationController.text.trim()

@@ -75,7 +75,7 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
+                        color: Colors.grey.withValues(alpha: 0.1),
                         spreadRadius: 1,
                         blurRadius: 10,
                         offset: const Offset(0, 2),
@@ -143,7 +143,7 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
                   border: Border.all(color: Colors.grey[200]!),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       spreadRadius: 1,
                       blurRadius: 5,
                       offset: const Offset(0, 2),
@@ -186,7 +186,7 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withValues(alpha: 0.2),
                         spreadRadius: 2,
                         blurRadius: 10,
                         offset: const Offset(0, -2),
@@ -421,7 +421,7 @@ class FeedbackChip extends StatelessWidget {
       onSelected: (selected) {
         onSelected(feedback);
       },
-      selectedColor: Theme.of(context).primaryColor.withOpacity(0.2),
+      selectedColor: Theme.of(context).primaryColor.withValues(alpha: 0.2),
       checkmarkColor: Theme.of(context).primaryColor,
     );
   }
@@ -461,7 +461,7 @@ class WorshipFeedbackMapPainter extends CustomPainter {
       size.height * 0.1,
     );
     canvas.drawRect(
-        stageRect, Paint()..color = const Color(0xFF6B46C1).withOpacity(0.3));
+        stageRect, Paint()..color = const Color(0xFF6B46C1).withValues(alpha: 0.3));
     canvas.drawRect(stageRect, paint);
 
     // Draw text
@@ -511,7 +511,7 @@ class WorshipFeedbackMapPainter extends CustomPainter {
       size.height * 0.05,
     );
     canvas.drawRect(
-        entranceRect, Paint()..color = Colors.green.withOpacity(0.3));
+        entranceRect, Paint()..color = Colors.green.withValues(alpha: 0.3));
 
     final entranceTextPainter = TextPainter(
       text: TextSpan(

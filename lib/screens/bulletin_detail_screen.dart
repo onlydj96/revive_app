@@ -38,10 +38,11 @@ class BulletinDetailScreen extends ConsumerWidget {
             ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             // Banner Section
             if (bulletin.bannerImageUrl != null)
               Container(
@@ -363,6 +364,7 @@ class BulletinDetailScreen extends ConsumerWidget {
               ),
             ),
           ],
+          ),
         ),
       ),
     );

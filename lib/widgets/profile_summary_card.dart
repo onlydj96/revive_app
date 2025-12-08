@@ -11,6 +11,7 @@ class ProfileSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      color: Theme.of(context).colorScheme.primaryContainer,
       child: InkWell(
         onTap: () => context.push('/profile'),
         borderRadius: BorderRadius.circular(12),
@@ -21,7 +22,7 @@ class ProfileSummaryCard extends StatelessWidget {
               CircleAvatar(
                 radius: 30,
                 backgroundColor:
-                    Theme.of(context).primaryColor.withOpacity(0.1),
+                    Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
                 backgroundImage: user.profileImageUrl != null
                     ? NetworkImage(user.profileImageUrl!)
                     : null,
@@ -31,7 +32,7 @@ class ProfileSummaryCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).primaryColor,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       )
                     : null,
@@ -44,13 +45,14 @@ class ProfileSummaryCard extends StatelessWidget {
                     Text(
                       'Welcome back,',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[600],
+                            color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
                           ),
                     ),
                     Text(
                       user.name,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.onPrimaryContainer,
                           ),
                     ),
                     const SizedBox(height: 4),
@@ -59,28 +61,28 @@ class ProfileSummaryCard extends StatelessWidget {
                         Icon(
                           Icons.badge,
                           size: 16,
-                          color: Colors.grey[600],
+                          color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
                         ),
                         const SizedBox(width: 4),
                         Text(
                           user.role,
                           style:
                               Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Colors.grey[600],
+                                    color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
                                   ),
                         ),
                         const SizedBox(width: 16),
                         Icon(
                           Icons.calendar_today,
                           size: 16,
-                          color: Colors.grey[600],
+                          color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
                         ),
                         const SizedBox(width: 4),
                         Text(
                           'Since ${DateFormat('MMM yyyy').format(user.joinDate)}',
                           style:
                               Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Colors.grey[600],
+                                    color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
                                   ),
                         ),
                       ],
@@ -88,7 +90,7 @@ class ProfileSummaryCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: Colors.grey),
+              Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.5)),
             ],
           ),
         ),

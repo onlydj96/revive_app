@@ -7,6 +7,7 @@ import '../providers/user_pins_provider.dart';
 import '../models/update.dart';
 import '../widgets/create_update_dialog.dart';
 import '../widgets/update_detail_dialog.dart';
+import '../config/app_theme.dart';
 
 class UpdatesScreen extends ConsumerWidget {
   const UpdatesScreen({super.key});
@@ -40,9 +41,10 @@ class UpdatesScreen extends ConsumerWidget {
             onRefresh: () async {
               await ref.read(updatesProvider.notifier).refresh();
             },
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
+            child: SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (pinnedUpdates.isNotEmpty) ...[
@@ -127,6 +129,7 @@ class UpdatesScreen extends ConsumerWidget {
                       ),
                     ),
                 ],
+                ),
               ),
             ),
           );
@@ -213,8 +216,8 @@ class UpdateCard extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isPinned
-                        ? Theme.of(context).primaryColor.withOpacity(0.3)
-                        : Theme.of(context).primaryColor.withOpacity(0.2),
+                        ? Theme.of(context).primaryColor.withValues(alpha: 0.3)
+                        : Theme.of(context).primaryColor.withValues(alpha: 0.2),
                     width: 1,
                   ),
                 )
@@ -235,7 +238,7 @@ class UpdateCard extends ConsumerWidget {
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
                           color:
-                              _getUpdateTypeColor(update.type).withOpacity(0.1),
+                              _getUpdateTypeColor(update.type).withValues(alpha: 0.1),
                           child: Center(
                             child: Icon(
                               _getUpdateTypeIcon(update.type),
@@ -259,7 +262,7 @@ class UpdateCard extends ConsumerWidget {
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             color: _getUpdateTypeColor(update.type)
-                                .withOpacity(0.1),
+                                .withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(
@@ -280,7 +283,7 @@ class UpdateCard extends ConsumerWidget {
                                         horizontal: 8, vertical: 2),
                                     decoration: BoxDecoration(
                                       color: _getUpdateTypeColor(update.type)
-                                          .withOpacity(0.1),
+                                          .withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
@@ -376,7 +379,7 @@ class UpdateCard extends ConsumerWidget {
                     Text(
                       update.content,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[600],
+                            color: AppTheme.neutralN50,
                           ),
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
@@ -392,7 +395,7 @@ class UpdateCard extends ConsumerWidget {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: Colors.grey[100],
+                                    color: Theme.of(context).colorScheme.secondaryContainer,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
@@ -401,7 +404,8 @@ class UpdateCard extends ConsumerWidget {
                                         .textTheme
                                         .bodySmall
                                         ?.copyWith(
-                                          color: Colors.grey[600],
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
                                         ),
                                   ),
                                 ))

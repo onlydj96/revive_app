@@ -27,7 +27,15 @@
       "Bash($env:SUPABASE_ACCESS_TOKEN=\"sbp_199e507f49b2f4651e6ac7a3e919651f35cb1ba0\")",
       "Bash(cmd /c \"set SUPABASE_ACCESS_TOKEN=sbp_199e507f49b2f4651e6ac7a3e919651f35cb1ba0 && npx -y @supabase/mcp-server-supabase@latest --project-ref=cxwivzsafohbawhljevq --help\")",
       "Bash(claude --debug:*)",
-      "Bash(claude mcp list:*)"
+      "Bash(claude mcp list:*)",
+      "Bash(test:*)",
+      "Bash(lib/screens/teams_screen_backup.dart)",
+      "Bash(nul)",
+      "Bash(timeout 5 cat:*)",
+      "Bash(tee:*)",
+      "Bash(del \"c:\\workspace\\mobile\\revive_app\\lib\\themes\\app_colors.dart\")",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nrefactor: 코드 품질 개선 및 Resources 페이지네이션 UX 최적화\n\n중복 유틸리티 통합(UIUtils), DatabaseService 마이그레이션, Logger 도입, Resources 페이지네이션 성능 개선(65% 트리거, 80/50 페이지 크기), 코드 스타일 수정. Flutter analyze 이슈 273→92개로 66% 감소.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": []
   },

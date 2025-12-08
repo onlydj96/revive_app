@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../models/bulletin.dart';
+import '../config/app_theme.dart';
+import 'common/base_card.dart';
 
 class BulletinCard extends StatelessWidget {
   final Bulletin bulletin;
@@ -10,191 +12,194 @@ class BulletinCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 3,
-      shadowColor: Colors.grey.withValues(alpha: 0.3),
-      child: InkWell(
+    if (bulletin.bannerImageUrl != null) {
+      return ImageHeaderCard(
+        elevation: 2.0,
         onTap: () => context.push('/bulletin/${bulletin.id}'),
-        borderRadius: BorderRadius.circular(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (bulletin.bannerImageUrl != null)
-              ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(12)),
-                child: Container(
-                  height: 120,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Theme.of(context).primaryColor,
-                        Theme.of(context).primaryColor.withValues(alpha: 0.7),
-                      ],
-                    ),
-                  ),
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: Container(
-                          color: Theme.of(context).primaryColor,
-                        ),
-                      ),
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withValues(alpha: 0.3),
-                            ],
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 16,
-                        left: 16,
-                        right: 16,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'This Week\'s Bulletin',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                            ),
-                            Text(
-                              'Week of ${DateFormat('MMM d, yyyy').format(bulletin.weekOf)}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: Colors.white70,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+        headerHeight: 120,
+        bodyPadding: const EdgeInsets.all(16),
+        headerImage: _buildHeaderImage(context),
+        body: _buildCardBody(context),
+      );
+    }
+
+    return BaseCard(
+      elevation: 2.0,
+      onTap: () => context.push('/bulletin/${bulletin.id}'),
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Purple header section
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
               ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'This Week\'s Bulletin',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                ),
+                Text(
+                  'Week of ${DateFormat('MMM d, yyyy').format(bulletin.weekOf)}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
+                      ),
+                ),
+              ],
+            ),
+          ),
+          // White body section
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: _buildCardBody(context, showHeader: false),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeaderImage(BuildContext context) {
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Theme.of(context).colorScheme.primary,
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.transparent,
+                Colors.black.withValues(alpha: 0.2),
+              ],
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 16,
+          left: 16,
+          right: 16,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'This Week\'s Bulletin',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              Text(
+                'Week of ${DateFormat('MMM d, yyyy').format(bulletin.weekOf)}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.white70,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCardBody(BuildContext context, {bool showHeader = false}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          bulletin.theme,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+        ),
+        const SizedBox(height: 12),
+        ...bulletin.items.take(3).map((item) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (bulletin.bannerImageUrl == null) ...[
-                    Text(
-                      'This Week\'s Bulletin',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                  Container(
+                    width: 6,
+                    height: 6,
+                    margin: const EdgeInsets.only(top: 6, right: 8),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                      shape: BoxShape.circle,
                     ),
-                    Text(
-                      'Week of ${DateFormat('MMM d, yyyy').format(bulletin.weekOf)}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                          ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-
-                  Text(
-                    bulletin.theme,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).primaryColor,
-                        ),
                   ),
-                  const SizedBox(height: 12),
-
-                  ...bulletin.items.take(3).map((item) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: 6,
-                              height: 6,
-                              margin: const EdgeInsets.only(top: 6, right: 8),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).primaryColor,
-                                shape: BoxShape.circle,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.title,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
                               ),
-                            ),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    item.title,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                  ),
-                                  if (item.content.isNotEmpty)
-                                    Text(
-                                      item.content.length > 100
-                                          ? '${item.content.substring(0, 100)}...'
-                                          : item.content,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            color: Colors.grey[600],
-                                          ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ],
                         ),
-                      )),
-
-                  if (bulletin.items.length > 3) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      'and ${bulletin.items.length - 3} more items...',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                            fontStyle: FontStyle.italic,
+                        if (item.content.isNotEmpty)
+                          Text(
+                            item.content.length > 100
+                                ? '${item.content.substring(0, 100)}...'
+                                : item.content,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: AppTheme.neutralN50,
+                                ),
                           ),
-                    ),
-                  ],
-
-                  const SizedBox(height: 12),
-
-                  // View All Bulletins Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () => context.push('/bulletins'),
-                      icon: const Icon(Icons.library_books),
-                      label: const Text('View All 2025 Bulletins'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Theme.of(context).primaryColor,
-                      ),
+                      ],
                     ),
                   ),
                 ],
               ),
+            )),
+        if (bulletin.items.length > 3) ...[
+          const SizedBox(height: 8),
+          Text(
+            'and ${bulletin.items.length - 3} more items...',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppTheme.neutralN50,
+                  fontStyle: FontStyle.italic,
+                ),
+          ),
+        ],
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () => context.push('/bulletins'),
+            icon: const Icon(Icons.library_books),
+            label: const Text('View All 2025 Bulletins'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.primary,
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }

@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/media_folder.dart';
-import '../models/media_item.dart';
 import '../services/database_service.dart';
 import '../services/storage_service.dart';
 import '../services/supabase_service.dart';
@@ -19,11 +18,50 @@ final mediaFolderSearchProvider = StateProvider<String>((ref) => '');
 
 final showDeletedFoldersProvider = StateProvider<bool>((ref) => false);
 
+// Sorting providers
+final folderSortOptionProvider = StateProvider<FolderSortOption>((ref) => FolderSortOption.dateCreated);
+final folderSortAscendingProvider = StateProvider<bool>((ref) => false); // false = descending (newest first)
+
+// Provider to get actual media count for a folder from database
+// This ensures accurate counts even with pagination
+// Includes media items in all subfolders recursively
+final folderMediaCountProvider = FutureProvider.family<int, String>((ref, folderId) async {
+  return await DatabaseService.getMediaItemCountRecursive(folderId: folderId);
+});
+
+// Provider to get media counts for all folders in current directory
+// Used for accurate sorting by item count
+final folderMediaCountsProvider = FutureProvider<Map<String, int>>((ref) async {
+  final foldersAsyncValue = ref.watch(mediaFolderProvider);
+  final currentFolderId = ref.watch(currentFolderProvider);
+
+  return await foldersAsyncValue.when(
+    data: (folders) async {
+      final filtered = folders
+          .where((folder) => folder.parentId == currentFolderId && !folder.isDeleted)
+          .toList();
+
+      final counts = <String, int>{};
+      for (final folder in filtered) {
+        counts[folder.id] = await DatabaseService.getMediaItemCountRecursive(folderId: folder.id);
+      }
+      return counts;
+    },
+    loading: () async => <String, int>{},
+    error: (_, __) async => <String, int>{},
+  );
+});
+
 final filteredMediaFoldersProvider = Provider<List<MediaFolder>>((ref) {
   final foldersAsyncValue = ref.watch(mediaFolderProvider);
   final searchQuery = ref.watch(mediaFolderSearchProvider);
   final currentFolderId = ref.watch(currentFolderProvider);
   final showDeleted = ref.watch(showDeletedFoldersProvider);
+  final sortOption = ref.watch(folderSortOptionProvider);
+  final sortAscending = ref.watch(folderSortAscendingProvider);
+
+  // Watch folder counts for accurate item count sorting
+  final folderCountsAsync = ref.watch(folderMediaCountsProvider);
 
   return foldersAsyncValue.when(
     data: (folders) {
@@ -45,6 +83,41 @@ final filteredMediaFoldersProvider = Provider<List<MediaFolder>>((ref) {
                     false))
             .toList();
       }
+
+      // Apply sorting
+      filtered.sort((a, b) {
+        int comparison;
+        switch (sortOption) {
+          case FolderSortOption.name:
+            comparison = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+            break;
+          case FolderSortOption.dateCreated:
+            comparison = a.createdAt.compareTo(b.createdAt);
+            break;
+          case FolderSortOption.dateModified:
+            comparison = a.updatedAt.compareTo(b.updatedAt);
+            break;
+          case FolderSortOption.itemCount:
+            // Use accurate database counts when available
+            comparison = folderCountsAsync.when(
+              data: (counts) {
+                final countA = counts[a.id] ?? 0;
+                final countB = counts[b.id] ?? 0;
+                return countA.compareTo(countB);
+              },
+              loading: () {
+                // Fallback to in-memory count during loading
+                return a.totalItemCount.compareTo(b.totalItemCount);
+              },
+              error: (_, __) {
+                // Fallback to in-memory count on error
+                return a.totalItemCount.compareTo(b.totalItemCount);
+              },
+            );
+            break;
+        }
+        return sortAscending ? comparison : -comparison;
+      });
 
       return filtered;
     },
@@ -73,15 +146,10 @@ class MediaFolderNotifier extends StateNotifier<AsyncValue<List<MediaFolder>>> {
       final folders = <MediaFolder>[];
       final folderMap = <String, MediaFolder>{};
 
-      // First pass: Create all folders with their direct media items
+      // First pass: Create all folders without media items
+      // Media items are managed separately by mediaProvider and accessed via mediaByFolderProvider
       for (final folderData in foldersData) {
-        // Get media items for this folder
-        final mediaData =
-            await DatabaseService.getMediaItems(folderId: folderData['id']);
-        final mediaItems =
-            mediaData.map((item) => MediaItem.fromJson(item)).toList();
-
-        final folder = MediaFolder.fromJson(folderData, mediaItems: mediaItems);
+        final folder = MediaFolder.fromJson(folderData);
         folders.add(folder);
         folderMap[folder.id] = folder;
       }
@@ -181,6 +249,7 @@ class MediaFolderNotifier extends StateNotifier<AsyncValue<List<MediaFolder>>> {
     String? name,
     String? description,
     String? folderPath,
+    String? thumbnailUrl,
   }) async {
     // Store previous state for rollback
     final previousState = state;
@@ -194,6 +263,7 @@ class MediaFolderNotifier extends StateNotifier<AsyncValue<List<MediaFolder>>> {
               name: name ?? folder.name,
               description: description ?? folder.description,
               folderPath: folderPath ?? folder.folderPath,
+              thumbnailUrl: thumbnailUrl ?? folder.thumbnailUrl,
             );
           }
           return folder;
@@ -205,6 +275,7 @@ class MediaFolderNotifier extends StateNotifier<AsyncValue<List<MediaFolder>>> {
       if (name != null) data['name'] = name;
       if (description != null) data['description'] = description;
       if (folderPath != null) data['folder_path'] = folderPath;
+      if (thumbnailUrl != null) data['thumbnail_url'] = thumbnailUrl;
       data['updated_at'] = DateTime.now().toIso8601String();
 
       await DatabaseService.update('media_folders', id, data);
@@ -322,7 +393,25 @@ class MediaFolderNotifier extends StateNotifier<AsyncValue<List<MediaFolder>>> {
         'updated_at': now.toIso8601String(),
       };
 
-      await DatabaseService.update('media_folders', id, updateData);
+      await SupabaseService.update('media_folders', id, updateData);
+
+      // Cascade delete: Soft-delete all media items in this folder
+      final mediaItems = await SupabaseService.from('media_items')
+          .select('id')
+          .eq('folder_id', id)
+          .isFilter('deleted_at', null); // Only get non-deleted items
+
+      // Soft-delete each media item
+      for (final item in mediaItems) {
+        await SupabaseService.update('media_items', item['id'], {
+          'deleted_at': now.toIso8601String(),
+          'deleted_by': currentUserId,
+          'updated_at': now.toIso8601String(),
+        });
+      }
+
+      // Invalidate folder media count cache
+      ref.invalidate(folderMediaCountProvider(id));
     } catch (error) {
       // Rollback on error
       state = previousState;

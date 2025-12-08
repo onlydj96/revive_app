@@ -78,10 +78,20 @@ class TeamApplicationsNotifier extends StateNotifier<TeamApplicationsState> {
     ref.read(teamsProvider.notifier).joinTeam(teamId);
 
     try {
+      // Get user name and email from metadata
+      final userMeta = SupabaseService.currentUser?.userMetadata;
+      final userName = userMeta?['full_name'] ??
+                      userMeta?['name'] ??
+                      SupabaseService.currentUser?.email?.split('@')[0] ??
+                      'Unknown User';
+      final userEmail = SupabaseService.currentUser?.email ?? '';
+
       // Then try to update the server
       await SupabaseService.from('team_applications').insert({
         'user_id': userId,
         'team_id': teamId,
+        'user_name': userName,
+        'user_email': userEmail,
         'status': 'pending',
         'applied_at': DateTime.now().toIso8601String(),
       });

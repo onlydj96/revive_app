@@ -182,7 +182,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             end: Alignment.bottomRight,
             colors: [
               Theme.of(context).colorScheme.primary,
-              Theme.of(context).colorScheme.primary.withOpacity(0.8),
+              Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
             ],
           ),
         ),
@@ -239,7 +239,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                         color: Theme.of(context)
                             .colorScheme
                             .onPrimary
-                            .withOpacity(0.8),
+                            .withValues(alpha: 0.8),
                       ),
                 ),
               ),

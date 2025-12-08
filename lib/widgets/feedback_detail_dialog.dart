@@ -140,7 +140,7 @@ class FeedbackDetailDialog extends StatelessWidget {
                                     shape: BoxShape.circle,
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.red.withOpacity(0.3),
+                                        color: Colors.red.withValues(alpha: 0.3),
                                         spreadRadius: 4,
                                         blurRadius: 8,
                                       ),
@@ -269,7 +269,7 @@ class WorshipFeedbackMapPainter extends CustomPainter {
       size.height * 0.1,
     );
     canvas.drawRect(
-        stageRect, Paint()..color = const Color(0xFF6B46C1).withOpacity(0.3));
+        stageRect, Paint()..color = const Color(0xFF6B46C1).withValues(alpha: 0.3));
     canvas.drawRect(stageRect, paint);
 
     // Draw text
@@ -319,7 +319,7 @@ class WorshipFeedbackMapPainter extends CustomPainter {
       size.height * 0.05,
     );
     canvas.drawRect(
-        entranceRect, Paint()..color = Colors.green.withOpacity(0.3));
+        entranceRect, Paint()..color = Colors.green.withValues(alpha: 0.3));
 
     final entranceTextPainter = TextPainter(
       text: TextSpan(

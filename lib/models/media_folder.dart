@@ -146,13 +146,13 @@ extension FolderSortOptionExtension on FolderSortOption {
   String get label {
     switch (this) {
       case FolderSortOption.name:
-        return 'Name';
+        return '이름순';
       case FolderSortOption.dateCreated:
-        return 'Date Created';
+        return '생성일순';
       case FolderSortOption.dateModified:
-        return 'Date Modified';
+        return '수정일순';
       case FolderSortOption.itemCount:
-        return 'Item Count';
+        return '항목 수';
     }
   }
 }

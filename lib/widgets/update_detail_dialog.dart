@@ -31,7 +31,7 @@ class UpdateDetailDialog extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: _getUpdateTypeColor(update.type).withOpacity(0.1),
+                color: _getUpdateTypeColor(update.type).withValues(alpha: 0.1),
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(12)),
               ),
@@ -40,7 +40,7 @@ class UpdateDetailDialog extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: _getUpdateTypeColor(update.type).withOpacity(0.2),
+                      color: _getUpdateTypeColor(update.type).withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
@@ -84,7 +84,7 @@ class UpdateDetailDialog extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor.withOpacity(0.1),
+                        color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -157,7 +157,7 @@ class UpdateDetailDialog extends ConsumerWidget {
                               return Container(
                                 height: 200,
                                 color: _getUpdateTypeColor(update.type)
-                                    .withOpacity(0.1),
+                                    .withValues(alpha: 0.1),
                                 child: Center(
                                   child: Icon(
                                     _getUpdateTypeIcon(update.type),

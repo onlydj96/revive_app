@@ -58,10 +58,11 @@ class EventDetailScreen extends ConsumerWidget {
           ],
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             if (event.imageUrl != null)
               AspectRatio(
                 aspectRatio: 16 / 9,
@@ -70,7 +71,7 @@ class EventDetailScreen extends ConsumerWidget {
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
-                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                      color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                       child: const Icon(Icons.image, size: 64),
                     );
                   },
@@ -86,7 +87,7 @@ class EventDetailScreen extends ConsumerWidget {
                       Chip(
                         label: Text(_getEventTypeLabel(event.type)),
                         backgroundColor:
-                            _getEventTypeColor(event.type).withOpacity(0.2),
+                            _getEventTypeColor(event.type).withValues(alpha: 0.2),
                       ),
                       const SizedBox(width: 8),
                       if (event.isHighlighted)
@@ -203,8 +204,10 @@ class EventDetailScreen extends ConsumerWidget {
                               },
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundColor: isSignedUp ? Colors.orange : null,
-                          foregroundColor: isSignedUp ? Colors.white : null,
+                          backgroundColor: isSignedUp
+                              ? Colors.orange
+                              : Theme.of(context).colorScheme.secondary,
+                          foregroundColor: Colors.white,
                         ),
                         child: Text(
                           isFull && !isSignedUp
@@ -221,6 +224,7 @@ class EventDetailScreen extends ConsumerWidget {
               ),
             ),
           ],
+          ),
         ),
       ),
     );

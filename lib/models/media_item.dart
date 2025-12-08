@@ -92,7 +92,7 @@ class MediaItem {
       type: MediaType.fromString(json['type'] as String? ?? 'photo'),
       category:
           MediaCategory.fromString(json['category'] as String? ?? 'general'),
-      url: json['url'] as String? ?? json['file_url'] as String? ?? '',
+      url: json['file_url'] as String? ?? '',  // Use file_url from DB
       thumbnailUrl: json['thumbnail_url'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       photographer: json['photographer'] as String?,
@@ -160,4 +160,30 @@ class MediaItem {
 
   // Helper methods
   bool get isDeleted => deletedAt != null;
+}
+
+// Enum for media sorting options
+enum MediaSortOption {
+  dateNewest,
+  dateOldest,
+  nameAZ,
+  nameZA,
+  type,
+}
+
+extension MediaSortOptionExtension on MediaSortOption {
+  String get label {
+    switch (this) {
+      case MediaSortOption.dateNewest:
+        return '최신순';
+      case MediaSortOption.dateOldest:
+        return '오래된순';
+      case MediaSortOption.nameAZ:
+        return '이름 (가나다순)';
+      case MediaSortOption.nameZA:
+        return '이름 (역순)';
+      case MediaSortOption.type:
+        return '유형별';
+    }
+  }
 }

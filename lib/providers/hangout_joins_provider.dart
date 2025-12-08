@@ -74,25 +74,10 @@ class HangoutJoinsNotifier extends StateNotifier<HangoutJoinsState> {
     // Optimistic update: Update UI immediately
     final newJoinedHangouts = <String>{...state.joinedHangouts, teamId};
     state = state.copyWith(joinedHangouts: newJoinedHangouts);
-    ref.read(teamsProvider.notifier).joinTeam(teamId);
 
     try {
-      // Get user name from metadata
-      final userMeta = SupabaseService.currentUser?.userMetadata;
-      final userName = userMeta?['full_name'] ??
-          userMeta?['name'] ??
-          SupabaseService.currentUser?.email?.split('@')[0] ??
-          'Unknown User';
-
-      // Then try to update the server
-      await SupabaseService.from('team_memberships').insert({
-        'user_id': userId,
-        'team_id': teamId,
-        'user_name': userName,
-        'role': 'member',
-        'status': 'active',
-        'joined_at': DateTime.now().toIso8601String(),
-      });
+      // Delegate to teamsProvider - it handles DB insert with upsert
+      await ref.read(teamsProvider.notifier).joinTeam(teamId);
 
       // Remove from loading state on success
       state = state.copyWith(
@@ -110,7 +95,6 @@ class HangoutJoinsNotifier extends StateNotifier<HangoutJoinsState> {
         loadingHangouts: Set<String>.from(state.loadingHangouts)
           ..remove(teamId),
       );
-      ref.read(teamsProvider.notifier).leaveTeam(teamId);
 
       // Re-throw error so UI can handle it
       rethrow;
@@ -139,14 +123,10 @@ class HangoutJoinsNotifier extends StateNotifier<HangoutJoinsState> {
     final newJoinedHangouts = Set<String>.from(state.joinedHangouts)
       ..remove(teamId);
     state = state.copyWith(joinedHangouts: newJoinedHangouts);
-    ref.read(teamsProvider.notifier).leaveTeam(teamId);
 
     try {
-      // Then try to update the server
-      await SupabaseService.from('team_memberships')
-          .delete()
-          .eq('user_id', userId)
-          .eq('team_id', teamId);
+      // Delegate to teamsProvider - it handles DB delete
+      await ref.read(teamsProvider.notifier).leaveTeam(teamId);
 
       // Remove from loading state on success
       state = state.copyWith(
@@ -162,7 +142,6 @@ class HangoutJoinsNotifier extends StateNotifier<HangoutJoinsState> {
         loadingHangouts: Set<String>.from(state.loadingHangouts)
           ..remove(teamId),
       );
-      ref.read(teamsProvider.notifier).joinTeam(teamId);
 
       // Re-throw error so UI can handle it
       rethrow;

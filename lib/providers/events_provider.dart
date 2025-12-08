@@ -56,6 +56,12 @@ class EventsNotifier extends StateNotifier<List<Event>> {
   final _supabase = SupabaseService.client;
   RealtimeChannel? _eventsChannel;
 
+  // FIXED P0-2: Track loading operations to prevent race conditions
+  final Set<String> _loadingOperations = {};
+
+  /// Check if an event operation is currently in progress
+  bool isEventLoading(String eventId) => _loadingOperations.contains(eventId);
+
   Future<void> _loadEvents() async {
     try {
       final response = await _supabase
@@ -170,11 +176,19 @@ class EventsNotifier extends StateNotifier<List<Event>> {
   }
 
   Future<void> toggleEventSignUp(String eventId, WidgetRef widgetRef) async {
+    // FIXED P0-2: Prevent race conditions with loading state tracking
+    if (_loadingOperations.contains(eventId)) {
+      return; // Already processing this event
+    }
+
     final userSignedUpEvents = widgetRef.read(userSignedUpEventsProvider);
     final isSignedUp = userSignedUpEvents.contains(eventId);
     final userId = _supabase.auth.currentUser?.id;
 
     if (userId == null) return;
+
+    // Mark as loading
+    _loadingOperations.add(eventId);
 
     // Store previous state for rollback
     final previousState = state;
@@ -243,6 +257,9 @@ class EventsNotifier extends StateNotifier<List<Event>> {
           );
 
       rethrow;
+    } finally {
+      // FIXED P0-2: Always remove from loading set
+      _loadingOperations.remove(eventId);
     }
   }
 

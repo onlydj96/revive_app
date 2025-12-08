@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../models/notification.dart';
@@ -15,7 +16,25 @@ class MainScreen extends ConsumerWidget {
     final hasUnreadNotifications = ref.watch(hasUnreadNotificationsProvider);
     final unreadCount = ref.watch(unreadNotificationCountProvider);
 
-    return Scaffold(
+    // Check if we're on a main screen (one of the bottom nav items)
+    final String location = GoRouterState.of(context).uri.path;
+    final isMainScreen = ['/home', '/resources', '/schedule', '/teams', '/updates']
+        .any((path) => location.startsWith(path));
+
+    return PopScope(
+      canPop: !isMainScreen,
+      onPopInvokedWithResult: (bool didPop, dynamic result) async {
+        if (didPop) return;
+
+        // Only handle back button for main screens
+        if (isMainScreen) {
+          final shouldExit = await _showExitConfirmationDialog(context);
+          if (shouldExit == true && context.mounted) {
+            SystemNavigator.pop();
+          }
+        }
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: const Text('Ezer'),
         backgroundColor: Theme.of(context).primaryColor,
@@ -90,6 +109,30 @@ class MainScreen extends ConsumerWidget {
           BottomNavigationBarItem(
             icon: Icon(Icons.notifications),
             label: 'Updates',
+          ),
+        ],
+      ),
+      ),
+    );
+  }
+
+  Future<bool?> _showExitConfirmationDialog(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('앱 종료'),
+        content: const Text('앱을 종료하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('종료'),
           ),
         ],
       ),

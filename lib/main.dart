@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'router/app_router.dart';
 import 'services/deep_link_service.dart';
 import 'providers/theme_provider.dart';
@@ -8,6 +9,9 @@ import 'models/theme_mode.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // FIXED P0-5: Load environment variables before initializing services
+  await dotenv.load(fileName: ".env");
 
   // Initialize Deep Link Service
   await DeepLinkService.instance.initialize();

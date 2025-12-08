@@ -126,7 +126,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
           child: FloatingActionButton(
             heroTag: "back",
             mini: true,
-            backgroundColor: Colors.black.withOpacity(0.5),
+            backgroundColor: Colors.black.withValues(alpha: 0.5),
             onPressed: () => Navigator.of(context).pop(),
             child: const Icon(Icons.arrow_back, color: Colors.white),
           ),
@@ -143,7 +143,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5),
+                  color: Colors.black.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(15),
                 ),
                 child: Text(
@@ -170,7 +170,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                 backgroundColor: (currentIndex < mediaItems.length &&
                         mediaItems[currentIndex].isCollected)
                     ? Colors.red
-                    : Colors.white.withOpacity(0.9),
+                    : Colors.white.withValues(alpha: 0.9),
                 onPressed: currentIndex < mediaItems.length
                     ? () {
                         ref
@@ -193,7 +193,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
               FloatingActionButton(
                 heroTag: "share",
                 mini: true,
-                backgroundColor: Colors.white.withOpacity(0.9),
+                backgroundColor: Colors.white.withValues(alpha: 0.9),
                 onPressed: () {
                   // TODO: Implement share functionality
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -232,8 +232,8 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                 end: Alignment.bottomCenter,
                 colors: [
                   Colors.transparent,
-                  Colors.black.withOpacity(0.7),
-                  Colors.black.withOpacity(0.9),
+                  Colors.black.withValues(alpha: 0.7),
+                  Colors.black.withValues(alpha: 0.9),
                 ],
               ),
             ),
@@ -335,7 +335,7 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
                                 tag,
                                 style: const TextStyle(fontSize: 12),
                               ),
-                              backgroundColor: Colors.white.withOpacity(0.2),
+                              backgroundColor: Colors.white.withValues(alpha: 0.2),
                               labelStyle: const TextStyle(color: Colors.white),
                             ))
                         .toList(),
@@ -392,14 +392,14 @@ class _MediaDetailScreenState extends ConsumerState<MediaDetailScreen> {
             Icon(
               Icons.play_circle_filled,
               size: 80,
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
             ),
             const SizedBox(height: 16),
             Text(
               'Video Player\n(Coming Soon)',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withValues(alpha: 0.8),
                 fontSize: 18,
               ),
             ),

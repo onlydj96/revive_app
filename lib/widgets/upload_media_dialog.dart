@@ -25,11 +25,20 @@ class _UploadMediaDialogState extends ConsumerState<UploadMediaDialog> {
   final ImagePicker _picker = ImagePicker();
 
   @override
+  void initState() {
+    super.initState();
+    // Reset providers when dialog opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(uploadMediaLoadingProvider.notifier).state = false;
+      ref.read(uploadProgressProvider.notifier).state = 0.0;
+      ref.read(selectedMediaItemsProvider.notifier).state = [];
+    });
+  }
+
+  @override
   void dispose() {
-    // Reset providers when dialog is closed
-    ref.read(uploadMediaLoadingProvider.notifier).state = false;
-    ref.read(uploadProgressProvider.notifier).state = 0.0;
-    ref.read(selectedMediaItemsProvider.notifier).state = [];
+    // Don't reset providers in dispose() - they'll be reset when dialog reopens
+    // Using ref after widget disposal causes StateError
     super.dispose();
   }
 
@@ -198,6 +207,8 @@ class _UploadMediaDialogState extends ConsumerState<UploadMediaDialog> {
             ? Image.file(
                 File(media.path),
                 fit: BoxFit.cover,
+                cacheWidth: 120,  // Memory optimization: limit decoded image size
+                cacheHeight: 120,
                 errorBuilder: (context, error, stackTrace) =>
                     const Icon(Icons.photo),
               )

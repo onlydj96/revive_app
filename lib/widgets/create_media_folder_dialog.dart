@@ -203,11 +203,13 @@ class _CreateMediaFolderDialogState
                         children: [
                           const Icon(Icons.image, size: 20),
                           const SizedBox(width: 8),
-                          const Text(
-                            '썸네일 이미지 (선택사항)',
-                            style: TextStyle(fontWeight: FontWeight.w500),
+                          const Expanded(
+                            child: Text(
+                              '썸네일 이미지 (선택사항)',
+                              style: TextStyle(fontWeight: FontWeight.w500),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          const Spacer(),
                           TextButton.icon(
                             onPressed: _pickThumbnailImage,
                             icon:

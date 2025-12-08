@@ -1,6 +1,7 @@
 // This file is deprecated. Use SupabaseService instead.
 // Keeping for backward compatibility during migration.
 
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'supabase_service.dart';
 
 @Deprecated(
@@ -82,18 +83,123 @@ class DatabaseService {
     String? albumId,
     String? folderId,
     int? limit,
+    int? offset,
     bool excludeSoftDeleted = true,
   }) async {
-    return SupabaseService.getAll('media_items',
-        orderBy: 'created_at',
-        ascending: false,
-        limit: limit,
-        excludeSoftDeleted: excludeSoftDeleted);
+    dynamic query = SupabaseService.client.from('media_items').select();
+
+    // Filter by folder_id
+    if (folderId != null) {
+      query = query.eq('folder_id', folderId);
+    }
+
+    // Filter by type
+    if (type != null) {
+      query = query.eq('type', type);
+    }
+
+    // Filter by category
+    if (category != null) {
+      query = query.eq('category', category);
+    }
+
+    // Filter by search
+    if (search != null && search.isNotEmpty) {
+      query = query.or('title.ilike.%$search%,description.ilike.%$search%');
+    }
+
+    // Filter by album (legacy support)
+    if (albumId != null) {
+      query = query.eq('album_id', albumId);
+    }
+
+    // Exclude soft deleted
+    if (excludeSoftDeleted) {
+      query = query.isFilter('deleted_at', null);
+    }
+
+    // Order and pagination
+    query = query.order('created_at', ascending: false);
+
+    if (limit != null) {
+      query = query.limit(limit);
+    }
+
+    if (offset != null) {
+      query = query.range(offset, offset + (limit ?? 50) - 1);
+    }
+
+    final response = await query;
+    return List<Map<String, dynamic>>.from(response);
   }
 
   static Future<Map<String, dynamic>?> createMediaItem(
       Map<String, dynamic> data) async {
     return SupabaseService.create('media_items', data);
+  }
+
+  // Get count of media items in a folder (direct children only)
+  static Future<int> getMediaItemCount({
+    String? folderId,
+    bool excludeSoftDeleted = true,
+  }) async {
+    dynamic query = SupabaseService.client
+        .from('media_items')
+        .select();
+
+    // Filter by folder_id
+    if (folderId != null) {
+      query = query.eq('folder_id', folderId);
+    }
+
+    // Exclude soft deleted
+    if (excludeSoftDeleted) {
+      query = query.isFilter('deleted_at', null);
+    }
+
+    final response = await query.count(CountOption.exact);
+    return response.count;
+  }
+
+  // Get count of media items in a folder including all subfolders recursively
+  static Future<int> getMediaItemCountRecursive({
+    String? folderId,
+    bool excludeSoftDeleted = true,
+  }) async {
+    // Get direct media items in this folder
+    int totalCount = await getMediaItemCount(
+      folderId: folderId,
+      excludeSoftDeleted: excludeSoftDeleted,
+    );
+
+    // Get all subfolders
+    dynamic query = SupabaseService.client
+        .from('media_folders')
+        .select('id');
+
+    if (folderId != null) {
+      query = query.eq('parent_id', folderId);
+    } else {
+      query = query.isFilter('parent_id', null);
+    }
+
+    if (excludeSoftDeleted) {
+      query = query.isFilter('deleted_at', null);
+    }
+
+    final subfolders = await query;
+    final subfolderList = List<Map<String, dynamic>>.from(subfolders);
+
+    // Recursively get count from each subfolder
+    for (final subfolder in subfolderList) {
+      final subfolderCount = await getMediaItemCountRecursive(
+        folderId: subfolder['id'] as String,
+        excludeSoftDeleted: excludeSoftDeleted,
+      );
+      totalCount += subfolderCount;
+    }
+
+    return totalCount;
   }
 
   static Future<List<Map<String, dynamic>>> getEvents({

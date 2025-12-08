@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../models/update.dart';
+import '../config/app_theme.dart';
 
 class UpdatesPreview extends StatelessWidget {
   final List<Update> updates;
@@ -28,6 +29,9 @@ class UpdatesPreview extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: () => context.go('/updates'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.secondary,
+                  ),
                   child: const Text('View All'),
                 ),
               ],
@@ -40,7 +44,7 @@ class UpdatesPreview extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
                     border: Border(
-                      top: BorderSide(color: Colors.grey[200]!),
+                      top: BorderSide(color: AppTheme.outlineVariant),
                     ),
                   ),
                   child: Row(
@@ -49,13 +53,13 @@ class UpdatesPreview extends StatelessWidget {
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color:
-                              _getUpdateTypeColor(update.type).withOpacity(0.1),
+                              _getUpdateTypeColor(update.type, context).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
                           _getUpdateTypeIcon(update.type),
                           size: 16,
-                          color: _getUpdateTypeColor(update.type),
+                          color: _getUpdateTypeColor(update.type, context),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -95,7 +99,7 @@ class UpdatesPreview extends StatelessWidget {
                                   .textTheme
                                   .bodySmall
                                   ?.copyWith(
-                                    color: Colors.grey[600],
+                                    color: AppTheme.neutralN50,
                                   ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
@@ -107,7 +111,7 @@ class UpdatesPreview extends StatelessWidget {
                                   .textTheme
                                   .bodySmall
                                   ?.copyWith(
-                                    color: Colors.grey[500],
+                                    color: AppTheme.neutralN50,
                                   ),
                             ),
                           ],
@@ -139,18 +143,18 @@ class UpdatesPreview extends StatelessWidget {
     }
   }
 
-  Color _getUpdateTypeColor(UpdateType type) {
+  Color _getUpdateTypeColor(UpdateType type, BuildContext context) {
     switch (type) {
       case UpdateType.announcement:
-        return Colors.blue;
+        return AppTheme.getInfoColor(context); // 정보성 - 파랑
       case UpdateType.news:
-        return Colors.green;
+        return AppTheme.getSuccessColor(context); // 긍정적 소식 - 녹색
       case UpdateType.prayer:
-        return Colors.purple;
+        return Theme.of(context).colorScheme.tertiary; // 감성적 - Tertiary
       case UpdateType.celebration:
-        return Colors.orange;
+        return AppTheme.getWarningColor(context); // 주목 필요 - 주황
       case UpdateType.urgent:
-        return Colors.red;
+        return Theme.of(context).colorScheme.error; // 긴급 - 빨강
     }
   }
 }

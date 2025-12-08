@@ -53,9 +53,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ref.invalidate(updatesProvider);
         ref.invalidate(eventsProvider);
       },
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (user != null) ...[
@@ -87,6 +88,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               UpcomingEventsList(events: upcomingEvents.take(5).toList()),
             ],
           ],
+          ),
         ),
       ),
     );

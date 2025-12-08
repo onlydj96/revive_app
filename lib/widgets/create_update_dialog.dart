@@ -50,7 +50,7 @@ class _CreateUpdateDialogState extends State<CreateUpdateDialog> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    _getUpdateTypeColor(_selectedType).withOpacity(0.8),
+                    _getUpdateTypeColor(_selectedType).withValues(alpha: 0.8),
                     _getUpdateTypeColor(_selectedType),
                   ],
                   begin: Alignment.topLeft,
@@ -64,7 +64,7 @@ class _CreateUpdateDialogState extends State<CreateUpdateDialog> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -89,7 +89,7 @@ class _CreateUpdateDialogState extends State<CreateUpdateDialog> {
                         Text(
                           'Share news and announcements',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                             fontSize: 14,
                           ),
                         ),
@@ -144,7 +144,7 @@ class _CreateUpdateDialogState extends State<CreateUpdateDialog> {
                                           padding: const EdgeInsets.all(6),
                                           decoration: BoxDecoration(
                                             color: _getUpdateTypeColor(type)
-                                                .withOpacity(0.1),
+                                                .withValues(alpha: 0.1),
                                             borderRadius:
                                                 BorderRadius.circular(6),
                                           ),
@@ -322,7 +322,7 @@ class _CreateUpdateDialogState extends State<CreateUpdateDialog> {
                                 color: _isPinned
                                     ? Theme.of(context)
                                         .primaryColor
-                                        .withOpacity(0.1)
+                                        .withValues(alpha: 0.1)
                                     : Colors.grey[100],
                                 borderRadius: BorderRadius.circular(8),
                               ),

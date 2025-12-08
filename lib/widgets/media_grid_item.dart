@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../models/media_item.dart';
 import '../providers/permissions_provider.dart';
 
@@ -38,18 +39,29 @@ class MediaGridItem extends ConsumerWidget {
                       color: Colors.grey[200],
                     ),
                     child: mediaItem.thumbnailUrl != null
-                        ? Image.network(
-                            mediaItem.thumbnailUrl!,
+                        ? CachedNetworkImage(
+                            imageUrl: mediaItem.thumbnailUrl!,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Center(
-                                child: Icon(
-                                  _getMediaTypeIcon(mediaItem.type),
-                                  size: 48,
-                                  color: Colors.grey[600],
+                            memCacheWidth: 400,
+                            memCacheHeight: 400,
+                            maxWidthDiskCache: 600,
+                            maxHeightDiskCache: 600,
+                            placeholder: (context, url) => Container(
+                              color: Colors.grey[200],
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.grey[400],
                                 ),
-                              );
-                            },
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => Center(
+                              child: Icon(
+                                _getMediaTypeIcon(mediaItem.type),
+                                size: 48,
+                                color: Colors.grey[600],
+                              ),
+                            ),
                           )
                         : Center(
                             child: Icon(
@@ -76,7 +88,7 @@ class MediaGridItem extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.7),
+                        color: Colors.black.withValues(alpha: 0.7),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -99,7 +111,7 @@ class MediaGridItem extends ConsumerWidget {
                           child: Container(
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.7),
+                              color: Colors.black.withValues(alpha: 0.7),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
@@ -125,7 +137,7 @@ class MediaGridItem extends ConsumerWidget {
                             icon: Container(
                               padding: const EdgeInsets.all(4),
                               decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.7),
+                                color: Colors.black.withValues(alpha: 0.7),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
@@ -175,7 +187,7 @@ class MediaGridItem extends ConsumerWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                      color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -258,9 +270,9 @@ class MediaGridItem extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
+                color: Colors.orange.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
@@ -286,8 +298,10 @@ class MediaGridItem extends ConsumerWidget {
             child: const Text('취소'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.of(context).pop();
+              // Wait for dialog to fully close before calling onDelete
+              await Future.delayed(const Duration(milliseconds: 100));
               if (onDelete != null) {
                 onDelete();
               }

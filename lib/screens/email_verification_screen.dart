@@ -65,7 +65,7 @@ class _EmailVerificationScreenState
     });
 
     return Scaffold(
-      backgroundColor: Theme.of(context).primaryColor.withOpacity(0.05),
+      backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.05),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -90,11 +90,11 @@ class _EmailVerificationScreenState
                       width: 120,
                       height: 120,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor.withOpacity(0.1),
+                        color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                         border: Border.all(
                           color:
-                              Theme.of(context).primaryColor.withOpacity(0.3),
+                              Theme.of(context).primaryColor.withValues(alpha: 0.3),
                           width: 2,
                         ),
                       ),
@@ -135,7 +135,7 @@ class _EmailVerificationScreenState
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -164,10 +164,10 @@ class _EmailVerificationScreenState
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
+                  color: Colors.blue.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Colors.blue.withOpacity(0.3),
+                    color: Colors.blue.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Column(

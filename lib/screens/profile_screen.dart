@@ -53,8 +53,8 @@ class ProfileScreen extends ConsumerWidget {
                           radius: 50,
                           backgroundColor:
                               isAdmin
-                                  ? Colors.purple.withOpacity(0.1)
-                                  : Theme.of(context).primaryColor.withOpacity(0.1),
+                                  ? Colors.purple.withValues(alpha: 0.1)
+                                  : Theme.of(context).primaryColor.withValues(alpha: 0.1),
                           backgroundImage: user.userMetadata?['avatar_url'] != null
                               ? NetworkImage(user.userMetadata!['avatar_url'])
                               : null,
@@ -89,7 +89,7 @@ class ProfileScreen extends ConsumerWidget {
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.purple.withOpacity(0.3),
+                                    color: Colors.purple.withValues(alpha: 0.3),
                                     spreadRadius: 2,
                                     blurRadius: 8,
                                   ),
@@ -128,7 +128,7 @@ class ProfileScreen extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.purple.withOpacity(0.3),
+                              color: Colors.purple.withValues(alpha: 0.3),
                               spreadRadius: 1,
                               blurRadius: 4,
                               offset: const Offset(0, 2),
