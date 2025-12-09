@@ -42,6 +42,7 @@ class TeamsScreen extends ConsumerWidget {
         ),
         floatingActionButton: permissions.isAdmin
             ? FloatingActionButton.extended(
+                heroTag: 'teams_fab',
                 onPressed: () => context.push('/create-team'),
                 icon: const Icon(Icons.add),
                 label: const Text('Create Team'),

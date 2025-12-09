@@ -1,7 +1,10 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/logger.dart';
 import 'supabase_service.dart';
+
+final _logger = Logger('StorageService');
 
 class StorageService {
   static const String mediaBucket = 'media';
@@ -60,16 +63,16 @@ class StorageService {
       // Construct full path with folder structure
       final fullPath = '$folderPath/$fileName'.replaceAll('//', '/');
 
-      print('📤 [STORAGE] Uploading to: $bucketName/$fullPath');
+      _logger.debug('📤 [STORAGE] Uploading to: $bucketName/$fullPath');
 
       // Determine MIME type from file extension
       final String contentType = _getMimeType(fileName);
-      print('   Content-Type: $contentType');
+      _logger.debug('   Content-Type: $contentType');
 
       // Upload based on file type with upsert to handle duplicates
       if (file is File) {
         final bytes = await file.readAsBytes();
-        print('   File size: ${(bytes.length / 1024).toStringAsFixed(2)} KB');
+        _logger.debug('   File size: ${(bytes.length / 1024).toStringAsFixed(2)} KB');
 
         final response = await SupabaseService.storage.from(bucketName).uploadBinary(
               fullPath,
@@ -79,9 +82,9 @@ class StorageService {
                 contentType: contentType,
               ),
             );
-        print('✅ [STORAGE] Upload successful: $response');
+        _logger.debug('✅ [STORAGE] Upload successful: $response');
       } else if (file is Uint8List) {
-        print('   File size: ${(file.length / 1024).toStringAsFixed(2)} KB');
+        _logger.debug('   File size: ${(file.length / 1024).toStringAsFixed(2)} KB');
 
         final response = await SupabaseService.storage.from(bucketName).uploadBinary(
               fullPath,
@@ -91,12 +94,12 @@ class StorageService {
                 contentType: contentType,
               ),
             );
-        print('✅ [STORAGE] Upload successful: $response');
+        _logger.debug('✅ [STORAGE] Upload successful: $response');
       } else if (file is String) {
         // Assume it's a file path
         final fileObj = File(file);
         final bytes = await fileObj.readAsBytes();
-        print('   File size: ${(bytes.length / 1024).toStringAsFixed(2)} KB');
+        _logger.debug('   File size: ${(bytes.length / 1024).toStringAsFixed(2)} KB');
 
         final response = await SupabaseService.storage.from(bucketName).uploadBinary(
               fullPath,
@@ -106,29 +109,27 @@ class StorageService {
                 contentType: contentType,
               ),
             );
-        print('✅ [STORAGE] Upload successful: $response');
+        _logger.debug('✅ [STORAGE] Upload successful: $response');
       }
 
       // Return the public URL
       final url =
           SupabaseService.storage.from(bucketName).getPublicUrl(fullPath);
 
-      print('🔗 [STORAGE] Public URL: $url');
+      _logger.debug('🔗 [STORAGE] Public URL: $url');
 
       // Verify the URL format is correct
       if (!url.contains(bucketName) || !url.contains(fullPath)) {
-        print('⚠️  [STORAGE] Warning: Generated URL might be incorrect!');
-        print('   Expected bucket: $bucketName, path: $fullPath');
-        print('   Got URL: $url');
+        _logger.warning('⚠️  [STORAGE] Warning: Generated URL might be incorrect!');
+        _logger.warning('   Expected bucket: $bucketName, path: $fullPath');
+        _logger.warning('   Got URL: $url');
       }
 
       return url;
     } catch (e, stackTrace) {
-      print('❌ [STORAGE] Upload failed!');
-      print('   Bucket: $bucketName');
-      print('   Path: $folderPath/$fileName');
-      print('   Error: $e');
-      print('   Stack: $stackTrace');
+      _logger.error('❌ [STORAGE] Upload failed!', e, stackTrace);
+      _logger.error('   Bucket: $bucketName');
+      _logger.error('   Path: $folderPath/$fileName');
       throw Exception('Failed to upload file to $bucketName/$folderPath/$fileName: $e');
     }
   }

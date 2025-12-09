@@ -49,13 +49,15 @@ class TeamsNotifier extends StateNotifier<List<Team>> {
   Future<void> joinTeam(String teamId) async {
     _logger.debug('🟢 joinTeam START: teamId=$teamId');
 
-    // Prevent duplicate requests
+    // CRITICAL: Prevent duplicate requests with synchronous check
     if (_loadingTeams.contains(teamId)) {
-      _logger.debug('⚠️ joinTeam BLOCKED: Already loading');
+      _logger.debug('⚠️ joinTeam BLOCKED: Already loading for teamId=$teamId');
       return;
     }
 
+    // Immediately mark as loading BEFORE any async operations
     _loadingTeams.add(teamId);
+    _logger.debug('🟢 joinTeam: Added to loading set, teamId=$teamId');
 
     try {
       final userId = SupabaseService.currentUser?.id;
@@ -65,57 +67,62 @@ class TeamsNotifier extends StateNotifier<List<Team>> {
 
       final team = state.firstWhere((team) => team.id == teamId);
 
-      // OPTIMISTIC UPDATE: Immediately update UI state
-      _logger.debug('🟢 joinTeam: Calling setMembershipOptimistic(true)');
-      ref.read(teamMembershipProvider.notifier).setMembershipOptimistic(teamId, true);
-
-      // Get user name from metadata
+      // Get user info from metadata
       final userMeta = SupabaseService.currentUser?.userMetadata;
       final userName = userMeta?['full_name'] ??
                       userMeta?['name'] ??
                       SupabaseService.currentUser?.email?.split('@')[0] ??
                       'Unknown User';
 
-      // Use upsert to prevent race conditions - database will handle uniqueness
-      // This is safer than check-then-insert pattern
-      final result = await SupabaseService.from('team_memberships')
-          .upsert({
-            'team_id': teamId,
-            'user_id': userId,
-            'user_name': userName,
-            'role': 'member',
-            'status': 'active',
-            'join_date': DateTime.now().toIso8601String(),
-          },
-          onConflict: 'team_id,user_id')
-          .select()
-          .maybeSingle();
+      // Route to correct table based on team type
+      if (team.type == TeamType.hangout) {
+        // Hangouts: Direct join via hangout_joins table
+        _logger.debug('🟢 joinTeam: Joining hangout directly');
 
-      // Only increment if this was a new insertion (not an update)
-      if (result != null && result['join_date'] != null) {
-        final joinDate = DateTime.parse(result['join_date']);
-        final now = DateTime.now();
-        final isNewMember = now.difference(joinDate).inSeconds < 5;
+        // OPTIMISTIC UPDATE: Immediately update UI state
+        ref.read(teamMembershipProvider.notifier).setMembershipOptimistic(teamId, true);
 
-        if (isNewMember) {
-          // Increment member count atomically
-          final updatedTeam =
-              team.copyWith(currentMembers: team.currentMembers + 1);
+        final result = await SupabaseService.from('hangout_joins')
+            .upsert({
+              'team_id': teamId,
+              'user_id': userId,
+              'user_name': userName,
+              'status': 'active',
+              'joined_at': DateTime.now().toIso8601String(),
+            },
+            onConflict: 'team_id,user_id')
+            .select()
+            .maybeSingle();
 
-          await SupabaseService.from('teams').update(
-              {'current_members': updatedTeam.currentMembers}).eq('id', teamId);
+        // Only increment if this was a new insertion
+        if (result != null && result['joined_at'] != null) {
+          final joinDate = DateTime.parse(result['joined_at']);
+          final now = DateTime.now();
+          final isNewMember = now.difference(joinDate).inSeconds < 5;
 
-          state = state.map((team) {
-            return team.id == teamId ? updatedTeam : team;
-          }).toList();
+          if (isNewMember) {
+            final updatedTeam = team.copyWith(currentMembers: team.currentMembers + 1);
+            await SupabaseService.from('teams').update(
+                {'current_members': updatedTeam.currentMembers}).eq('id', teamId);
+
+            state = state.map((t) => t.id == teamId ? updatedTeam : t).toList();
+          }
         }
-      }
 
-      _logger.debug('🟢 joinTeam SUCCESS');
+        _logger.debug('🟢 joinTeam SUCCESS: Hangout joined');
+      } else {
+        // Connect Groups: Should use team_applications_provider instead
+        // This code path should not be reached for Connect Groups
+        _logger.error('⚠️ joinTeam: Connect Groups should use team_applications_provider');
+        throw Exception('Connect Groups require application. Please use the application flow.');
+      }
     } catch (e) {
       _logger.error('❌joinTeam ERROR: $e');
-      // ROLLBACK: Revert optimistic update on failure
-      ref.read(teamMembershipProvider.notifier).setMembershipOptimistic(teamId, false);
+      // ROLLBACK: Revert optimistic update on failure (only for hangouts)
+      final team = state.firstWhere((team) => team.id == teamId);
+      if (team.type == TeamType.hangout) {
+        ref.read(teamMembershipProvider.notifier).setMembershipOptimistic(teamId, false);
+      }
       rethrow;
     } finally {
       _loadingTeams.remove(teamId);
@@ -126,13 +133,15 @@ class TeamsNotifier extends StateNotifier<List<Team>> {
   Future<void> leaveTeam(String teamId) async {
     _logger.debug('🔴 leaveTeam START: teamId=$teamId');
 
-    // Prevent duplicate requests
+    // CRITICAL: Prevent duplicate requests with synchronous check
     if (_loadingTeams.contains(teamId)) {
-      _logger.debug('⚠️ leaveTeam BLOCKED: Already loading');
+      _logger.debug('⚠️ leaveTeam BLOCKED: Already loading for teamId=$teamId');
       return;
     }
 
+    // Immediately mark as loading BEFORE any async operations
     _loadingTeams.add(teamId);
+    _logger.debug('🔴 leaveTeam: Added to loading set, teamId=$teamId');
 
     try {
       final userId = SupabaseService.currentUser?.id;
@@ -146,11 +155,22 @@ class TeamsNotifier extends StateNotifier<List<Team>> {
       _logger.debug('🔴 leaveTeam: Calling setMembershipOptimistic(false)');
       ref.read(teamMembershipProvider.notifier).setMembershipOptimistic(teamId, false);
 
-      // Remove user from team_memberships
-      await SupabaseService.from('team_memberships')
-          .delete()
-          .eq('team_id', teamId)
-          .eq('user_id', userId);
+      // Route to correct table based on team type
+      if (team.type == TeamType.hangout) {
+        // Hangouts: Remove from hangout_joins
+        _logger.debug('🔴 leaveTeam: Leaving hangout');
+        await SupabaseService.from('hangout_joins')
+            .delete()
+            .eq('team_id', teamId)
+            .eq('user_id', userId);
+      } else {
+        // Connect Groups: Remove from team_memberships
+        _logger.debug('🔴 leaveTeam: Leaving connect group');
+        await SupabaseService.from('team_memberships')
+            .delete()
+            .eq('team_id', teamId)
+            .eq('user_id', userId);
+      }
 
       // Decrement member count
       if (team.currentMembers > 0) {

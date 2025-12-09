@@ -87,6 +87,73 @@ class ScheduleScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildCustomDayCell(
+    BuildContext context,
+    DateTime day,
+    List<Event> allEvents,
+    DateTime selectedDate, {
+    required bool isToday,
+    required bool isSelected,
+  }) {
+    final hasEvents =
+        allEvents.any((event) => isSameDay(event.startTime, day));
+    final primaryColor = Theme.of(context).primaryColor;
+
+    return Container(
+      margin: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        // Selected: filled background
+        color: isSelected ? primaryColor : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+        // Today: thin border
+        border: isToday && !isSelected
+            ? Border.all(
+                color: primaryColor.withValues(alpha: 0.5),
+                width: 1.5,
+              )
+            : null,
+      ),
+      child: Stack(
+        children: [
+          // Left bar for events
+          if (hasEvents)
+            Positioned(
+              left: 2,
+              top: 6,
+              bottom: 6,
+              child: Container(
+                width: 3,
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Colors.white.withValues(alpha: 0.9)
+                      : primaryColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+          // Day number
+          Center(
+            child: Text(
+              '${day.day}',
+              style: TextStyle(
+                color: isSelected
+                    ? Colors.white
+                    : (day.weekday == DateTime.saturday ||
+                            day.weekday == DateTime.sunday)
+                        ? primaryColor
+                        : Colors.black87,
+                fontWeight: isToday || isSelected || hasEvents
+                    ? FontWeight.bold
+                    : FontWeight.normal,
+                fontSize: 15,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final events = ref.watch(eventsProvider);
@@ -162,17 +229,24 @@ class ScheduleScreen extends ConsumerWidget {
                       TextStyle(color: Theme.of(context).primaryColor),
                   holidayTextStyle:
                       TextStyle(color: Theme.of(context).primaryColor),
-                  markerDecoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor,
-                    shape: BoxShape.circle,
+                  // Remove default marker decoration (we'll use custom builder)
+                  markerDecoration: const BoxDecoration(
+                    color: Colors.transparent,
                   ),
-                  selectedDecoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor,
-                    shape: BoxShape.circle,
+                  // Remove default selected decoration (we'll use custom builder)
+                  selectedDecoration: const BoxDecoration(
+                    color: Colors.transparent,
                   ),
-                  todayDecoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor.withValues(alpha: 0.5),
-                    shape: BoxShape.circle,
+                  // Remove default today decoration (we'll use custom builder)
+                  todayDecoration: const BoxDecoration(
+                    color: Colors.transparent,
+                  ),
+                  // Set default cell style
+                  defaultDecoration: const BoxDecoration(
+                    color: Colors.transparent,
+                  ),
+                  weekendDecoration: const BoxDecoration(
+                    color: Colors.transparent,
                   ),
                 ),
                 headerStyle: HeaderStyle(
@@ -189,6 +263,39 @@ class ScheduleScreen extends ConsumerWidget {
                 onDaySelected: (selectedDay, focusedDay) {
                   ref.read(selectedDateProvider.notifier).state = selectedDay;
                 },
+                // Custom cell builder for visual design
+                calendarBuilders: CalendarBuilders(
+                  defaultBuilder: (context, day, focusedDay) {
+                    return _buildCustomDayCell(
+                      context,
+                      day,
+                      events,
+                      selectedDate,
+                      isToday: false,
+                      isSelected: false,
+                    );
+                  },
+                  todayBuilder: (context, day, focusedDay) {
+                    return _buildCustomDayCell(
+                      context,
+                      day,
+                      events,
+                      selectedDate,
+                      isToday: true,
+                      isSelected: isSameDay(selectedDate, day),
+                    );
+                  },
+                  selectedBuilder: (context, day, focusedDay) {
+                    return _buildCustomDayCell(
+                      context,
+                      day,
+                      events,
+                      selectedDate,
+                      isToday: isSameDay(day, DateTime.now()),
+                      isSelected: true,
+                    );
+                  },
+                ),
               ),
             ),
 

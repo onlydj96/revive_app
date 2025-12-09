@@ -2,9 +2,9 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/media_item.dart';
-import '../services/database_service.dart';
 import '../services/storage_service.dart';
 import '../services/supabase_service.dart';
+import '../utils/logger.dart';
 import '../widgets/upload_media_dialog.dart';
 
 final mediaProvider =
@@ -112,9 +112,11 @@ final mediaByFolderProvider = Provider.family<List<MediaItem>, String?>((ref, fo
   );
 });
 
+final _logger = Logger('MediaNotifier');
+
 class MediaNotifier extends StateNotifier<AsyncValue<List<MediaItem>>> {
   MediaNotifier() : super(const AsyncValue.loading()) {
-    print('🎯 [MEDIA NOTIFIER] Constructor called, initializing...');
+    _logger.debug('🎯 [MEDIA NOTIFIER] Constructor called, initializing...');
     _loadMedia();
     _setupRealtimeSubscription();
   }
@@ -131,32 +133,31 @@ class MediaNotifier extends StateNotifier<AsyncValue<List<MediaItem>>> {
   Future<void> _loadMedia() async {
     try {
       state = const AsyncValue.loading();
-      print('🔍 [MEDIA PROVIDER] Loading initial media items...');
+      _logger.debug('🔍 [MEDIA PROVIDER] Loading initial media items...');
 
       // Reset pagination state
       _currentOffset = 0;
       _hasMoreData = true;
 
-      final data = await DatabaseService.getMediaItems(limit: _initialPageSize);
-      print('   Fetched ${data.length} media items from database');
+      final data = await SupabaseService.getMediaItems(limit: _initialPageSize);
+      _logger.debug('   Fetched ${data.length} media items from database');
 
       final media = data.map((item) => MediaItem.fromJson(item)).toList();
-      print('   Parsed ${media.length} MediaItem objects');
+      _logger.debug('   Parsed ${media.length} MediaItem objects');
 
       if (media.isNotEmpty) {
-        print('   Sample IDs: ${media.take(3).map((m) => '${m.id} (folder: ${m.folderId})').toList()}');
+        _logger.debug('   Sample IDs: ${media.take(3).map((m) => '${m.id} (folder: ${m.folderId})').toList()}');
       }
 
       // Update pagination state
       _currentOffset = media.length;
       _hasMoreData = data.length == _initialPageSize;
 
-      print('   Pagination: offset=$_currentOffset, hasMore=$_hasMoreData');
+      _logger.debug('   Pagination: offset=$_currentOffset, hasMore=$_hasMoreData');
 
       state = AsyncValue.data(media);
     } catch (error, stackTrace) {
-      print('❌ [MEDIA PROVIDER] Error loading media: $error');
-      print('   Stack trace: $stackTrace');
+      _logger.error('❌ [MEDIA PROVIDER] Error loading media: $error', error, stackTrace);
       state = AsyncValue.error(error, stackTrace);
     }
   }
@@ -164,25 +165,25 @@ class MediaNotifier extends StateNotifier<AsyncValue<List<MediaItem>>> {
   Future<void> loadMoreMedia() async {
     // Prevent multiple simultaneous loads
     if (_isLoadingMore || !_hasMoreData) {
-      print('⏭️ [MEDIA PROVIDER] Skip load more: loading=$_isLoadingMore, hasMore=$_hasMoreData');
+      _logger.debug('⏭️ [MEDIA PROVIDER] Skip load more: loading=$_isLoadingMore, hasMore=$_hasMoreData');
       return;
     }
 
     _isLoadingMore = true;
-    print('📄 [MEDIA PROVIDER] Loading more media items...');
-    print('   Current offset: $_currentOffset');
+    _logger.debug('📄 [MEDIA PROVIDER] Loading more media items...');
+    _logger.debug('   Current offset: $_currentOffset');
 
     try {
-      final data = await DatabaseService.getMediaItems(
+      final data = await SupabaseService.getMediaItems(
         limit: _pageSize,
         offset: _currentOffset,
       );
 
-      print('   Fetched ${data.length} additional items');
+      _logger.debug('   Fetched ${data.length} additional items');
 
       if (data.isEmpty) {
         _hasMoreData = false;
-        print('   No more data available');
+        _logger.debug('   No more data available');
         return;
       }
 
@@ -195,11 +196,11 @@ class MediaNotifier extends StateNotifier<AsyncValue<List<MediaItem>>> {
         _currentOffset += newMedia.length;
         _hasMoreData = data.length == _pageSize;
 
-        print('   Total media: ${updatedMedia.length}');
-        print('   New offset: $_currentOffset, hasMore: $_hasMoreData');
+        _logger.debug('   Total media: ${updatedMedia.length}');
+        _logger.debug('   New offset: $_currentOffset, hasMore: $_hasMoreData');
       });
     } catch (error) {
-      print('❌ [MEDIA PROVIDER] Error loading more media: $error');
+      _logger.error('❌ [MEDIA PROVIDER] Error loading more media: $error', error);
     } finally {
       _isLoadingMore = false;
     }
@@ -209,7 +210,7 @@ class MediaNotifier extends StateNotifier<AsyncValue<List<MediaItem>>> {
   bool get isLoadingMore => _isLoadingMore;
 
   void _setupRealtimeSubscription() {
-    _channel = DatabaseService.subscribeToTable(
+    _channel = SupabaseService.subscribeToTable(
       'media_items',
       (newRecord) {
         // Handle insert
@@ -272,7 +273,7 @@ class MediaNotifier extends StateNotifier<AsyncValue<List<MediaItem>>> {
         'folder_id': folderId,
       };
 
-      await DatabaseService.createMediaItem(data);
+      await SupabaseService.createMediaItem(data);
       // The real-time subscription will handle updating the state
     } catch (error) {
       rethrow;
@@ -301,7 +302,7 @@ class MediaNotifier extends StateNotifier<AsyncValue<List<MediaItem>>> {
       if (photographer != null) data['photographer'] = photographer;
       if (tags != null) data['tags'] = tags;
 
-      await DatabaseService.update('media_items', id, data);
+      await SupabaseService.update('media_items', id, data);
       // The real-time subscription will handle updating the state
     } catch (error) {
       rethrow;
@@ -310,7 +311,7 @@ class MediaNotifier extends StateNotifier<AsyncValue<List<MediaItem>>> {
 
   Future<void> deleteMediaItem(String id) async {
     try {
-      await DatabaseService.delete('media_items', id);
+      await SupabaseService.delete('media_items', id);
       // The real-time subscription will handle updating the state
     } catch (error) {
       rethrow;
@@ -325,7 +326,7 @@ class MediaNotifier extends StateNotifier<AsyncValue<List<MediaItem>>> {
         throw Exception('User must be authenticated to delete media');
       }
 
-      await DatabaseService.update('media_items', id, {
+      await SupabaseService.update('media_items', id, {
         'deleted_at': DateTime.now().toIso8601String(),
         'deleted_by': currentUser.id,
         'updated_at': DateTime.now().toIso8601String(),
@@ -340,7 +341,7 @@ class MediaNotifier extends StateNotifier<AsyncValue<List<MediaItem>>> {
 
   Future<void> restoreMedia(String id) async {
     try {
-      await DatabaseService.update('media_items', id, {
+      await SupabaseService.update('media_items', id, {
         'deleted_at': null,
         'deleted_by': null,
         'updated_at': DateTime.now().toIso8601String(),

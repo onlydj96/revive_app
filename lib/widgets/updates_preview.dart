@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../models/update.dart';
 import '../config/app_theme.dart';
+import './update_detail_dialog.dart';
 
 class UpdatesPreview extends StatelessWidget {
   final List<Update> updates;
@@ -38,7 +39,10 @@ class UpdatesPreview extends StatelessWidget {
             ),
           ),
           ...updates.map((update) => InkWell(
-                onTap: () => context.push('/update/${update.id}'),
+                onTap: () => showDialog(
+                  context: context,
+                  builder: (context) => UpdateDetailDialog(update: update),
+                ),
                 child: Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/media_folder.dart';
-import '../services/database_service.dart';
 import '../services/storage_service.dart';
 import '../services/supabase_service.dart';
 import 'error_provider.dart';
@@ -26,7 +25,7 @@ final folderSortAscendingProvider = StateProvider<bool>((ref) => false); // fals
 // This ensures accurate counts even with pagination
 // Includes media items in all subfolders recursively
 final folderMediaCountProvider = FutureProvider.family<int, String>((ref, folderId) async {
-  return await DatabaseService.getMediaItemCountRecursive(folderId: folderId);
+  return await SupabaseService.getMediaItemCountRecursive(folderId: folderId);
 });
 
 // Provider to get media counts for all folders in current directory
@@ -43,7 +42,7 @@ final folderMediaCountsProvider = FutureProvider<Map<String, int>>((ref) async {
 
       final counts = <String, int>{};
       for (final folder in filtered) {
-        counts[folder.id] = await DatabaseService.getMediaItemCountRecursive(folderId: folder.id);
+        counts[folder.id] = await SupabaseService.getMediaItemCountRecursive(folderId: folder.id);
       }
       return counts;
     },
@@ -140,7 +139,7 @@ class MediaFolderNotifier extends StateNotifier<AsyncValue<List<MediaFolder>>> {
       state = const AsyncValue.loading();
 
       // Get all folders including soft deleted ones (filtering happens in UI)
-      final foldersData = await DatabaseService.getAll('media_folders',
+      final foldersData = await SupabaseService.getAll('media_folders',
           orderBy: 'created_at', ascending: false, excludeSoftDeleted: false);
 
       final folders = <MediaFolder>[];
@@ -185,7 +184,7 @@ class MediaFolderNotifier extends StateNotifier<AsyncValue<List<MediaFolder>>> {
   }
 
   void _setupRealtimeSubscription() {
-    _channel = DatabaseService.subscribeToTable(
+    _channel = SupabaseService.subscribeToTable(
       'media_folders',
       (newRecord) {
         // Handle insert - reload folders
@@ -218,7 +217,7 @@ class MediaFolderNotifier extends StateNotifier<AsyncValue<List<MediaFolder>>> {
         'thumbnail_url': thumbnailUrl,
       };
 
-      final result = await DatabaseService.create('media_folders', folderData);
+      final result = await SupabaseService.create('media_folders', folderData);
       final folderId = result!['id'] as String;
 
       // Create folder in storage
@@ -278,7 +277,7 @@ class MediaFolderNotifier extends StateNotifier<AsyncValue<List<MediaFolder>>> {
       if (thumbnailUrl != null) data['thumbnail_url'] = thumbnailUrl;
       data['updated_at'] = DateTime.now().toIso8601String();
 
-      await DatabaseService.update('media_folders', id, data);
+      await SupabaseService.update('media_folders', id, data);
     } catch (error) {
       // Rollback on error
       state = previousState;
@@ -289,21 +288,20 @@ class MediaFolderNotifier extends StateNotifier<AsyncValue<List<MediaFolder>>> {
   Future<void> deleteFolder(String id) async {
     try {
       // Get folder data first
-      final folderData = await DatabaseService.getById('media_folders', id);
+      final folderData = await SupabaseService.getById('media_folders', id);
       if (folderData == null) return;
 
       // Delete all media items in this folder
-      final mediaItems = await DatabaseService.getMediaItems(folderId: id);
+      final mediaItems = await SupabaseService.getMediaItems(folderId: id);
       for (final item in mediaItems) {
-        await DatabaseService.delete('media_items', item['id']);
+        await SupabaseService.delete('media_items', item['id']);
       }
 
       // Delete all subfolders recursively
-      final subfolders = await DatabaseService.query(
-        'media_folders',
-        where: 'parent_id = ?',
-        whereArgs: [id],
-      );
+      final subfolders = await SupabaseService.client
+          .from('media_folders')
+          .select()
+          .eq('parent_id', id);
       for (final subfolder in subfolders) {
         await deleteFolder(subfolder['id']);
       }
@@ -316,7 +314,7 @@ class MediaFolderNotifier extends StateNotifier<AsyncValue<List<MediaFolder>>> {
       );
 
       // Delete folder from database
-      await DatabaseService.delete('media_folders', id);
+      await SupabaseService.delete('media_folders', id);
     } catch (error) {
       rethrow;
     }
@@ -324,7 +322,7 @@ class MediaFolderNotifier extends StateNotifier<AsyncValue<List<MediaFolder>>> {
 
   Future<void> moveFolder(String folderId, String? newParentId) async {
     try {
-      await DatabaseService.update('media_folders', folderId, {
+      await SupabaseService.update('media_folders', folderId, {
         'parent_id': newParentId,
         'updated_at': DateTime.now().toIso8601String(),
       });
@@ -438,7 +436,7 @@ class MediaFolderNotifier extends StateNotifier<AsyncValue<List<MediaFolder>>> {
       });
 
       // Sync with backend
-      await DatabaseService.update('media_folders', id, {
+      await SupabaseService.update('media_folders', id, {
         'deleted_at': null,
         'deleted_by': null,
         'updated_at': DateTime.now().toIso8601String(),
@@ -461,7 +459,7 @@ class MediaFolderNotifier extends StateNotifier<AsyncValue<List<MediaFolder>>> {
       });
 
       // Sync with backend - delete permanently
-      await DatabaseService.delete('media_folders', id);
+      await SupabaseService.delete('media_folders', id);
     } catch (error) {
       // Rollback on error
       state = previousState;

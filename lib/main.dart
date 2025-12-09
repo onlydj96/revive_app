@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'router/app_router.dart';
 import 'services/deep_link_service.dart';
+import 'services/storage_service.dart';
 import 'providers/theme_provider.dart';
 import 'config/app_theme.dart';
 import 'models/theme_mode.dart';
@@ -15,6 +16,15 @@ void main() async {
 
   // Initialize Deep Link Service
   await DeepLinkService.instance.initialize();
+
+  // PERF: Initialize storage buckets once at app startup
+  // Prevents redundant initialization on every HomeScreen visit
+  try {
+    await StorageService.initializeBuckets();
+  } catch (e) {
+    // Log error but continue - storage will be retried if needed
+    debugPrint('Storage initialization failed: $e');
+  }
 
   runApp(const ProviderScope(child: EzerApp()));
 }

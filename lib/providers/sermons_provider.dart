@@ -1,11 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/sermon.dart';
 
+// PERF: StateNotifierProvider automatically keeps alive
 final sermonsProvider =
     StateNotifierProvider<SermonsNotifier, List<Sermon>>((ref) {
   return SermonsNotifier();
 });
 
+// PERF: AutoDispose disabled to cache latest sermon across page transitions
 final latestSermonProvider = Provider<Sermon?>((ref) {
   final sermons = ref.watch(sermonsProvider);
   if (sermons.isEmpty) return null;

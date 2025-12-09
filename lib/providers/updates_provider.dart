@@ -3,11 +3,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/update.dart';
 import '../services/supabase_service.dart';
 
+// PERF: StateNotifierProvider automatically keeps alive
 final updatesProvider =
     StateNotifierProvider<UpdatesNotifier, AsyncValue<List<Update>>>((ref) {
   return UpdatesNotifier();
 });
 
+// PERF: AutoDispose disabled to cache pinned updates across page transitions
 final pinnedUpdatesProvider = Provider<List<Update>>((ref) {
   final updatesAsyncValue = ref.watch(updatesProvider);
   return updatesAsyncValue.when(
@@ -17,6 +19,7 @@ final pinnedUpdatesProvider = Provider<List<Update>>((ref) {
   );
 });
 
+// PERF: AutoDispose disabled to cache recent updates across page transitions
 final recentUpdatesProvider = Provider<List<Update>>((ref) {
   final updatesAsyncValue = ref.watch(updatesProvider);
   return updatesAsyncValue.when(

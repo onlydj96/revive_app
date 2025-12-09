@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../services/supabase_service.dart';
 import '../router/app_router.dart';
+import '../utils/logger.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -14,6 +15,8 @@ class SplashScreen extends ConsumerStatefulWidget {
 
 class _SplashScreenState extends ConsumerState<SplashScreen>
     with TickerProviderStateMixin {
+  final _logger = Logger('SplashScreen');
+
   late AnimationController _fadeController;
   late AnimationController _scaleController;
   late Animation<double> _fadeAnimation;
@@ -60,7 +63,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   Future<void> _initializeApp() async {
     try {
-      print('📱 [APP] Starting app initialization...');
+      _logger.debug('Starting app initialization...');
 
       // Run initialization and minimum splash duration in parallel
       // This ensures we show splash for at least animation duration
@@ -70,17 +73,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         Future.delayed(const Duration(milliseconds: 1500)), // Minimum for animation
       ]);
 
-      print('✅ [APP] Supabase initialized successfully');
+      _logger.debug('Supabase initialized successfully');
 
       if (mounted) {
-        print('✅ [APP] Initialization complete, navigating...');
+        _logger.debug('Initialization complete, navigating...');
         _navigateToNextScreen();
       }
     } catch (e, stackTrace) {
       // Handle initialization error
-      print('❌ [APP] Initialization failed');
-      print('   Error: $e');
-      print('   Stack trace: $stackTrace');
+      _logger.error('Initialization failed', e, stackTrace);
 
       if (mounted) {
         _showErrorAndRetry(e.toString());

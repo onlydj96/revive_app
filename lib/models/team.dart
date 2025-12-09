@@ -1,3 +1,5 @@
+import '../utils/logger.dart';
+
 enum TeamType {
   connectGroup,
   hangout,
@@ -88,6 +90,8 @@ class Team {
   }
 
   factory Team.fromJson(Map<String, dynamic> json) {
+    final logger = Logger('Team');
+
     // Parse meetingTime with error handling
     // DB stores TEXT format which can be either ISO 8601 date or human-readable text
     DateTime? parsedMeetingTime;
@@ -97,7 +101,7 @@ class Team {
       } catch (e) {
         // If parsing fails (e.g., "Wednesdays 7:00 PM"), leave as null
         // The text value is stored in DB but not used in the current UI
-        print('⚠️ Could not parse meeting_schedule as DateTime: ${json['meeting_schedule']}');
+        logger.warning('Could not parse meeting_schedule as DateTime: ${json['meeting_schedule']}');
         parsedMeetingTime = null;
       }
     }

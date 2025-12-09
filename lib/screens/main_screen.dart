@@ -5,6 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../models/notification.dart';
 import '../providers/notification_provider.dart';
 import '../widgets/feedback_detail_dialog.dart';
+import 'home_screen.dart';
+import 'resources_screen.dart';
+import 'schedule_screen.dart';
+import 'teams_screen.dart';
+import 'updates_screen.dart';
 
 class MainScreen extends ConsumerWidget {
   final Widget child;
@@ -13,13 +18,16 @@ class MainScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final hasUnreadNotifications = ref.watch(hasUnreadNotificationsProvider);
-    final unreadCount = ref.watch(unreadNotificationCountProvider);
+    // PERF: Removed provider watches from build method
+    // Notification providers now isolated in Consumer to prevent full rebuild
 
     // Check if we're on a main screen (one of the bottom nav items)
     final String location = GoRouterState.of(context).uri.path;
     final isMainScreen = ['/home', '/resources', '/schedule', '/teams', '/updates']
         .any((path) => location.startsWith(path));
+
+    // PERF: Calculate current index for IndexedStack
+    final currentIndex = _calculateSelectedIndex(context);
 
     return PopScope(
       canPop: !isMainScreen,
@@ -41,38 +49,47 @@ class MainScreen extends ConsumerWidget {
         foregroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications),
-                onPressed: () => _showNotifications(context, ref),
-              ),
-              if (hasUnreadNotifications)
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 16,
-                    ),
-                    child: Text(
-                      unreadCount > 9 ? '9+' : unreadCount.toString(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
+          // PERF: Isolated notification provider in Consumer
+          // Only notification icon rebuilds when notification state changes
+          Consumer(
+            builder: (context, ref, child) {
+              final hasUnreadNotifications = ref.watch(hasUnreadNotificationsProvider);
+              final unreadCount = ref.watch(unreadNotificationCountProvider);
+
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications),
+                    onPressed: () => _showNotifications(context, ref),
                   ),
-                ),
-            ],
+                  if (hasUnreadNotifications)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          unreadCount > 9 ? '9+' : unreadCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
           IconButton(
             icon: const Icon(Icons.person),
@@ -80,12 +97,23 @@ class MainScreen extends ConsumerWidget {
           ),
         ],
       ),
+      // PERF: IndexedStack keeps all screens in memory
+      // Prevents widget tree recreation and maintains scroll positions
       body: SafeArea(
-        child: child,
+        child: IndexedStack(
+          index: currentIndex,
+          children: [
+            const HomeScreen(),
+            const ResourcesScreen(),
+            const ScheduleScreen(),
+            const TeamsScreen(),
+            const UpdatesScreen(),
+          ],
+        ),
       ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        currentIndex: _calculateSelectedIndex(context),
+        currentIndex: currentIndex,
         onTap: (index) => _onItemTapped(index, context),
         selectedItemColor: Theme.of(context).primaryColor,
         unselectedItemColor: Colors.grey,

@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/theme_provider.dart';
 import '../models/theme_mode.dart';
+import '../utils/logger.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
+
+  static final _logger = Logger('SettingsScreen');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -58,7 +61,7 @@ class SettingsScreen extends ConsumerWidget {
                     groupValue: themeSettings.mode,
                     onChanged: (value) {
                       if (value != null) {
-                        print('Setting theme mode to: ${value.name}');
+                        _logger.debug('Setting theme mode to: ${value.name}');
                         themeNotifier.setThemeMode(value);
                       }
                     },
@@ -73,7 +76,7 @@ class SettingsScreen extends ConsumerWidget {
                     groupValue: themeSettings.mode,
                     onChanged: (value) {
                       if (value != null) {
-                        print('Setting theme mode to: ${value.name}');
+                        _logger.debug('Setting theme mode to: ${value.name}');
                         themeNotifier.setThemeMode(value);
                       }
                     },
@@ -88,7 +91,7 @@ class SettingsScreen extends ConsumerWidget {
                     groupValue: themeSettings.mode,
                     onChanged: (value) {
                       if (value != null) {
-                        print('Setting theme mode to: ${value.name}');
+                        _logger.debug('Setting theme mode to: ${value.name}');
                         themeNotifier.setThemeMode(value);
                       }
                     },

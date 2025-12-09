@@ -11,21 +11,29 @@ import '../models/team.dart';
 import '../utils/ui_utils.dart';
 import '../widgets/team_info_row.dart';
 
-class TeamDetailScreen extends ConsumerWidget {
+class TeamDetailScreen extends ConsumerStatefulWidget {
   final String teamId;
 
   const TeamDetailScreen({super.key, required this.teamId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TeamDetailScreen> createState() => _TeamDetailScreenState();
+}
+
+class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
+  // Local UI lock to prevent duplicate button presses
+  bool _isProcessing = false;
+
+  @override
+  Widget build(BuildContext context) {
     final teams = ref.watch(teamsProvider);
     final permissions = ref.watch(permissionsProvider);
     final applicationsState = ref.watch(teamApplicationsProvider);
-    final isMember = ref.watch(isTeamMemberProvider(teamId));
+    final isMember = ref.watch(isTeamMemberProvider(widget.teamId));
 
-    final team = teams.where((t) => t.id == teamId).firstOrNull;
-    final hasApplied = applicationsState.appliedTeams.contains(teamId);
-    final isLoading = applicationsState.loadingTeams.contains(teamId);
+    final team = teams.where((t) => t.id == widget.teamId).firstOrNull;
+    final hasApplied = applicationsState.appliedTeams.contains(widget.teamId);
+    final isLoading = applicationsState.loadingTeams.contains(widget.teamId) || _isProcessing;
 
     if (team == null) {
       return Scaffold(
@@ -282,119 +290,131 @@ class TeamDetailScreen extends ConsumerWidget {
                               isLoading
                           ? null
                           : () async {
-                              if (team.requiresApplication) {
-                                if (hasApplied) {
-                                  // Cancel application - Confirm first
-                                  final confirmed =
-                                      await UIUtils.showCancelApplicationConfirmation(
-                                    context: context,
-                                    teamName: team.name,
-                                  );
-                                  if (!confirmed) return;
+                              // UI-level lock: Prevent rapid consecutive clicks
+                              if (_isProcessing) return;
 
-                                  try {
-                                    await ref
-                                        .read(teamApplicationsProvider.notifier)
-                                        .cancelApplication(team.id);
-                                    // Refresh member list (membership already updated by optimistic update)
-                                    ref.invalidate(teamMembersProvider(teamId));
+                              setState(() => _isProcessing = true);
 
-                                    if (context.mounted) {
-                                      UIUtils.showWarning(
-                                        context,
-                                        'Application to ${team.name} cancelled',
-                                      );
+                              try {
+                                if (team.requiresApplication) {
+                                  if (hasApplied) {
+                                    // Cancel application - Confirm first
+                                    final confirmed =
+                                        await UIUtils.showCancelApplicationConfirmation(
+                                      context: context,
+                                      teamName: team.name,
+                                    );
+                                    if (!confirmed) return;
+
+                                    try {
+                                      await ref
+                                          .read(teamApplicationsProvider.notifier)
+                                          .cancelApplication(team.id);
+                                      // Refresh member list (membership already updated by optimistic update)
+                                      ref.invalidate(teamMembersProvider(widget.teamId));
+
+                                      if (context.mounted) {
+                                        UIUtils.showWarning(
+                                          context,
+                                          'Application to ${team.name} cancelled',
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        UIUtils.showError(
+                                          context,
+                                          'Failed to cancel application. Please try again.',
+                                        );
+                                      }
                                     }
-                                  } catch (e) {
-                                    if (context.mounted) {
-                                      UIUtils.showError(
-                                        context,
-                                        'Failed to cancel application. Please try again.',
-                                      );
+                                  } else {
+                                    // Apply to join team
+                                    try {
+                                      await ref
+                                          .read(teamApplicationsProvider.notifier)
+                                          .applyToTeam(team.id);
+                                      // Refresh member list (membership already updated by optimistic update)
+                                      ref.invalidate(teamMembersProvider(widget.teamId));
+
+                                      if (context.mounted) {
+                                        UIUtils.showSuccess(
+                                          context,
+                                          'Application submitted to ${team.name}!',
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        UIUtils.showError(
+                                          context,
+                                          'Failed to apply. Please try again.',
+                                        );
+                                      }
                                     }
                                   }
                                 } else {
-                                  // Apply to join team
-                                  try {
-                                    await ref
-                                        .read(teamApplicationsProvider.notifier)
-                                        .applyToTeam(team.id);
-                                    // Refresh member list (membership already updated by optimistic update)
-                                    ref.invalidate(teamMembersProvider(teamId));
+                                  // Open team - Join/Leave directly
+                                  if (isMember) {
+                                    // Leave team - Confirm first
+                                    final confirmed =
+                                        await UIUtils.showLeaveTeamConfirmation(
+                                      context: context,
+                                      teamName: team.name,
+                                      teamType: team.type == TeamType.connectGroup
+                                          ? 'Group'
+                                          : 'Hangout',
+                                    );
+                                    if (!confirmed) return;
 
-                                    if (context.mounted) {
-                                      UIUtils.showSuccess(
-                                        context,
-                                        'Application submitted to ${team.name}!',
-                                      );
+                                    try {
+                                      await ref
+                                          .read(teamsProvider.notifier)
+                                          .leaveTeam(team.id);
+                                      // Refresh member list (membership already updated by optimistic update)
+                                      ref.invalidate(teamMembersProvider(widget.teamId));
+
+                                      if (context.mounted) {
+                                        UIUtils.showWarning(
+                                          context,
+                                          'Left ${team.name}',
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        UIUtils.showError(
+                                          context,
+                                          'Failed to leave. Please try again.',
+                                        );
+                                      }
                                     }
-                                  } catch (e) {
-                                    if (context.mounted) {
-                                      UIUtils.showError(
-                                        context,
-                                        'Failed to apply. Please try again.',
-                                      );
+                                  } else {
+                                    // Join team
+                                    try {
+                                      await ref
+                                          .read(teamsProvider.notifier)
+                                          .joinTeam(team.id);
+                                      // Refresh member list (membership already updated by optimistic update)
+                                      ref.invalidate(teamMembersProvider(widget.teamId));
+
+                                      if (context.mounted) {
+                                        UIUtils.showSuccess(
+                                          context,
+                                          'Joined ${team.name}!',
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        UIUtils.showError(
+                                          context,
+                                          'Failed to join. Please try again.',
+                                        );
+                                      }
                                     }
                                   }
                                 }
-                              } else {
-                                // Open team - Join/Leave directly
-                                if (isMember) {
-                                  // Leave team - Confirm first
-                                  final confirmed =
-                                      await UIUtils.showLeaveTeamConfirmation(
-                                    context: context,
-                                    teamName: team.name,
-                                    teamType: team.type == TeamType.connectGroup
-                                        ? 'Group'
-                                        : 'Hangout',
-                                  );
-                                  if (!confirmed) return;
-
-                                  try {
-                                    await ref
-                                        .read(teamsProvider.notifier)
-                                        .leaveTeam(team.id);
-                                    // Refresh member list (membership already updated by optimistic update)
-                                    ref.invalidate(teamMembersProvider(teamId));
-
-                                    if (context.mounted) {
-                                      UIUtils.showWarning(
-                                        context,
-                                        'Left ${team.name}',
-                                      );
-                                    }
-                                  } catch (e) {
-                                    if (context.mounted) {
-                                      UIUtils.showError(
-                                        context,
-                                        'Failed to leave. Please try again.',
-                                      );
-                                    }
-                                  }
-                                } else {
-                                  // Join team
-                                  try {
-                                    await ref
-                                        .read(teamsProvider.notifier)
-                                        .joinTeam(team.id);
-                                    // Refresh member list (membership already updated by optimistic update)
-                                    ref.invalidate(teamMembersProvider(teamId));
-
-                                    if (context.mounted) {
-                                      UIUtils.showSuccess(
-                                        context,
-                                        'Joined ${team.name}!',
-                                      );
-                                    }
-                                  } catch (e) {
-                                    if (context.mounted) {
-                                      UIUtils.showError(
-                                        context,
-                                        'Failed to join. Please try again.',
-                                      );
-                                    }
-                                  }
+                              } finally {
+                                // Always release the UI lock
+                                if (mounted) {
+                                  setState(() => _isProcessing = false);
                                 }
                               }
                             },

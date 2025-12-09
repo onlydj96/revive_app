@@ -23,6 +23,7 @@ class UpdatesScreen extends ConsumerWidget {
       ),
       floatingActionButton: permissions.canCreateContent
           ? FloatingActionButton(
+              heroTag: 'updates_fab',
               onPressed: () {
                 _showCreateUpdateDialog(context, ref);
               },

@@ -3,6 +3,29 @@ import 'package:flutter/material.dart';
 /// Unified UI utilities for dialogs, snackbars, and confirmations
 /// Consolidates functionality from DialogUtils, SnackbarUtils, and ConfirmationDialog
 class UIUtils {
+  // ==================== SnackBar Queue Management ====================
+
+  // Track last snackbar timestamp to prevent rapid successive snackbars
+  static DateTime? _lastSnackBarTime;
+  static const _snackBarThrottle = Duration(milliseconds: 500);
+
+  /// Check if enough time has passed since last snackbar
+  static bool _canShowSnackBar() {
+    final now = DateTime.now();
+    if (_lastSnackBarTime == null) {
+      _lastSnackBarTime = now;
+      return true;
+    }
+
+    final timeSinceLastSnackBar = now.difference(_lastSnackBarTime!);
+    if (timeSinceLastSnackBar < _snackBarThrottle) {
+      return false;
+    }
+
+    _lastSnackBarTime = now;
+    return true;
+  }
+
   // ==================== Snackbar Methods ====================
 
   /// Show success message
@@ -259,6 +282,15 @@ class UIUtils {
     Duration duration = const Duration(seconds: 3),
     SnackBarAction? action,
   }) {
+    // Throttle snackbars: Prevent rapid successive snackbars (500ms minimum interval)
+    if (!_canShowSnackBar()) {
+      // Skip if too soon - prevents queue buildup from rapid clicks
+      return;
+    }
+
+    // Clear any existing snackbars first to avoid queue buildup
+    ScaffoldMessenger.of(context).clearSnackBars();
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),

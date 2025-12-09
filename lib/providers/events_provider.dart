@@ -4,17 +4,20 @@ import '../models/event.dart';
 import '../services/supabase_service.dart';
 import 'error_provider.dart';
 
+// PERF: StateNotifierProvider automatically keeps alive
 final eventsProvider =
     StateNotifierProvider<EventsNotifier, List<Event>>((ref) {
   return EventsNotifier(ref);
 });
 
 // Provider to track which events the current user has signed up for
+// PERF: StateNotifierProvider automatically keeps alive
 final userSignedUpEventsProvider =
     StateNotifierProvider<UserSignedUpEventsNotifier, Set<String>>((ref) {
   return UserSignedUpEventsNotifier(ref);
 });
 
+// PERF: AutoDispose disabled to cache upcoming events across page transitions
 final upcomingEventsProvider = Provider<List<Event>>((ref) {
   final events = ref.watch(eventsProvider);
   final now = DateTime.now();
@@ -23,6 +26,7 @@ final upcomingEventsProvider = Provider<List<Event>>((ref) {
 });
 
 // Provider for upcoming events sorted by date (replaces highlighted events for banner)
+// PERF: AutoDispose disabled to cache banner events across page transitions
 final upcomingEventsBannerProvider = Provider<List<Event>>((ref) {
   final events = ref.watch(eventsProvider);
   final now = DateTime.now();

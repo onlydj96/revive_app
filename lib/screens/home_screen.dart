@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/bulletin.dart';
 import '../providers/user_provider.dart';
 import '../providers/bulletin_provider.dart';
 import '../providers/sermons_provider.dart';
 import '../providers/updates_provider.dart';
 import '../providers/events_provider.dart';
-import '../services/storage_service.dart';
 import '../widgets/profile_summary_card.dart';
 import '../widgets/bulletin_card.dart';
 import '../widgets/sermon_card.dart';
 import '../widgets/updates_preview.dart';
 import '../widgets/upcoming_events_list.dart';
 import '../widgets/worship_feedback_map_card.dart';
+import '../utils/logger.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -21,34 +22,22 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  @override
-  void initState() {
-    super.initState();
-    // Initialize storage buckets after authentication
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeStorage();
-    });
-  }
+  final _logger = Logger('HomeScreen');
 
-  Future<void> _initializeStorage() async {
-    try {
-      await StorageService.initializeBuckets();
-    } catch (e) {
-      // Don't show error to user, just log it
-    }
-  }
+  // PERF: Removed storage initialization from initState
+  // Storage is now initialized once in main.dart for better performance
 
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(userProvider);
-    final bulletin = ref.watch(bulletinProvider);
+    final bulletinsAsync = ref.watch(bulletinsProvider);
     final latestSermon = ref.watch(latestSermonProvider);
     final recentUpdates = ref.watch(recentUpdatesProvider);
     final upcomingEvents = ref.watch(upcomingEventsProvider);
 
     return RefreshIndicator(
       onRefresh: () async {
-        ref.invalidate(bulletinProvider);
+        ref.invalidate(bulletinsProvider);
         ref.invalidate(sermonsProvider);
         ref.invalidate(updatesProvider);
         ref.invalidate(eventsProvider);
@@ -65,10 +54,47 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
             WorshipFeedbackMapCard(),
             const SizedBox(height: 16),
-            if (bulletin != null) ...[
-              BulletinCard(bulletin: bulletin),
-              const SizedBox(height: 16),
-            ],
+            bulletinsAsync.when(
+              data: (bulletins) {
+                _logger.debug('Received ${bulletins.length} bulletins');
+                if (bulletins.isEmpty) {
+                  _logger.debug('No bulletins available, hiding card');
+                  return const SizedBox.shrink();
+                }
+                // Find current week's bulletin or use most recent
+                final now = DateTime.now();
+                Bulletin? currentBulletin;
+                try {
+                  currentBulletin = bulletins.firstWhere(
+                    (b) {
+                      final weekStart = b.weekOf;
+                      final weekEnd = weekStart.add(const Duration(days: 6));
+                      return now.isAfter(weekStart.subtract(const Duration(days: 1))) &&
+                          now.isBefore(weekEnd.add(const Duration(days: 1)));
+                    },
+                  );
+                  _logger.debug('Found current week bulletin: ${currentBulletin.theme}');
+                } catch (e) {
+                  // If no current week bulletin found, use most recent
+                  currentBulletin = bulletins.first;
+                  _logger.debug('No current week bulletin, using most recent: ${currentBulletin.theme}');
+                }
+                return Column(
+                  children: [
+                    BulletinCard(bulletin: currentBulletin),
+                    const SizedBox(height: 16),
+                  ],
+                );
+              },
+              loading: () {
+                _logger.debug('Bulletins loading...');
+                return const SizedBox.shrink();
+              },
+              error: (error, stack) {
+                _logger.error('Error loading bulletins', error, stack);
+                return const SizedBox.shrink();
+              },
+            ),
             if (latestSermon != null) ...[
               SermonCard(sermon: latestSermon),
               const SizedBox(height: 16),

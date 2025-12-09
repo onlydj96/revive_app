@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/supabase_service.dart';
 import 'teams_provider.dart';
+import '../utils/logger.dart';
 
 // State class to track hangout joins and loading state
 class HangoutJoinsState {
@@ -31,6 +32,7 @@ final hangoutJoinsProvider =
 
 class HangoutJoinsNotifier extends StateNotifier<HangoutJoinsState> {
   final Ref ref;
+  final _logger = Logger('HangoutJoinsNotifier');
 
   HangoutJoinsNotifier(this.ref) : super(const HangoutJoinsState()) {
     loadUserJoinedHangouts();
@@ -51,7 +53,7 @@ class HangoutJoinsNotifier extends StateNotifier<HangoutJoinsState> {
 
       state = state.copyWith(joinedHangouts: joinedHangoutIds);
     } catch (e) {
-      print('Error loading user joined hangouts: $e');
+      _logger.error('Error loading user joined hangouts', e);
       state = state.copyWith(joinedHangouts: <String>{});
     }
   }
@@ -85,7 +87,7 @@ class HangoutJoinsNotifier extends StateNotifier<HangoutJoinsState> {
           ..remove(teamId),
       );
     } catch (e) {
-      print('Error joining hangout: $e');
+      _logger.error('Error joining hangout', e);
 
       // Rollback optimistic update on failure
       final rolledBackJoinedHangouts = Set<String>.from(state.joinedHangouts)
@@ -134,7 +136,7 @@ class HangoutJoinsNotifier extends StateNotifier<HangoutJoinsState> {
           ..remove(teamId),
       );
     } catch (e) {
-      print('Error leaving hangout: $e');
+      _logger.error('Error leaving hangout', e);
 
       // Rollback optimistic update on failure
       state = state.copyWith(

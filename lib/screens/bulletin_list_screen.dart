@@ -21,6 +21,7 @@ class BulletinListScreen extends ConsumerWidget {
       ),
       floatingActionButton: permissions.canCreateContent
           ? FloatingActionButton(
+              heroTag: 'bulletin_fab',
               onPressed: () {
                 _showCreateBulletinDialog(context, ref);
               },

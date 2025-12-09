@@ -93,6 +93,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
       ),
       floatingActionButton: permissions.canCreateContent
           ? FloatingActionButton(
+              heroTag: 'resources_fab',
               onPressed: () {
                 _showCreateOptions(context);
               },
