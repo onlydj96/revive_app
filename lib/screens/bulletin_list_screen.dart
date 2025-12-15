@@ -56,14 +56,15 @@ class BulletinListScreen extends ConsumerWidget {
   }
 }
 
-class BulletinListCard extends StatelessWidget {
+class BulletinListCard extends ConsumerWidget {
   final Bulletin bulletin;
 
   const BulletinListCard({super.key, required this.bulletin});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isCurrentWeek = _isCurrentWeek(bulletin.weekOf);
+    final permissions = ref.watch(permissionsProvider);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -177,10 +178,26 @@ class BulletinListCard extends StatelessWidget {
                   ),
                 ),
 
-                // Arrow Icon
-                Icon(
-                  Icons.chevron_right,
-                  color: Colors.grey[400],
+                // Actions
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (permissions.canEditContent)
+                      IconButton(
+                        icon: Icon(
+                          Icons.delete_outline,
+                          color: Colors.grey[400],
+                        ),
+                        onPressed: () {
+                          _showDeleteConfirmationDialog(context, ref, bulletin);
+                        },
+                        tooltip: 'Delete bulletin',
+                      ),
+                    Icon(
+                      Icons.chevron_right,
+                      color: Colors.grey[400],
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -196,5 +213,91 @@ class BulletinListCard extends StatelessWidget {
     final weekEnd = weekStart.add(const Duration(days: 6));
     return now.isAfter(weekStart.subtract(const Duration(days: 1))) &&
         now.isBefore(weekEnd.add(const Duration(days: 1)));
+  }
+
+  void _showDeleteConfirmationDialog(
+      BuildContext context, WidgetRef ref, Bulletin bulletin) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete Bulletin'),
+        content: Text(
+          'Are you sure you want to delete the bulletin for ${DateFormat('MMMM d, yyyy').format(bulletin.weekOf)}?\n\n'
+          'Theme: "${bulletin.theme}"\n\n'
+          'This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              await _deleteBulletin(context, ref, bulletin);
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteBulletin(
+      BuildContext context, WidgetRef ref, Bulletin bulletin) async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    try {
+      // Show loading indicator
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              ),
+              SizedBox(width: 16),
+              Text('Deleting bulletin...'),
+            ],
+          ),
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      // Delete the bulletin
+      await ref.read(bulletinsProvider.notifier).deleteBulletin(bulletin.id);
+
+      // Show success message
+      scaffoldMessenger.hideCurrentSnackBar();
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: const Text('Bulletin deleted successfully'),
+          backgroundColor: Colors.green,
+          action: SnackBarAction(
+            label: 'OK',
+            textColor: Colors.white,
+            onPressed: () {},
+          ),
+        ),
+      );
+    } catch (error) {
+      // Show error message
+      scaffoldMessenger.hideCurrentSnackBar();
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Failed to delete bulletin: $error'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
   }
 }

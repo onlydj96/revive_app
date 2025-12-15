@@ -26,6 +26,9 @@ class UserNotifier extends StateNotifier<User?> {
         final profileData =
             await SupabaseService.getById('user_profiles', _supabaseUser.id);
 
+        // Check if still mounted before updating state
+        if (!mounted) return;
+
         if (profileData != null) {
           // Use database profile
           state = User(
@@ -54,6 +57,9 @@ class UserNotifier extends StateNotifier<User?> {
           );
         }
       } catch (e) {
+        // Check if still mounted before updating state
+        if (!mounted) return;
+
         // If database query fails, fall back to auth metadata
         final metadata = _supabaseUser.userMetadata ?? {};
 
@@ -123,6 +129,9 @@ class UserNotifier extends StateNotifier<User?> {
   Future<void> updateUserRole(String userId, String role) async {
     try {
       await SupabaseService.update('user_profiles', userId, {'role': role});
+
+      // Check if still mounted before refreshing
+      if (!mounted) return;
 
       // If updating current user, refresh the profile
       if (userId == _supabaseUser?.id) {

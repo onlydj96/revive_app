@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/event.dart';
 import '../services/storage_service.dart';
+import 'recurrence_picker.dart';
+import 'time_picker_5min.dart';
 
 class CreateEventDialog extends StatefulWidget {
   final Function(Event) onEventCreated;
@@ -48,6 +50,7 @@ class _CreateEventDialogState extends State<CreateEventDialog>
   EventType _selectedType = EventType.service;
   bool _isHighlighted = false;
   bool _requiresSignup = false;
+  RecurrenceRule _recurrenceRule = const RecurrenceRule();
 
   @override
   void initState() {
@@ -475,13 +478,13 @@ class _CreateEventDialogState extends State<CreateEventDialog>
           ),
           const SizedBox(height: 16),
 
-          // Description
+          // Description (Optional)
           TextFormField(
             controller: _descriptionController,
             focusNode: _descriptionFocus,
             decoration: InputDecoration(
-              labelText: 'Description *',
-              hintText: 'What\'s this event about?',
+              labelText: 'Description',
+              hintText: 'What\'s this event about? (optional)',
               prefixIcon: Icon(Icons.description,
                   color: Theme.of(context).primaryColor),
               border: OutlineInputBorder(
@@ -496,12 +499,6 @@ class _CreateEventDialogState extends State<CreateEventDialog>
               ),
             ),
             maxLines: 3,
-            validator: (value) {
-              if (value?.isEmpty ?? true) {
-                return 'Please enter a description';
-              }
-              return null;
-            },
           ),
           const SizedBox(height: 16),
 
@@ -557,7 +554,10 @@ class _CreateEventDialogState extends State<CreateEventDialog>
           Row(
             children: [
               Expanded(
-                child: InkWell(
+                child: _buildDateTimeBox(
+                  icon: Icons.calendar_today,
+                  label: 'Date',
+                  value: DateFormat('MMM d, yyyy').format(_startDate),
                   onTap: () async {
                     final date = await showDatePicker(
                       context: context,
@@ -574,51 +574,19 @@ class _CreateEventDialogState extends State<CreateEventDialog>
                       });
                     }
                   },
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey[300]!),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.calendar_today,
-                            color: Theme.of(context).primaryColor, size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Date',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                              Text(
-                                DateFormat('MMM d, yyyy').format(_startDate),
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: InkWell(
+                child: _buildDateTimeBox(
+                  icon: Icons.access_time,
+                  label: 'Time',
+                  value: _startTime.format(context),
                   onTap: () async {
-                    final time = await showTimePicker(
-                      context: context,
+                    final time = await TimePicker5Min.show(
+                      context,
                       initialTime: _startTime,
+                      title: 'Start Time',
                     );
                     if (time != null) {
                       setState(() {
@@ -626,42 +594,6 @@ class _CreateEventDialogState extends State<CreateEventDialog>
                       });
                     }
                   },
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey[300]!),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.access_time,
-                            color: Theme.of(context).primaryColor, size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Time',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                              Text(
-                                _startTime.format(context),
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
               ),
             ],
@@ -681,7 +613,10 @@ class _CreateEventDialogState extends State<CreateEventDialog>
           Row(
             children: [
               Expanded(
-                child: InkWell(
+                child: _buildDateTimeBox(
+                  icon: Icons.calendar_today,
+                  label: 'Date',
+                  value: DateFormat('MMM d, yyyy').format(_endDate),
                   onTap: () async {
                     final date = await showDatePicker(
                       context: context,
@@ -695,51 +630,19 @@ class _CreateEventDialogState extends State<CreateEventDialog>
                       });
                     }
                   },
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey[300]!),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.calendar_today,
-                            color: Theme.of(context).primaryColor, size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Date',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                              Text(
-                                DateFormat('MMM d, yyyy').format(_endDate),
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: InkWell(
+                child: _buildDateTimeBox(
+                  icon: Icons.access_time,
+                  label: 'Time',
+                  value: _endTime.format(context),
                   onTap: () async {
-                    final time = await showTimePicker(
-                      context: context,
+                    final time = await TimePicker5Min.show(
+                      context,
                       initialTime: _endTime,
+                      title: 'End Time',
                     );
                     if (time != null) {
                       setState(() {
@@ -747,42 +650,6 @@ class _CreateEventDialogState extends State<CreateEventDialog>
                       });
                     }
                   },
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey[300]!),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.access_time,
-                            color: Theme.of(context).primaryColor, size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Time',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                              Text(
-                                _endTime.format(context),
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
               ),
             ],
@@ -809,6 +676,18 @@ class _CreateEventDialogState extends State<CreateEventDialog>
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 24),
+
+          // Recurrence Options
+          RecurrencePicker(
+            initialRule: _recurrenceRule,
+            startDate: _startDate,
+            onChanged: (rule) {
+              setState(() {
+                _recurrenceRule = rule;
+              });
+            },
           ),
         ],
       ),
@@ -1117,18 +996,7 @@ class _CreateEventDialogState extends State<CreateEventDialog>
           );
           return false;
         }
-        if (_descriptionController.text.isEmpty) {
-          _descriptionFocus.requestFocus();
-          _scrollController.animateTo(
-            100,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-          );
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please enter event description')),
-          );
-          return false;
-        }
+        // Description is now optional - no validation needed
         if (_locationController.text.isEmpty) {
           _locationFocus.requestFocus();
           _scrollController.animateTo(
@@ -1257,9 +1125,78 @@ class _CreateEventDialogState extends State<CreateEventDialog>
               ? int.tryParse(_maxParticipantsController.text)
               : null,
       currentParticipants: 0,
+      recurrence: _recurrenceRule,
     );
 
     widget.onEventCreated(event);
+  }
+
+  Widget _buildDateTimeBox({
+    required IconData icon,
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        height: 72,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[300]!),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                color: Theme.of(context).primaryColor,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: Colors.grey[400],
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   String _getEventTypeLabel(EventType type) {

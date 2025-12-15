@@ -15,7 +15,7 @@ import '../services/storage_service.dart';
 final selectedDateProvider = StateProvider<DateTime>((ref) => DateTime.now());
 
 final eventsForSelectedDateProvider = Provider<List<Event>>((ref) {
-  final events = ref.watch(eventsProvider);
+  final events = ref.watch(expandedEventsProvider);
   final selectedDate = ref.watch(selectedDateProvider);
 
   return events.where((event) {
@@ -156,7 +156,7 @@ class ScheduleScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final events = ref.watch(eventsProvider);
+    final events = ref.watch(expandedEventsProvider);
     final upcomingEvents = ref.watch(upcomingEventsBannerProvider);
     final selectedDate = ref.watch(selectedDateProvider);
     final eventsForDate = ref.watch(eventsForSelectedDateProvider);
@@ -900,6 +900,21 @@ class EventListItem extends ConsumerWidget {
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                 ),
+                              ),
+                            ),
+                          // Recurring indicator
+                          if (event.isRecurring || event.isRecurrenceInstance)
+                            Container(
+                              margin: const EdgeInsets.only(left: 4),
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Icon(
+                                Icons.repeat,
+                                size: 14,
+                                color: Colors.blue[700],
                               ),
                             ),
                         ],

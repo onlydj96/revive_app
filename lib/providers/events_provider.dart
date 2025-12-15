@@ -17,9 +17,26 @@ final userSignedUpEventsProvider =
   return UserSignedUpEventsNotifier(ref);
 });
 
+// Provider for expanded recurring events (includes all recurring instances)
+final expandedEventsProvider = Provider<List<Event>>((ref) {
+  final events = ref.watch(eventsProvider);
+  final expandedEvents = <Event>[];
+
+  for (final event in events) {
+    if (event.isRecurring) {
+      // Expand recurring events into individual instances
+      expandedEvents.addAll(event.generateRecurrenceInstances());
+    } else {
+      expandedEvents.add(event);
+    }
+  }
+
+  return expandedEvents..sort((a, b) => a.startTime.compareTo(b.startTime));
+});
+
 // PERF: AutoDispose disabled to cache upcoming events across page transitions
 final upcomingEventsProvider = Provider<List<Event>>((ref) {
-  final events = ref.watch(eventsProvider);
+  final events = ref.watch(expandedEventsProvider);
   final now = DateTime.now();
   return events.where((event) => event.startTime.isAfter(now)).toList()
     ..sort((a, b) => a.startTime.compareTo(b.startTime));
@@ -273,6 +290,16 @@ class EventsNotifier extends StateNotifier<List<Event>> {
       eventData.remove('id'); // Let database generate ID
       eventData['created_by'] = _supabase.auth.currentUser?.id;
 
+      // Remove fields that don't exist in the database table
+      // These are computed/derived fields or not yet added to DB schema
+      eventData.remove('current_participants');
+      eventData.remove('parent_event_id');
+      eventData.remove('instance_index');
+      eventData.remove('is_highlighted');
+      eventData.remove('requires_signup');
+      eventData.remove('max_participants');
+      eventData.remove('recurrence');
+
       await _supabase.from('events').insert(eventData);
       await _loadEvents(); // Reload to get the new event with generated ID
     } catch (e) {
@@ -301,6 +328,15 @@ class EventsNotifier extends StateNotifier<List<Event>> {
       // Sync with backend
       final eventData = updatedEvent.toJson();
       eventData['updated_at'] = DateTime.now().toIso8601String();
+
+      // Remove fields that don't exist in the database table
+      eventData.remove('current_participants');
+      eventData.remove('parent_event_id');
+      eventData.remove('instance_index');
+      eventData.remove('is_highlighted');
+      eventData.remove('requires_signup');
+      eventData.remove('max_participants');
+      eventData.remove('recurrence');
 
       await _supabase
           .from('events')

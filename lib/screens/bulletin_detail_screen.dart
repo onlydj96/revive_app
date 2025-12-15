@@ -69,6 +69,13 @@ class _BulletinDetailScreenState extends ConsumerState<BulletinDetailScreen> {
                 _showEditBulletinDialog(context, bulletin);
               },
             ),
+          if (permissions.canEditContent)
+            IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: () {
+                _showDeleteConfirmationDialog(context, bulletin);
+              },
+            ),
         ],
       ),
       body: SafeArea(
@@ -424,21 +431,54 @@ class _BulletinDetailScreenState extends ConsumerState<BulletinDetailScreen> {
                                       ),
                                 ),
                               ),
+                              // 찬양 콘티 아이콘 표시
+                              if (item.isSongList)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.purple.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.music_note,
+                                        size: 14,
+                                        color: Colors.purple[700],
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '찬양',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.purple[700],
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                             ],
                           ),
                           const SizedBox(height: 12),
                           Padding(
                             padding: const EdgeInsets.only(left: 22),
-                            child: Text(
-                              item.content,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyLarge
-                                  ?.copyWith(
-                                    height: 1.6,
-                                    color: Colors.grey[800],
+                            child: item.isSongList
+                                ? _buildSongListContent(context, item)
+                                : Text(
+                                    item.content,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyLarge
+                                        ?.copyWith(
+                                          height: 1.6,
+                                          color: Colors.grey[800],
+                                        ),
                                   ),
-                            ),
                           ),
                         ],
                       ),
@@ -455,10 +495,211 @@ class _BulletinDetailScreenState extends ConsumerState<BulletinDetailScreen> {
     );
   }
 
+  /// 찬양 콘티 (곡 목록) 위젯 빌드
+  Widget _buildSongListContent(BuildContext context, BulletinItem item) {
+    final songs = item.parsedSongs;
+
+    // 곡 목록이 비어있으면 일반 content 표시
+    if (songs.isEmpty) {
+      return Text(
+        item.content,
+        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              height: 1.6,
+              color: Colors.grey[800],
+            ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ...songs.asMap().entries.map((entry) {
+          final index = entry.key;
+          final song = entry.value;
+          final isLast = index == songs.length - 1;
+
+          return Column(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 번호
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: Colors.purple.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '${index + 1}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.purple[700],
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // 곡 정보
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          song.title,
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey[900],
+                              ),
+                        ),
+                        if (song.key != null || song.artist != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Row(
+                              children: [
+                                if (song.key != null) ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      '${song.key} Key',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.blue[700],
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
+                                if (song.artist != null)
+                                  Text(
+                                    song.artist!,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              if (!isLast) const SizedBox(height: 12),
+            ],
+          );
+        }),
+      ],
+    );
+  }
+
   void _showEditBulletinDialog(BuildContext context, Bulletin bulletin) {
     showDialog(
       context: context,
       builder: (context) => CreateBulletinDialog(bulletin: bulletin),
     );
+  }
+
+  void _showDeleteConfirmationDialog(BuildContext context, Bulletin bulletin) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Bulletin'),
+        content: Text(
+          'Are you sure you want to delete the bulletin for ${DateFormat('MMMM d, yyyy').format(bulletin.weekOf)}?\n\n'
+          'This will permanently delete:\n'
+          '• The bulletin "${bulletin.theme}"\n'
+          '• All ${bulletin.items.length} bulletin items\n'
+          '• All ${bulletin.schedule.length} worship schedule items\n\n'
+          'This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _deleteBulletin(context, bulletin);
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteBulletin(BuildContext context, Bulletin bulletin) async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
+    try {
+      // Show loading indicator
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              ),
+              SizedBox(width: 16),
+              Text('Deleting bulletin...'),
+            ],
+          ),
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      // Delete the bulletin
+      await ref.read(bulletinsProvider.notifier).deleteBulletin(bulletin.id);
+
+      // Show success message
+      scaffoldMessenger.hideCurrentSnackBar();
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: const Text('Bulletin deleted successfully'),
+          backgroundColor: Colors.green,
+          action: SnackBarAction(
+            label: 'OK',
+            textColor: Colors.white,
+            onPressed: () {},
+          ),
+        ),
+      );
+
+      // Navigate back
+      navigator.pop();
+    } catch (error) {
+      // Show error message
+      scaffoldMessenger.hideCurrentSnackBar();
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Failed to delete bulletin: $error'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
   }
 }
