@@ -71,6 +71,13 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
         const SizedBox(height: 12),
         _buildRecurrenceTypeSelector(),
 
+        // Days of Week Selection (for weekly/biweekly)
+        if (_rule.type == RecurrenceType.weekly ||
+            _rule.type == RecurrenceType.biweekly) ...[
+          const SizedBox(height: 24),
+          _buildDaysOfWeekSelector(),
+        ],
+
         // End Options (only show if recurring)
         if (_rule.isRecurring) ...[
           const SizedBox(height: 24),
@@ -98,8 +105,15 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
             color: Colors.transparent,
             child: InkWell(
               onTap: () {
+                // Initialize daysOfWeek with start date's weekday for weekly/biweekly
+                List<int>? initialDays;
+                if (type == RecurrenceType.weekly || type == RecurrenceType.biweekly) {
+                  initialDays = [widget.startDate.weekday];
+                }
+
                 _updateRule(_rule.copyWith(
                   type: type,
+                  daysOfWeek: initialDays,
                   clearEndDate: type == RecurrenceType.none,
                   clearOccurrences: type == RecurrenceType.none,
                 ));
@@ -167,6 +181,101 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
           );
         }).toList(),
       ),
+    );
+  }
+
+  Widget _buildDaysOfWeekSelector() {
+    // Day names: 1=Mon, 2=Tue, ..., 7=Sun
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const dayNamesKo = ['월', '화', '수', '목', '금', '토', '일'];
+    final selectedDays = _rule.daysOfWeek ?? [widget.startDate.weekday];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Repeat on',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[700],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: List.generate(7, (index) {
+              final dayNumber = index + 1; // 1=Mon, 7=Sun
+              final isSelected = selectedDays.contains(dayNumber);
+
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    final newDays = List<int>.from(selectedDays);
+                    if (isSelected) {
+                      // Prevent deselecting the last day
+                      if (newDays.length > 1) {
+                        newDays.remove(dayNumber);
+                      }
+                    } else {
+                      newDays.add(dayNumber);
+                      newDays.sort();
+                    }
+                    _updateRule(_rule.copyWith(daysOfWeek: newDays));
+                  },
+                  child: Container(
+                    height: 36,
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isSelected
+                          ? Theme.of(context).primaryColor
+                          : Colors.transparent,
+                      border: Border.all(
+                        color: isSelected
+                            ? Theme.of(context).primaryColor
+                            : Colors.grey[300]!,
+                        width: 2,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        dayNamesKo[index],
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: isSelected ? Colors.white : Colors.grey[700],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Show selected days summary
+        if (selectedDays.length > 1)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              'Every ${selectedDays.map((d) => dayNames[d - 1]).join(', ')}',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+      ],
     );
   }
 

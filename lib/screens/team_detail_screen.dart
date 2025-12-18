@@ -899,17 +899,25 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               ref.read(teamsProvider.notifier).deleteTeam(team.id);
-              Navigator.of(context).pop();
-              context.pop(); // Go back to teams list
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${team.name} deleted successfully'),
-                  backgroundColor: Colors.red,
-                ),
-              );
+              // Close dialog first and wait for animation
+              Navigator.of(context).pop();
+
+              // Wait for dialog dismiss animation to complete
+              await Future.delayed(const Duration(milliseconds: 100));
+
+              if (context.mounted) {
+                context.pop(); // Go back to teams list
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${team.name} deleted successfully'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Delete', style: TextStyle(color: Colors.white)),

@@ -161,14 +161,67 @@ class RecurrenceRule {
     if (type == RecurrenceType.none) return [startDate];
 
     final occurrencesList = <DateTime>[];
-    var currentDate = startDate;
     final effectiveMaxCount = occurrences ?? maxCount;
     final effectiveEndDate = endDate ?? startDate.add(const Duration(days: 365));
 
+    // For weekly/biweekly with multiple days
+    if ((type == RecurrenceType.weekly || type == RecurrenceType.biweekly) &&
+        daysOfWeek != null &&
+        daysOfWeek!.isNotEmpty) {
+      return _generateMultiDayOccurrences(
+        startDate,
+        effectiveMaxCount,
+        effectiveEndDate,
+      );
+    }
+
+    // Default single-day logic
+    var currentDate = startDate;
     while (occurrencesList.length < effectiveMaxCount &&
         currentDate.isBefore(effectiveEndDate.add(const Duration(days: 1)))) {
       occurrencesList.add(currentDate);
       currentDate = _getNextOccurrence(currentDate);
+    }
+
+    return occurrencesList;
+  }
+
+  /// Generate occurrences for multiple days of week (weekly/biweekly)
+  List<DateTime> _generateMultiDayOccurrences(
+    DateTime startDate,
+    int maxCount,
+    DateTime effectiveEndDate,
+  ) {
+    final occurrencesList = <DateTime>[];
+    final sortedDays = List<int>.from(daysOfWeek!)..sort();
+
+    // Find the week start (Monday) for the startDate
+    final weekStart = startDate.subtract(Duration(days: startDate.weekday - 1));
+    var currentWeekStart = weekStart;
+
+    // Interval in weeks (biweekly = 2)
+    final weekInterval = type == RecurrenceType.biweekly ? 2 : interval;
+
+    while (occurrencesList.length < maxCount &&
+        currentWeekStart.isBefore(effectiveEndDate.add(const Duration(days: 7)))) {
+      for (final dayOfWeek in sortedDays) {
+        final occurrence = currentWeekStart.add(Duration(days: dayOfWeek - 1));
+        final occurrenceWithTime = DateTime(
+          occurrence.year,
+          occurrence.month,
+          occurrence.day,
+          startDate.hour,
+          startDate.minute,
+        );
+
+        // Only add if after or equal to startDate and before endDate
+        if (!occurrenceWithTime.isBefore(startDate) &&
+            occurrenceWithTime.isBefore(effectiveEndDate.add(const Duration(days: 1))) &&
+            occurrencesList.length < maxCount) {
+          occurrencesList.add(occurrenceWithTime);
+        }
+      }
+      currentWeekStart = currentWeekStart.add(Duration(days: 7 * weekInterval));
     }
 
     return occurrencesList;
@@ -210,17 +263,38 @@ class RecurrenceRule {
       case RecurrenceType.daily:
         return interval == 1 ? 'Every day' : 'Every $interval days';
       case RecurrenceType.weekly:
-        final dayName = _getDayName(startDate.weekday);
-        return interval == 1 ? 'Every $dayName' : 'Every $interval weeks on $dayName';
+        final dayNames = _getDayNames();
+        if (interval == 1) {
+          return 'Every $dayNames';
+        }
+        return 'Every $interval weeks on $dayNames';
       case RecurrenceType.biweekly:
-        final dayName = _getDayName(startDate.weekday);
-        return 'Every 2 weeks on $dayName';
+        final dayNames = _getDayNames();
+        return 'Every 2 weeks on $dayNames';
       case RecurrenceType.monthly:
         return interval == 1
             ? 'Monthly on day ${startDate.day}'
             : 'Every $interval months on day ${startDate.day}';
       case RecurrenceType.yearly:
         return 'Yearly on ${_getMonthName(startDate.month)} ${startDate.day}';
+    }
+  }
+
+  /// Get formatted day names from daysOfWeek list
+  String _getDayNames() {
+    if (daysOfWeek == null || daysOfWeek!.isEmpty) {
+      return '';
+    }
+    final sortedDays = List<int>.from(daysOfWeek!)..sort();
+    final names = sortedDays.map((d) => _getDayName(d)).toList();
+
+    if (names.length == 1) {
+      return names.first;
+    } else if (names.length == 2) {
+      return '${names[0]} & ${names[1]}';
+    } else {
+      final last = names.removeLast();
+      return '${names.join(', ')} & $last';
     }
   }
 

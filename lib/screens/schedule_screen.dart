@@ -26,10 +26,11 @@ final eventsForSelectedDateProvider = Provider<List<Event>>((ref) {
 class ScheduleScreen extends ConsumerWidget {
   const ScheduleScreen({super.key});
 
-  void _showCreateEventDialog(BuildContext context, WidgetRef ref) {
+  void _showCreateEventDialog(BuildContext context, WidgetRef ref, {DateTime? selectedDate}) {
     showDialog(
       context: context,
       builder: (context) => CreateEventDialog(
+        initialDate: selectedDate,
         onEventCreated: (event) async {
           try {
             await ref.read(eventsProvider.notifier).addEvent(event);
@@ -57,10 +58,21 @@ class ScheduleScreen extends ConsumerWidget {
   }
 
   void _showEditEventDialog(BuildContext context, WidgetRef ref, Event event) {
+    // For recurring event instances, get the original event for editing
+    Event eventToEdit = event;
+    if (event.isRecurrenceInstance && event.parentEventId != null) {
+      final events = ref.read(eventsProvider);
+      final originalEvent = events.firstWhere(
+        (e) => e.id == event.parentEventId,
+        orElse: () => event,
+      );
+      eventToEdit = originalEvent;
+    }
+
     showDialog(
       context: context,
       builder: (context) => EditEventDialog(
-        event: event,
+        event: eventToEdit,
         onEventUpdated: (updatedEvent) async {
           try {
             await ref.read(eventsProvider.notifier).updateEvent(updatedEvent);
@@ -169,7 +181,7 @@ class ScheduleScreen extends ConsumerWidget {
           if (permissions.isAdmin)
             IconButton(
               icon: const Icon(Icons.add),
-              onPressed: () => _showCreateEventDialog(context, ref),
+              onPressed: () => _showCreateEventDialog(context, ref, selectedDate: selectedDate),
             ),
         ],
       ),
@@ -346,6 +358,14 @@ class ScheduleScreen extends ConsumerWidget {
                             color: Colors.grey[500],
                           ),
                     ),
+                    if (permissions.isAdmin) ...[
+                      const SizedBox(height: 16),
+                      OutlinedButton.icon(
+                        onPressed: () => _showCreateEventDialog(context, ref, selectedDate: selectedDate),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add Event'),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -368,16 +388,35 @@ class EventBannerCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final daysUntil = event.startTime.difference(DateTime.now()).inDays;
-    final hoursUntil = event.startTime.difference(DateTime.now()).inHours;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final eventDate = DateTime(
+      event.startTime.year,
+      event.startTime.month,
+      event.startTime.day,
+    );
+    final isToday = eventDate == today;
+
+    final daysUntil = event.startTime.difference(now).inDays;
+    final hoursUntil = event.startTime.difference(now).inHours;
+    final minutesUntil = event.startTime.difference(now).inMinutes;
 
     String timeUntilText;
-    if (daysUntil > 0) {
-      timeUntilText = 'In $daysUntil ${daysUntil == 1 ? 'day' : 'days'}';
-    } else if (hoursUntil > 0) {
-      timeUntilText = 'In $hoursUntil ${hoursUntil == 1 ? 'hour' : 'hours'}';
+    if (isToday) {
+      if (minutesUntil <= 0) {
+        timeUntilText = '진행 중'; // Ongoing
+      } else if (minutesUntil < 60) {
+        timeUntilText = '$minutesUntil분 후';
+      } else {
+        timeUntilText = '$hoursUntil시간 후';
+      }
+    } else if (daysUntil == 0) {
+      // Tomorrow (less than 24 hours but not today)
+      timeUntilText = '내일';
+    } else if (daysUntil == 1) {
+      timeUntilText = '내일';
     } else {
-      timeUntilText = 'Today';
+      timeUntilText = '$daysUntil일 후';
     }
 
     return Container(
@@ -502,27 +541,72 @@ class EventBannerCard extends ConsumerWidget {
                     right: 12,
                     child: Row(
                       children: [
+                        // Today badge (special highlight)
+                        if (isToday)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFFF6B6B), Color(0xFFFF8E53)],
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.red.withValues(alpha: 0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.today,
+                                  size: 14,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(width: 4),
+                                const Text(
+                                  '오늘',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        if (isToday) const SizedBox(width: 8),
                         // Time until badge
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.9),
+                            color: isToday
+                                ? Colors.white
+                                : Colors.white.withValues(alpha: 0.9),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                Icons.schedule,
+                                isToday ? Icons.access_time : Icons.schedule,
                                 size: 14,
-                                color: Theme.of(context).primaryColor,
+                                color: isToday
+                                    ? Colors.deepOrange
+                                    : Theme.of(context).primaryColor,
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 timeUntilText,
                                 style: TextStyle(
-                                  color: Theme.of(context).primaryColor,
+                                  color: isToday
+                                      ? Colors.deepOrange
+                                      : Theme.of(context).primaryColor,
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                 ),

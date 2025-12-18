@@ -14,8 +14,9 @@ class EventDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final events = ref.watch(eventsProvider);
-    final event = events.firstWhere(
+    // Use expandedEventsProvider to include recurring event instances
+    final expandedEvents = ref.watch(expandedEventsProvider);
+    final event = expandedEvents.firstWhere(
       (e) => e.id == eventId,
       orElse: () => Event(
         id: '',
@@ -38,9 +39,22 @@ class EventDetailScreen extends ConsumerWidget {
     }
 
     final permissions = ref.watch(permissionsProvider);
-    final isSignedUp = ref.watch(userSignedUpEventsProvider).contains(event.id);
+
+    // For recurring instances, get the parent event for sign-up tracking
+    final effectiveEventId = event.parentEventId ?? event.id;
+    final isSignedUp = ref.watch(userSignedUpEventsProvider).contains(effectiveEventId);
     final isFull = event.maxParticipants != null &&
         event.currentParticipants >= event.maxParticipants!;
+
+    // Get the original event for editing (if this is a recurring instance)
+    Event? originalEvent;
+    if (event.isRecurrenceInstance) {
+      final events = ref.watch(eventsProvider);
+      originalEvent = events.firstWhere(
+        (e) => e.id == event.parentEventId,
+        orElse: () => event,
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -49,11 +63,19 @@ class EventDetailScreen extends ConsumerWidget {
           if (permissions.isAdmin) ...[
             IconButton(
               icon: const Icon(Icons.edit),
-              onPressed: () => _showEditEventDialog(context, ref, event),
+              onPressed: () => _showEditEventDialog(
+                context,
+                ref,
+                originalEvent ?? event,
+              ),
             ),
             IconButton(
               icon: const Icon(Icons.delete),
-              onPressed: () => _showDeleteConfirmation(context, ref, event),
+              onPressed: () => _showDeleteConfirmation(
+                context,
+                ref,
+                originalEvent ?? event,
+              ),
             ),
           ],
         ],
@@ -82,19 +104,29 @@ class EventDetailScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
                     children: [
                       Chip(
                         label: Text(_getEventTypeLabel(event.type)),
                         backgroundColor:
                             _getEventTypeColor(event.type).withValues(alpha: 0.2),
                       ),
-                      const SizedBox(width: 8),
                       if (event.isHighlighted)
                         const Chip(
                           label: Text('FEATURED'),
                           backgroundColor: Colors.orange,
                           labelStyle: TextStyle(color: Colors.white),
+                        ),
+                      if (event.isRecurrenceInstance || (originalEvent?.isRecurring ?? false))
+                        Chip(
+                          avatar: const Icon(Icons.repeat, size: 16),
+                          label: Text(
+                            originalEvent?.recurrence.getDescription(originalEvent.startTime) ??
+                                'Recurring',
+                          ),
+                          backgroundColor: Colors.blue.withValues(alpha: 0.2),
                         ),
                     ],
                   ),
@@ -186,9 +218,10 @@ class EventDetailScreen extends ConsumerWidget {
                         onPressed: (isFull && !isSignedUp)
                             ? null
                             : () async {
+                                // Use parent event ID for recurring instances
                                 await ref
                                     .read(eventsProvider.notifier)
-                                    .toggleEventSignUp(event.id, ref);
+                                    .toggleEventSignUp(effectiveEventId, ref);
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
@@ -338,7 +371,12 @@ class EventDetailScreen extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () async {
+              // Close dialog first and wait for animation
               Navigator.of(context).pop();
+
+              // Wait for dialog dismiss animation to complete
+              await Future.delayed(const Duration(milliseconds: 100));
+
               try {
                 await ref.read(eventsProvider.notifier).deleteEvent(event.id);
                 if (context.mounted) {

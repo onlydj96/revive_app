@@ -44,18 +44,46 @@ final upcomingEventsProvider = Provider<List<Event>>((ref) {
 
 // Provider for upcoming events sorted by date (replaces highlighted events for banner)
 // PERF: AutoDispose disabled to cache banner events across page transitions
+// Priority: Today's events first, then upcoming events by date
 final upcomingEventsBannerProvider = Provider<List<Event>>((ref) {
   final events = ref.watch(eventsProvider);
   final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
 
-  // Get all future events sorted by date
-  final upcomingEvents = events
-      .where((event) => event.startTime.isAfter(now))
-      .toList()
-    ..sort((a, b) => a.startTime.compareTo(b.startTime));
+  // Separate today's events from future events
+  final todayEvents = <Event>[];
+  final futureEvents = <Event>[];
 
-  // Return first 5 upcoming events for the banner
-  return upcomingEvents.take(5).toList();
+  for (final event in events) {
+    final eventDate = DateTime(
+      event.startTime.year,
+      event.startTime.month,
+      event.startTime.day,
+    );
+
+    // Include events that haven't ended yet (for today) or are in the future
+    if (eventDate == today) {
+      // Today's event - include if not ended yet
+      if (event.endTime.isAfter(now)) {
+        todayEvents.add(event);
+      }
+    } else if (eventDate.isAfter(today)) {
+      // Future events
+      futureEvents.add(event);
+    }
+  }
+
+  // Sort today's events by start time
+  todayEvents.sort((a, b) => a.startTime.compareTo(b.startTime));
+
+  // Sort future events by start time
+  futureEvents.sort((a, b) => a.startTime.compareTo(b.startTime));
+
+  // Combine: Today's events first (priority), then future events
+  final combinedEvents = [...todayEvents, ...futureEvents];
+
+  // Return first 5 events for the banner
+  return combinedEvents.take(5).toList();
 });
 
 final highlightedEventsProvider = Provider<List<Event>>((ref) {
@@ -290,15 +318,16 @@ class EventsNotifier extends StateNotifier<List<Event>> {
       eventData.remove('id'); // Let database generate ID
       eventData['created_by'] = _supabase.auth.currentUser?.id;
 
-      // Remove fields that don't exist in the database table
-      // These are computed/derived fields or not yet added to DB schema
+      // Set category from type (DB has category as legacy field)
+      eventData['category'] = event.type.toJson();
+
+      // Only remove fields that are truly not in the DB schema
+      // current_participants is managed by DB default (0)
       eventData.remove('current_participants');
+
+      // These are computed fields for recurring event instances
       eventData.remove('parent_event_id');
       eventData.remove('instance_index');
-      eventData.remove('is_highlighted');
-      eventData.remove('requires_signup');
-      eventData.remove('max_participants');
-      eventData.remove('recurrence');
 
       await _supabase.from('events').insert(eventData);
       await _loadEvents(); // Reload to get the new event with generated ID
@@ -328,15 +357,18 @@ class EventsNotifier extends StateNotifier<List<Event>> {
       // Sync with backend
       final eventData = updatedEvent.toJson();
       eventData['updated_at'] = DateTime.now().toIso8601String();
+      eventData['updated_by'] = _supabase.auth.currentUser?.id;
 
-      // Remove fields that don't exist in the database table
+      // Set category from type (DB has category as legacy field)
+      eventData['category'] = updatedEvent.type.toJson();
+
+      // Only remove fields that are truly not in the DB schema
+      // current_participants should not be updated here (use toggleEventSignUp)
       eventData.remove('current_participants');
+
+      // These are computed fields for recurring event instances
       eventData.remove('parent_event_id');
       eventData.remove('instance_index');
-      eventData.remove('is_highlighted');
-      eventData.remove('requires_signup');
-      eventData.remove('max_participants');
-      eventData.remove('recurrence');
 
       await _supabase
           .from('events')

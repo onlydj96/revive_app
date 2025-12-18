@@ -9,8 +9,13 @@ import 'time_picker_5min.dart';
 
 class CreateEventDialog extends StatefulWidget {
   final Function(Event) onEventCreated;
+  final DateTime? initialDate;
 
-  const CreateEventDialog({super.key, required this.onEventCreated});
+  const CreateEventDialog({
+    super.key,
+    required this.onEventCreated,
+    this.initialDate,
+  });
 
   @override
   State<CreateEventDialog> createState() => _CreateEventDialogState();
@@ -41,11 +46,10 @@ class _CreateEventDialogState extends State<CreateEventDialog>
   bool _isUploading = false;
   int _currentStep = 0;
 
-  DateTime _startDate = DateTime.now();
-  TimeOfDay _startTime = TimeOfDay.now();
-  DateTime _endDate = DateTime.now();
-  TimeOfDay _endTime =
-      TimeOfDay(hour: TimeOfDay.now().hour + 1, minute: TimeOfDay.now().minute);
+  late DateTime _startDate;
+  late TimeOfDay _startTime;
+  late DateTime _endDate;
+  late TimeOfDay _endTime;
 
   EventType _selectedType = EventType.service;
   bool _isHighlighted = false;
@@ -56,6 +60,16 @@ class _CreateEventDialogState extends State<CreateEventDialog>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+
+    // Use provided initial date or default to today
+    final initialDate = widget.initialDate ?? DateTime.now();
+    _startDate = initialDate;
+    _endDate = initialDate;
+    _startTime = TimeOfDay.now();
+    _endTime = TimeOfDay(
+      hour: (TimeOfDay.now().hour + 1) % 24,
+      minute: TimeOfDay.now().minute,
+    );
   }
 
   @override
@@ -536,14 +550,18 @@ class _CreateEventDialogState extends State<CreateEventDialog>
   }
 
   Widget _buildScheduleStep() {
+    final bool isSameDay = _startDate.year == _endDate.year &&
+        _startDate.month == _endDate.month &&
+        _startDate.day == _endDate.day;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Start DateTime
+          // Combined Event Schedule Section
           Text(
-            'Start Date & Time',
+            'Event Schedule',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -551,38 +569,41 @@ class _CreateEventDialogState extends State<CreateEventDialog>
             ),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildDateTimeBox(
-                  icon: Icons.calendar_today,
-                  label: 'Date',
-                  value: DateFormat('MMM d, yyyy').format(_startDate),
-                  onTap: () async {
+
+          // Unified Schedule Card
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey[200]!),
+            ),
+            child: Column(
+              children: [
+                // Start Section
+                _buildScheduleRow(
+                  label: 'Starts',
+                  icon: Icons.play_circle_outline,
+                  iconColor: Colors.green,
+                  dateValue: DateFormat('EEE, MMM d, yyyy').format(_startDate),
+                  timeValue: _startTime.format(context),
+                  onDateTap: () async {
                     final date = await showDatePicker(
                       context: context,
                       initialDate: _startDate,
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                      firstDate: DateTime(2020), // Allow past dates
+                      lastDate: DateTime.now().add(const Duration(days: 730)),
                     );
                     if (date != null) {
                       setState(() {
                         _startDate = date;
+                        // Auto-adjust end date if it's before start date
                         if (_endDate.isBefore(_startDate)) {
                           _endDate = _startDate;
                         }
                       });
                     }
                   },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildDateTimeBox(
-                  icon: Icons.access_time,
-                  label: 'Time',
-                  value: _startTime.format(context),
-                  onTap: () async {
+                  onTimeTap: () async {
                     final time = await TimePicker5Min.show(
                       context,
                       initialTime: _startTime,
@@ -595,34 +616,65 @@ class _CreateEventDialogState extends State<CreateEventDialog>
                     }
                   },
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
 
-          // End DateTime
-          Text(
-            'End Date & Time',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[700],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildDateTimeBox(
-                  icon: Icons.calendar_today,
-                  label: 'Date',
-                  value: DateFormat('MMM d, yyyy').format(_endDate),
-                  onTap: () async {
+                // Divider with duration chip
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      Expanded(child: Divider(color: Colors.grey[300])),
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.timer_outlined,
+                              size: 14,
+                              color: Colors.blue[700],
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _calculateDuration(),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.blue[700],
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(child: Divider(color: Colors.grey[300])),
+                    ],
+                  ),
+                ),
+
+                // End Section
+                _buildScheduleRow(
+                  label: 'Ends',
+                  icon: Icons.stop_circle_outlined,
+                  iconColor: Colors.red,
+                  dateValue: isSameDay
+                      ? 'Same day'
+                      : DateFormat('EEE, MMM d, yyyy').format(_endDate),
+                  timeValue: _endTime.format(context),
+                  onDateTap: () async {
                     final date = await showDatePicker(
                       context: context,
-                      initialDate: _endDate,
-                      firstDate: _startDate,
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                      initialDate: _endDate.isBefore(_startDate)
+                          ? _startDate
+                          : _endDate,
+                      firstDate: _startDate, // End date must be >= start date
+                      lastDate: DateTime.now().add(const Duration(days: 730)),
                     );
                     if (date != null) {
                       setState(() {
@@ -630,15 +682,7 @@ class _CreateEventDialogState extends State<CreateEventDialog>
                       });
                     }
                   },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildDateTimeBox(
-                  icon: Icons.access_time,
-                  label: 'Time',
-                  value: _endTime.format(context),
-                  onTap: () async {
+                  onTimeTap: () async {
                     final time = await TimePicker5Min.show(
                       context,
                       initialTime: _endTime,
@@ -650,33 +694,41 @@ class _CreateEventDialogState extends State<CreateEventDialog>
                       });
                     }
                   },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // Duration Display
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.blue.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.timer, color: Colors.blue[700], size: 20),
-                const SizedBox(width: 12),
-                Text(
-                  'Duration: ${_calculateDuration()}',
-                  style: TextStyle(
-                    color: Colors.blue[700],
-                    fontWeight: FontWeight.w600,
-                  ),
+                  isEndRow: true,
                 ),
               ],
             ),
           ),
+
+          // Past event info banner (only show if start date is in the past)
+          if (_startDate.isBefore(DateTime.now().subtract(const Duration(days: 1)))) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.history, color: Colors.orange[700], size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'This event is scheduled in the past',
+                      style: TextStyle(
+                        color: Colors.orange[800],
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           const SizedBox(height: 24),
 
           // Recurrence Options
@@ -688,6 +740,125 @@ class _CreateEventDialogState extends State<CreateEventDialog>
                 _recurrenceRule = rule;
               });
             },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScheduleRow({
+    required String label,
+    required IconData icon,
+    required Color iconColor,
+    required String dateValue,
+    required String timeValue,
+    required VoidCallback onDateTap,
+    required VoidCallback onTimeTap,
+    bool isEndRow = false,
+  }) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: isEndRow ? 12 : 16,
+        bottom: isEndRow ? 16 : 12,
+      ),
+      child: Row(
+        children: [
+          // Label with icon
+          SizedBox(
+            width: 70,
+            child: Row(
+              children: [
+                Icon(icon, size: 18, color: iconColor),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Date picker
+          Expanded(
+            flex: 3,
+            child: InkWell(
+              onTap: onDateTap,
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      size: 16,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        dateValue,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: dateValue == 'Same day'
+                              ? Colors.grey[500]
+                              : Colors.grey[800],
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Time picker
+          Expanded(
+            flex: 2,
+            child: InkWell(
+              onTap: onTimeTap,
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.access_time,
+                      size: 16,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        timeValue,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -1129,74 +1300,6 @@ class _CreateEventDialogState extends State<CreateEventDialog>
     );
 
     widget.onEventCreated(event);
-  }
-
-  Widget _buildDateTimeBox({
-    required IconData icon,
-    required String label,
-    required String value,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        height: 72,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.grey[50],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[300]!),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                icon,
-                color: Theme.of(context).primaryColor,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right,
-              color: Colors.grey[400],
-              size: 20,
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   String _getEventTypeLabel(EventType type) {
