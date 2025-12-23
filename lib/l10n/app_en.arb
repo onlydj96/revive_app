@@ -1,0 +1,690 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "Ezer - Revive Church",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+
+  "home": "Home",
+  "resources": "Resources",
+  "schedule": "Schedule",
+  "teams": "Teams",
+  "updates": "Updates",
+
+  "profile": "Profile",
+  "settings": "Settings",
+  "signOut": "Sign Out",
+  "cancel": "Cancel",
+  "save": "Save",
+  "ok": "OK",
+  "confirm": "Confirm",
+  "delete": "Delete",
+  "edit": "Edit",
+  "close": "Close",
+  "undo": "Undo",
+  "unknown": "Unknown",
+
+  "editProfile": "Edit Profile",
+  "editProfileComingSoon": "Edit Profile feature coming soon!",
+  "noUserData": "No user data available",
+  "churchInformation": "Church Information",
+  "role": "Role",
+  "member": "Member",
+  "memberSince": "Member Since",
+  "administrator": "ADMINISTRATOR",
+
+  "mySavedResources": "My Saved Resources",
+  "myEvents": "My Events",
+  "myTeams": "My Teams",
+  "helpAndSupport": "Help & Support",
+  "comingSoon": "Coming Soon",
+  "featureComingSoon": "{feature} feature coming soon!",
+  "@featureComingSoon": {
+    "placeholders": {
+      "feature": {
+        "type": "String"
+      }
+    }
+  },
+
+  "signOutConfirmTitle": "Sign Out",
+  "signOutConfirmMessage": "Are you sure you want to sign out?",
+
+  "appearance": "Appearance",
+  "themeMode": "Theme Mode",
+  "lightMode": "Light Mode",
+  "lightModeDesc": "Always use light theme",
+  "darkMode": "Dark Mode",
+  "darkModeDesc": "Always use dark theme",
+  "systemMode": "System",
+  "systemModeDesc": "Follow system theme",
+  "currentTheme": "Current: {mode} | System: {system}",
+  "@currentTheme": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      },
+      "system": {
+        "type": "String"
+      }
+    }
+  },
+
+  "language": "Language",
+  "languageDesc": "Select your preferred language",
+  "english": "English",
+  "korean": "한국어",
+
+  "about": "About",
+  "appVersion": "App Version",
+  "reviveChurch": "Revive Church",
+  "churchManagementAssistant": "Church Management Assistant",
+
+  "login": "Login",
+  "signUp": "Sign Up",
+  "email": "Email",
+  "password": "Password",
+  "confirmPassword": "Confirm Password",
+  "name": "Name",
+  "fullName": "Full Name",
+  "forgotPassword": "Forgot Password?",
+  "dontHaveAccount": "Don't have an account?",
+  "alreadyHaveAccount": "Already have an account?",
+  "createAccount": "Create Account",
+  "welcomeBack": "Welcome Back",
+  "loginToContinue": "Login to continue",
+  "createYourAccount": "Create your account",
+  "joinOurCommunity": "Join our community",
+  "orContinueWith": "Or continue with",
+  "bySigningUp": "By signing up, you agree to our:",
+  "termsOfService": "Terms of Service",
+  "and": "and",
+  "privacyPolicy": "Privacy Policy",
+  "welcomeToEzer": "Welcome to Ezer",
+  "signInToContinue": "Sign in to continue",
+  "rememberMe": "Remember me",
+  "signIn": "Sign In",
+  "or": "or",
+  "continueWithGoogle": "Continue with Google",
+  "joinReviveChurch": "Join Revive Church",
+  "createAccountToStart": "Create your account to get started",
+  "pleaseEnterFullName": "Please enter your full name",
+  "nameTooShort": "Name must be at least 2 characters",
+  "pleaseEnterEmail": "Please enter your email",
+  "pleaseEnterValidEmail": "Please enter a valid email",
+  "acceptTerms": "Please accept the terms and conditions",
+  "iAgreeToThe": "I agree to the",
+
+  "search": "Search",
+  "searchHint": "Search...",
+  "searchFoldersAndMedia": "Search folders and media...",
+  "noResultsFound": "No results found",
+  "noSearchResults": "No results for \"{query}\"",
+  "@noSearchResults": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "clearSearch": "Clear search",
+  "loading": "Loading...",
+  "loadingMore": "Loading more...",
+  "error": "Error",
+  "retry": "Retry",
+  "refresh": "Refresh",
+
+  "today": "Today",
+  "tomorrow": "Tomorrow",
+  "yesterday": "Yesterday",
+  "thisWeek": "This Week",
+  "thisMonth": "This Month",
+  "daysAgo": "{days} days ago",
+  "@daysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "hoursAgo": "{hours} hours ago",
+  "@hoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "minutesAgo": "{minutes} minutes ago",
+  "@minutesAgo": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "inDays": "In {days} days",
+  "@inDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "inHours": "In {hours} hours",
+  "@inHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "inMinutes": "In {minutes} minutes",
+  "@inMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "ongoing": "Ongoing",
+
+  "events": "Events",
+  "noUpcomingEvents": "No upcoming events",
+  "noEventsScheduled": "No events scheduled",
+  "forDate": "for {date}",
+  "@forDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "eventsFor": "Events for {date}",
+  "@eventsFor": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "eventDetails": "Event Details",
+  "addEvent": "Add Event",
+  "createEvent": "Create Event",
+  "editEvent": "Edit Event",
+  "deleteEvent": "Delete Event",
+  "eventCreatedSuccess": "Event \"{title}\" created successfully!",
+  "@eventCreatedSuccess": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "eventUpdatedSuccess": "Event \"{title}\" updated successfully!",
+  "@eventUpdatedSuccess": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "eventDeletedSuccess": "Event deleted successfully",
+  "failedToCreateEvent": "Failed to create event",
+  "failedToUpdateEvent": "Failed to update event",
+  "failedToDeleteEvent": "Failed to delete event",
+  "join": "Join",
+  "joined": "Joined",
+  "leave": "Leave",
+  "full": "Full",
+  "joinedCount": "{current}/{max} joined",
+  "@joinedCount": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "successfullyRegistered": "Successfully registered!",
+  "cancelledRegistration": "Cancelled registration",
+  "leftEvent": "Left {title}",
+  "@leftEvent": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "joinedEvent": "Joined {title}!",
+  "@joinedEvent": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "featured": "FEATURED",
+
+  "worshipFeedbackMap": "Worship Feedback Map",
+  "shareLocationFeedback": "Share your location & feedback",
+  "helpImproveWorship": "Help us improve your worship experience",
+  "thisWeeksBulletin": "This Week's Bulletin",
+  "weekOf": "Week of {date}",
+  "@weekOf": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "andMoreItems": "and {count} more items...",
+  "@andMoreItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "viewAllBulletins": "View All {year} Bulletins",
+  "@viewAllBulletins": {
+    "placeholders": {
+      "year": {
+        "type": "int"
+      }
+    }
+  },
+
+  "connectGroups": "Connect Groups",
+  "hangouts": "Hangouts",
+  "createTeam": "Create Team",
+  "joinTeam": "Join Team",
+  "leaveTeam": "Leave Team",
+  "teamDetails": "Team Details",
+  "noTeamsAvailable": "No teams available",
+  "applicationPending": "Application pending",
+  "applicationApproved": "Application approved",
+  "applicationRejected": "Application rejected",
+  "aboutConnectGroups": "About Connect Groups",
+  "connectGroupsDescription": "Connect Groups are regular, application-based gatherings focused on spiritual growth, fellowship, and discipleship. These groups require commitment and may have specific requirements.",
+  "availableGroups": "Available Groups",
+  "noConnectGroupsAvailable": "No Connect Groups Available",
+  "checkBackLaterForGroups": "Check back later for new groups",
+  "aboutHangouts": "About Hangouts",
+  "hangoutsDescription": "Hangouts are open, casual events for fellowship, fun, and building relationships. Everyone is welcome to join - no application required!",
+  "joinAHangout": "Join a Hangout",
+  "noHangoutsAvailable": "No Hangouts Available",
+  "checkBackLaterForActivities": "Check back later for new activities",
+  "applicationRequired": "APPLICATION REQUIRED",
+  "openToAll": "OPEN TO ALL",
+  "ledBy": "Led by {name}",
+  "@ledBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "membersCount": "{count} members",
+  "@membersCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "spotsFilled": "{current}/{max} spots filled",
+  "@spotsFilled": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "activeMembers": "{count} active members",
+  "@activeMembers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "apply": "Apply",
+  "reapply": "Reapply",
+  "leftTeam": "Left {name}",
+  "@leftTeam": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelledApplication": "Cancelled application to {name}",
+  "@cancelledApplication": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "applicationSubmitted": "Application submitted for {name}",
+  "@applicationSubmitted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "joinedTeam": "Joined {name}!",
+  "@joinedTeam": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToLeaveTeam": "Failed to leave {name}",
+  "@failedToLeaveTeam": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToCancelApplication": "Failed to cancel application",
+  "failedToApplyTeam": "Failed to apply to {name}",
+  "@failedToApplyTeam": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToJoinTeam": "Failed to join {name}",
+  "@failedToJoinTeam": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+
+  "bulletin": "Bulletin",
+  "latestSermon": "Latest Sermon",
+  "recentUpdates": "Recent Updates",
+  "pinnedUpdates": "Pinned Updates",
+  "upcomingEvents": "Upcoming Events",
+  "viewAll": "View All",
+  "updatesRefreshed": "Updates refreshed",
+  "noUpdates": "No Updates",
+  "checkBackLater": "Check back later for church news and announcements",
+  "updateCreatedSuccess": "Update created successfully!",
+  "failedToCreateUpdate": "Failed to create update",
+  "editUpdate": "Edit Update",
+  "deleteUpdate": "Delete Update",
+  "editing": "Editing \"{title}\"",
+  "@editing": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteConfirmTitle": "Delete Update",
+  "deleteConfirmMessage": "Are you sure you want to delete \"{title}\"? This action cannot be undone.",
+  "@deleteConfirmMessage": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "deleted": "Deleted \"{title}\"",
+  "@deleted": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToDelete": "Failed to delete",
+  "updateTypeAnnouncement": "ANNOUNCEMENT",
+  "updateTypeNews": "NEWS",
+  "updateTypePrayer": "PRAYER",
+  "updateTypeCelebration": "CELEBRATION",
+  "updateTypeUrgent": "URGENT",
+
+  "photos": "Photos",
+  "videos": "Videos",
+  "audio": "Audio",
+  "sermons": "Sermons",
+  "media": "Media",
+  "folders": "Folders",
+  "createFolder": "Create Folder",
+  "uploadMedia": "Upload Media",
+  "showDeletedItems": "Show deleted items",
+  "hideDeletedItems": "Hide deleted items",
+  "folderManagement": "Folder Management",
+  "restoreFolder": "Restore Folder",
+  "restoreFolderDesc": "Restore {name} folder",
+  "@restoreFolderDesc": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "permanentDelete": "Permanent Delete",
+  "permanentDeleteDesc": "Completely delete the folder (cannot be undone)",
+  "editThumbnail": "Edit Thumbnail",
+  "addThumbnail": "Add folder thumbnail",
+  "changeThumbnail": "Change folder thumbnail",
+  "deleteFolder": "Delete Folder",
+  "deleteFolderDesc": "Delete {name} folder",
+  "@deleteFolderDesc": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteFolderConfirmTitle": "Delete Folder Confirmation",
+  "deleteFolderConfirmMessage": "Are you sure you want to delete \"{name}\" folder?",
+  "@deleteFolderConfirmMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteFolderNote": "This action can be undone. The folder and contents will be hidden but not completely deleted.",
+  "permanentDeleteConfirmTitle": "Permanent Delete Confirmation",
+  "permanentDeleteConfirmMessage": "Are you sure you want to permanently delete \"{name}\" folder?",
+  "@permanentDeleteConfirmMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "permanentDeleteWarning": "This action cannot be undone. The folder and all contents will be completely deleted.",
+  "folderDeletedSuccess": "{name} folder has been deleted",
+  "@folderDeletedSuccess": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "folderDeletedAdminNote": "{name} folder has been deleted (still visible in admin mode)",
+  "@folderDeletedAdminNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "folderRestoredSuccess": "{name} folder has been restored",
+  "@folderRestoredSuccess": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "folderPermanentlyDeleted": "{name} folder has been permanently deleted",
+  "@folderPermanentlyDeleted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "thumbnailUpdatedSuccess": "{name} folder thumbnail has been updated",
+  "@thumbnailUpdatedSuccess": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "folderCreatedSuccess": "Folder created successfully!",
+  "uploadingThumbnail": "Uploading thumbnail...",
+  "failedToDeleteFolder": "Failed to delete folder",
+  "failedToRestoreFolder": "Failed to restore folder",
+  "failedToUpdateThumbnail": "Failed to update thumbnail",
+  "failedToPermanentDelete": "Failed to permanently delete",
+  "failedToCreateFolder": "Failed to create folder",
+  "failedToUpload": "Failed to upload",
+  "mediaDeletedSuccess": "{title} has been deleted",
+  "@mediaDeletedSuccess": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToDeleteMedia": "Failed to delete media",
+  "loadingMoreMedia": "Loading more media...",
+  "emptyFolder": "Folder is empty",
+  "emptyFolderAdmin": "Create a new folder or upload media",
+  "emptyFolderUser": "No content has been uploaded yet",
+  "sortFolders": "Sort folders",
+  "sortMedia": "Sort media",
+  "ascending": "Ascending",
+  "descending": "Descending",
+  "errorLoadingFolders": "Error loading folders",
+  "createFolderTitle": "Create Folder",
+  "createFolderDesc": "Create a new folder to organize media",
+  "uploadMediaTitle": "Upload Media",
+  "uploadMediaDesc": "Upload photos or videos to the current folder",
+
+  "welcomeMessage": "Welcome, {name}!",
+  "@welcomeMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "goodMorning": "Good morning",
+  "goodAfternoon": "Good afternoon",
+  "goodEvening": "Good evening",
+
+  "verifyEmail": "Verify Email",
+  "verificationEmailSent": "Verification email sent",
+  "checkYourEmail": "Check your email",
+  "resendVerification": "Resend verification",
+  "emailVerified": "Email verified",
+
+  "notifications": "Notifications",
+  "noNotifications": "No notifications",
+  "markAllAsRead": "Mark all as read",
+
+  "worshipFeedback": "Worship Feedback",
+  "submitFeedback": "Submit Feedback",
+  "feedbackSubmitted": "Feedback submitted",
+  "helpUsImproveExperience": "Help Us Improve Your Experience",
+  "tapMapInstruction": "Tap on the map to indicate your approximate location, then share your environmental feedback.",
+  "tapMapHint": "Tap anywhere on the worship area map to indicate your location",
+  "howsEnvironment": "How's the environment?",
+  "feedbackTooCold": "Too Cold",
+  "feedbackTooHot": "Too Hot",
+  "feedbackJustRight": "Just Right",
+  "feedbackTooLoud": "Too Loud",
+  "feedbackTooQuiet": "Too Quiet",
+  "feedbackLighting": "Lighting Issue",
+  "thankYouFeedback": "Thank you for your feedback! We'll work to improve the experience.",
+  "stage": "STAGE",
+  "entrance": "ENTRANCE",
+
+  "weeklyBulletin": "Weekly Bulletin",
+  "bulletinNotFound": "Bulletin not found",
+  "worshipSchedule": "Worship Schedule",
+  "details": "Details",
+  "worship": "Worship",
+  "deleteBulletin": "Delete Bulletin",
+  "deleteBulletinConfirm": "Are you sure you want to delete the bulletin for {date}?",
+  "@deleteBulletinConfirm": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteBulletinDetails": "This will permanently delete:\n• The bulletin \"{theme}\"\n• All {itemCount} bulletin items\n• All {scheduleCount} worship schedule items\n\nThis action cannot be undone.",
+  "@deleteBulletinDetails": {
+    "placeholders": {
+      "theme": {
+        "type": "String"
+      },
+      "itemCount": {
+        "type": "int"
+      },
+      "scheduleCount": {
+        "type": "int"
+      }
+    }
+  },
+  "deletingBulletin": "Deleting bulletin...",
+  "bulletinDeletedSuccess": "Bulletin deleted successfully",
+  "failedToDeleteBulletin": "Failed to delete bulletin",
+  "yearBulletins": "{year} Bulletins",
+  "@yearBulletins": {
+    "placeholders": {
+      "year": {
+        "type": "int"
+      }
+    }
+  },
+  "noBulletinsAvailable": "No bulletins available",
+  "bulletinsRefreshed": "Bulletins refreshed",
+  "thisWeek": "THIS WEEK",
+  "cannotBeUndone": "This action cannot be undone.",
+  "itemsCount": "{count} items",
+  "@itemsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "errorLoadingData": "Error loading data",
+  "somethingWentWrong": "Something went wrong",
+  "tryAgain": "Try again",
+  "noInternetConnection": "No internet connection",
+  "checkConnection": "Please check your connection and try again",
+
+  "exitApp": "Exit App",
+  "exitAppConfirm": "Are you sure you want to exit?",
+  "exit": "Exit",
+  "location": "Location",
+  "justNow": "Just now"
+}

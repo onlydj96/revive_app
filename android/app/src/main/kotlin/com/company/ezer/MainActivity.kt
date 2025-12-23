@@ -1,4 +1,4 @@
-package com.example.ezer
+package com.company.ezer
 
 import io.flutter.embedding.android.FlutterActivity
 

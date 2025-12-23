@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../l10n/app_localizations.dart';
 import '../providers/media_provider.dart';
 import '../providers/media_folder_provider.dart';
 import '../providers/permissions_provider.dart';
@@ -43,6 +44,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     // CRITICAL: Watch mediaProvider at top level to ensure MediaNotifier initializes
     // Without this, media items are never loaded from Supabase
     ref.watch(mediaProvider);
@@ -73,7 +75,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
                     showDeleted ? Icons.visibility_off : Icons.visibility,
                     color: showDeleted ? Colors.orange : null,
                   ),
-                  tooltip: showDeleted ? '삭제된 항목 숨기기' : '삭제된 항목 보기',
+                  tooltip: showDeleted ? l10n.hideDeletedItems : l10n.showDeletedItems,
                   onPressed: () {
                     ref.read(showDeletedFoldersProvider.notifier).state =
                         !showDeleted;
@@ -108,7 +110,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
               padding: const EdgeInsets.all(16),
               child: TextField(
                 decoration: InputDecoration(
-                  hintText: 'Search folders and media...',
+                  hintText: l10n.searchFoldersAndMedia,
                   prefixIcon: const Icon(Icons.search),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -127,7 +129,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
 
             // Content area
             Expanded(
-              child: _buildFolderContent(filteredFolders, currentFolderId),
+              child: _buildFolderContent(filteredFolders, currentFolderId, l10n),
             ),
           ],
         ),
@@ -138,12 +140,12 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
             children: [
               const Icon(Icons.error, size: 64, color: Colors.red),
               const SizedBox(height: 16),
-              Text('Error loading folders: $error'),
+              Text('${l10n.errorLoadingFolders}: $error'),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () =>
                     ref.read(mediaFolderProvider.notifier).refresh(),
-                child: const Text('Retry'),
+                child: Text(l10n.retry),
               ),
             ],
           ),
@@ -153,9 +155,10 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
   }
 
   Widget _buildAppBarTitle() {
+    final l10n = AppLocalizations.of(context)!;
     final currentFolderId = ref.watch(currentFolderProvider);
     if (currentFolderId == null) {
-      return const Text('Resources');
+      return Text(l10n.resources);
     }
 
     final folders = ref.watch(mediaFolderProvider).value ?? [];
@@ -163,7 +166,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
       (f) => f.id == currentFolderId,
       orElse: () => MediaFolder(
         id: '',
-        name: 'Unknown',
+        name: l10n.unknown,
         folderPath: '',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -200,12 +203,13 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
         ),
         itemBuilder: (context, index) {
           if (index == 0) {
+            final l10n = AppLocalizations.of(context)!;
             return InkWell(
               onTap: () =>
                   ref.read(currentFolderProvider.notifier).state = null,
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                child: Text('Home', style: TextStyle(color: Colors.blue)),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                child: Text(l10n.home, style: const TextStyle(color: Colors.blue)),
               ),
             );
           }
@@ -228,7 +232,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
   }
 
   Widget _buildFolderContent(
-      List<MediaFolder> folders, String? currentFolderId) {
+      List<MediaFolder> folders, String? currentFolderId, AppLocalizations l10n) {
     // Get current folder's subfolders
     final subfolders = folders
         .where((f) => f.parentId == currentFolderId && !f.isDeleted)
@@ -239,7 +243,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     final mediaItems = ref.watch(mediaByFolderProvider(currentFolderId));
 
     if (subfolders.isEmpty && mediaItems.isEmpty) {
-      return _buildEmptyState();
+      return _buildEmptyState(l10n);
     }
 
     return SafeArea(
@@ -255,7 +259,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               sliver: SliverToBoxAdapter(
                 child: _buildSectionHeader(
-                  title: 'Folders',
+                  title: l10n.folders,
                   count: subfolders.length,
                   isFolder: true,
                 ),
@@ -288,7 +292,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               sliver: SliverToBoxAdapter(
                 child: _buildSectionHeader(
-                  title: 'Media',
+                  title: l10n.media,
                   count: mediaItems.length,
                   isFolder: false,
                 ),
@@ -338,7 +342,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Loading more media...',
+                      l10n.loadingMoreMedia,
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.grey[600],
@@ -591,6 +595,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     required int count,
     required bool isFolder,
   }) {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8, top: 8),
       child: Row(
@@ -623,7 +628,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
               size: 20,
               color: Colors.grey[700],
             ),
-            tooltip: isFolder ? '폴더 정렬' : '미디어 정렬',
+            tooltip: isFolder ? l10n.sortFolders : l10n.sortMedia,
             offset: const Offset(0, 40),
             onSelected: (value) {
               if (isFolder) {
@@ -673,7 +678,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
                           size: 16,
                         ),
                         const SizedBox(width: 8),
-                        Text(sortAscending ? '오름차순' : '내림차순'),
+                        Text(sortAscending ? l10n.ascending : l10n.descending),
                       ],
                     ),
                   ),
@@ -703,7 +708,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(AppLocalizations l10n) {
     final searchQuery = ref.watch(mediaFolderSearchProvider);
     final permissions = ref.watch(permissionsProvider);
 
@@ -720,7 +725,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              '검색 결과가 없습니다',
+              l10n.noResultsFound,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: Colors.grey[600],
                     fontWeight: FontWeight.bold,
@@ -728,7 +733,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              '"$searchQuery"에 대한 폴더나 미디어를 찾을 수 없습니다',
+              l10n.noSearchResults(searchQuery),
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Colors.grey[500],
                   ),
@@ -740,7 +745,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
                 ref.read(mediaFolderSearchProvider.notifier).state = '';
               },
               icon: const Icon(Icons.clear),
-              label: const Text('검색 초기화'),
+              label: Text(l10n.clearSearch),
             ),
           ],
         ),
@@ -760,7 +765,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              '폴더가 비어있습니다',
+              l10n.emptyFolder,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: Colors.grey[600],
                     fontWeight: FontWeight.bold,
@@ -768,7 +773,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              '새 폴더를 만들거나 미디어를 업로드하세요',
+              l10n.emptyFolderAdmin,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Colors.grey[500],
                   ),
@@ -780,13 +785,13 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
                 ElevatedButton.icon(
                   onPressed: () => _showCreateFolderDialog(context),
                   icon: const Icon(Icons.create_new_folder),
-                  label: const Text('폴더 만들기'),
+                  label: Text(l10n.createFolder),
                 ),
                 const SizedBox(width: 16),
                 OutlinedButton.icon(
                   onPressed: () => _showUploadMediaDialog(context),
                   icon: const Icon(Icons.upload_file),
-                  label: const Text('미디어 업로드'),
+                  label: Text(l10n.uploadMedia),
                 ),
               ],
             ),
@@ -807,7 +812,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            '폴더가 비어있습니다',
+            l10n.emptyFolder,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: Colors.grey[600],
                   fontWeight: FontWeight.bold,
@@ -815,7 +820,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            '아직 콘텐츠가 업로드되지 않았습니다',
+            l10n.emptyFolderUser,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.grey[500],
                 ),
@@ -826,6 +831,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
   }
 
   void _showFolderOptions(BuildContext context, MediaFolder folder) {
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       builder: (context) => Container(
@@ -834,7 +840,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '폴더 관리',
+              l10n.folderManagement,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -844,8 +850,8 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
               // Options for deleted folders
               ListTile(
                 leading: const Icon(Icons.restore, color: Colors.green),
-                title: const Text('폴더 복구'),
-                subtitle: Text('${folder.name} 폴더를 복구합니다'),
+                title: Text(l10n.restoreFolder),
+                subtitle: Text(l10n.restoreFolderDesc(folder.name)),
                 onTap: () {
                   Navigator.of(context).pop();
                   _restoreFolder(context, folder);
@@ -853,8 +859,8 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
               ),
               ListTile(
                 leading: const Icon(Icons.delete_forever, color: Colors.red),
-                title: const Text('영구 삭제'),
-                subtitle: const Text('폴더를 완전히 삭제합니다 (복구 불가)'),
+                title: Text(l10n.permanentDelete),
+                subtitle: Text(l10n.permanentDeleteDesc),
                 onTap: () {
                   Navigator.of(context).pop();
                   _showPermanentDeleteConfirmation(context, folder);
@@ -864,10 +870,10 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
               // Options for active folders
               ListTile(
                 leading: const Icon(Icons.image, color: Colors.blue),
-                title: const Text('썸네일 수정'),
+                title: Text(l10n.editThumbnail),
                 subtitle: Text(folder.thumbnailUrl == null
-                    ? '폴더 썸네일을 추가합니다'
-                    : '폴더 썸네일을 변경합니다'),
+                    ? l10n.addThumbnail
+                    : l10n.changeThumbnail),
                 onTap: () {
                   Navigator.of(context).pop();
                   _updateFolderThumbnail(context, folder);
@@ -875,8 +881,8 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
               ),
               ListTile(
                 leading: const Icon(Icons.delete_outline, color: Colors.red),
-                title: const Text('폴더 삭제'),
-                subtitle: Text('${folder.name} 폴더를 삭제합니다'),
+                title: Text(l10n.deleteFolder),
+                subtitle: Text(l10n.deleteFolderDesc(folder.name)),
                 onTap: () {
                   Navigator.of(context).pop();
                   _showDeleteFolderConfirmation(context, folder);
@@ -890,15 +896,16 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
   }
 
   void _showDeleteFolderConfirmation(BuildContext context, MediaFolder folder) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('폴더 삭제 확인'),
+        title: Text(l10n.deleteFolderConfirmTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('정말로 "${folder.name}" 폴더를 삭제하시겠습니까?'),
+            Text(l10n.deleteFolderConfirmMessage(folder.name)),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
@@ -913,7 +920,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '이 작업은 되돌릴 수 있습니다. 폴더와 내용물이 숨겨지지만 완전히 삭제되지는 않습니다.',
+                      l10n.deleteFolderNote,
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.orange[700],
@@ -928,7 +935,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('취소'),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -939,7 +946,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
             ),
-            child: const Text('삭제'),
+            child: Text(l10n.delete),
           ),
         ],
       ),
@@ -948,6 +955,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
 
   Future<void> _deleteFolderSoft(
       BuildContext context, MediaFolder folder) async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       await ref.read(mediaFolderProvider.notifier).softDeleteFolder(folder.id);
 
@@ -960,11 +968,11 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
         UIUtils.showSuccess(
           context,
           showDeleted
-              ? '${folder.name} 폴더가 삭제되었습니다 (관리자 모드에서는 계속 보입니다)'
-              : '${folder.name} 폴더가 삭제되었습니다',
+              ? l10n.folderDeletedAdminNote(folder.name)
+              : l10n.folderDeletedSuccess(folder.name),
           duration: const Duration(seconds: 4),
           action: SnackBarAction(
-            label: '되돌리기',
+            label: l10n.undo,
             textColor: Colors.white,
             onPressed: () async {
               await ref
@@ -978,13 +986,14 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
       }
     } catch (e) {
       if (context.mounted) {
-        UIUtils.showError(context, '폴더 삭제 실패: $e');
+        UIUtils.showError(context, '${l10n.failedToDeleteFolder}: $e');
       }
     }
   }
 
   Future<void> _deleteMediaSoft(
       BuildContext context, MediaItem mediaItem) async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       await ref.read(mediaProvider.notifier).softDeleteMedia(mediaItem.id);
 
@@ -994,9 +1003,9 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
       if (context.mounted) {
         UIUtils.showSuccess(
           context,
-          '${mediaItem.title}이(가) 삭제되었습니다',
+          l10n.mediaDeletedSuccess(mediaItem.title),
           action: SnackBarAction(
-            label: '되돌리기',
+            label: l10n.undo,
             textColor: Colors.white,
             onPressed: () async {
               await ref
@@ -1010,12 +1019,13 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
       }
     } catch (e) {
       if (context.mounted) {
-        UIUtils.showError(context, '미디어 삭제 실패: $e');
+        UIUtils.showError(context, '${l10n.failedToDeleteMedia}: $e');
       }
     }
   }
 
   Future<void> _restoreFolder(BuildContext context, MediaFolder folder) async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       await ref.read(mediaFolderProvider.notifier).restoreFolder(folder.id);
 
@@ -1023,17 +1033,18 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
       ref.invalidate(folderMediaCountProvider);
 
       if (context.mounted) {
-        UIUtils.showSuccess(context, '${folder.name} 폴더가 복구되었습니다');
+        UIUtils.showSuccess(context, l10n.folderRestoredSuccess(folder.name));
       }
     } catch (e) {
       if (context.mounted) {
-        UIUtils.showError(context, '폴더 복구 실패: $e');
+        UIUtils.showError(context, '${l10n.failedToRestoreFolder}: $e');
       }
     }
   }
 
   Future<void> _updateFolderThumbnail(
       BuildContext context, MediaFolder folder) async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       final ImagePicker picker = ImagePicker();
       final XFile? image = await picker.pickImage(
@@ -1047,7 +1058,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
 
       if (context.mounted) {
         // Show loading indicator
-        UIUtils.showLoading(context, '썸네일 업로드 중...');
+        UIUtils.showLoading(context, l10n.uploadingThumbnail);
       }
 
       // Upload to Supabase Storage
@@ -1071,27 +1082,28 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
       if (context.mounted) {
         UIUtils.clearSnackBars(context);
         UIUtils.showSuccess(
-            context, '${folder.name} 폴더의 썸네일이 업데이트되었습니다');
+            context, l10n.thumbnailUpdatedSuccess(folder.name));
       }
     } catch (e) {
       if (context.mounted) {
         UIUtils.clearSnackBars(context);
-        UIUtils.showError(context, '썸네일 업데이트 실패: $e');
+        UIUtils.showError(context, '${l10n.failedToUpdateThumbnail}: $e');
       }
     }
   }
 
   void _showPermanentDeleteConfirmation(
       BuildContext context, MediaFolder folder) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('영구 삭제 확인'),
+        title: Text(l10n.permanentDeleteConfirmTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('정말로 "${folder.name}" 폴더를 영구 삭제하시겠습니까?'),
+            Text(l10n.permanentDeleteConfirmMessage(folder.name)),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
@@ -1106,7 +1118,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '이 작업은 되돌릴 수 없습니다. 폴더와 모든 내용이 완전히 삭제됩니다.',
+                      l10n.permanentDeleteWarning,
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.red[700],
@@ -1122,7 +1134,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('취소'),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -1133,7 +1145,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
               backgroundColor: Colors.red[700],
               foregroundColor: Colors.white,
             ),
-            child: const Text('영구 삭제'),
+            child: Text(l10n.permanentDelete),
           ),
         ],
       ),
@@ -1142,22 +1154,24 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
 
   Future<void> _permanentDeleteFolder(
       BuildContext context, MediaFolder folder) async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       await ref
           .read(mediaFolderProvider.notifier)
           .permanentDeleteFolder(folder.id);
 
       if (context.mounted) {
-        UIUtils.showError(context, '${folder.name} 폴더가 영구적으로 삭제되었습니다');
+        UIUtils.showError(context, l10n.folderPermanentlyDeleted(folder.name));
       }
     } catch (e) {
       if (context.mounted) {
-        UIUtils.showError(context, '영구 삭제 실패: $e');
+        UIUtils.showError(context, '${l10n.failedToPermanentDelete}: $e');
       }
     }
   }
 
   void _showCreateOptions(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       builder: (context) => Container(
@@ -1167,8 +1181,8 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.create_new_folder),
-              title: const Text('폴더 만들기'),
-              subtitle: const Text('새 폴더를 생성하여 미디어를 정리'),
+              title: Text(l10n.createFolderTitle),
+              subtitle: Text(l10n.createFolderDesc),
               onTap: () {
                 Navigator.of(context).pop();
                 _showCreateFolderDialog(context);
@@ -1176,8 +1190,8 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.upload_file),
-              title: const Text('미디어 업로드'),
-              subtitle: const Text('사진이나 동영상을 현재 폴더에 업로드'),
+              title: Text(l10n.uploadMediaTitle),
+              subtitle: Text(l10n.uploadMediaDesc),
               onTap: () {
                 Navigator.of(context).pop();
                 _showUploadMediaDialog(context);
@@ -1190,6 +1204,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
   }
 
   void _showCreateFolderDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => CreateMediaFolderDialog(
@@ -1205,11 +1220,11 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
                 );
 
             if (context.mounted) {
-              UIUtils.showSuccess(context, '폴더가 성공적으로 생성되었습니다!');
+              UIUtils.showSuccess(context, l10n.folderCreatedSuccess);
             }
           } catch (e) {
             if (context.mounted) {
-              UIUtils.showError(context, '폴더 생성 실패: $e');
+              UIUtils.showError(context, '${l10n.failedToCreateFolder}: $e');
             }
           }
         },
@@ -1263,7 +1278,8 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
             await ref.read(mediaFolderProvider.notifier).refresh();
           } catch (e) {
             if (context.mounted) {
-              UIUtils.showError(context, '업로드 실패: $e');
+              final l10n = AppLocalizations.of(context)!;
+              UIUtils.showError(context, '${l10n.failedToUpload}: $e');
             }
             rethrow;
           }

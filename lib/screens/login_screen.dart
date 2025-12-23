@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
 import '../models/auth_state.dart' as app_auth;
+import '../utils/form_validators.dart';
+import '../utils/ui_utils.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -35,22 +38,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _handleForgotPassword() {
+    final l10n = AppLocalizations.of(context)!;
     if (_emailController.text.isNotEmpty) {
       ref
           .read(authProvider.notifier)
           .resetPassword(_emailController.text.trim());
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter your email address first'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      UIUtils.showWarning(context, l10n.pleaseEnterEmail);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final authState = ref.watch(authProvider);
 
     // Listen to auth state changes
@@ -58,14 +58,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (next.isAuthenticated) {
         context.go('/home');
       } else if (next.hasError && next.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.errorMessage!),
-            backgroundColor: next.errorMessage!.contains('check your email')
-                ? Colors.green
-                : Colors.red,
-          ),
-        );
+        if (next.errorMessage!.contains('check your email')) {
+          UIUtils.showSuccess(context, next.errorMessage!);
+        } else {
+          UIUtils.showError(context, next.errorMessage!);
+        }
         ref.read(authProvider.notifier).clearError();
       }
     });
@@ -131,7 +128,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(height: 32),
 
                     Text(
-                      'Welcome to Ezer',
+                      l10n.welcomeToEzer,
                       style:
                           Theme.of(context).textTheme.headlineMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
@@ -142,9 +139,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(height: 8),
 
                     Text(
-                      'Sign in to continue',
+                      l10n.signInToContinue,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Colors.grey[600],
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                     ),
 
@@ -156,24 +153,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
-                        labelText: 'Email',
+                        labelText: l10n.email,
                         prefixIcon: const Icon(Icons.email_outlined),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         filled: true,
-                        fillColor: Colors.grey[50],
+                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your email';
-                        }
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                            .hasMatch(value)) {
-                          return 'Please enter a valid email';
-                        }
-                        return null;
-                      },
+                      validator: (value) => FormValidators.validateEmail(value),
                     ),
 
                     const SizedBox(height: 16),
@@ -185,7 +173,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       textInputAction: TextInputAction.done,
                       onFieldSubmitted: (_) => _handleLogin(),
                       decoration: InputDecoration(
-                        labelText: 'Password',
+                        labelText: l10n.password,
                         prefixIcon: const Icon(Icons.lock_outline),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -203,17 +191,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         filled: true,
-                        fillColor: Colors.grey[50],
+                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your password';
-                        }
-                        if (value.length < 6) {
-                          return 'Password must be at least 6 characters';
-                        }
-                        return null;
-                      },
+                      // For login, use non-strict validation (just check not empty and min length)
+                      validator: (value) => FormValidators.validatePassword(value, strict: false),
                     ),
 
                     const SizedBox(height: 16),
@@ -229,11 +210,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             });
                           },
                         ),
-                        const Text('Remember me'),
+                        Text(l10n.rememberMe),
                         const Spacer(),
                         TextButton(
                           onPressed: _handleForgotPassword,
-                          child: const Text('Forgot Password?'),
+                          child: Text(l10n.forgotPassword),
                         ),
                       ],
                     ),
@@ -262,13 +243,76 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Text(
-                                'Sign In',
-                                style: TextStyle(
+                            : Text(
+                                l10n.signIn,
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Divider with "or"
+                    Row(
+                      children: [
+                        Expanded(child: Divider(color: Theme.of(context).colorScheme.outlineVariant)),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            l10n.or,
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          ),
+                        ),
+                        Expanded(child: Divider(color: Theme.of(context).colorScheme.outlineVariant)),
+                      ],
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Google Sign In Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: OutlinedButton.icon(
+                        onPressed: authState.isLoading
+                            ? null
+                            : () => ref.read(authProvider.notifier).signInWithGoogle(),
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+                          backgroundColor: Theme.of(context).colorScheme.surface,
+                        ),
+                        icon: Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'G',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue[700],
+                              ),
+                            ),
+                          ),
+                        ),
+                        label: Text(
+                          l10n.continueWithGoogle,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black87,
+                          ),
+                        ),
                       ),
                     ),
 
@@ -279,14 +323,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Don\'t have an account? ',
+                          '${l10n.dontHaveAccount} ',
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         TextButton(
                           onPressed: () => context.go('/signup'),
-                          child: const Text(
-                            'Sign Up',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                          child: Text(
+                            l10n.signUp,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
                       ],

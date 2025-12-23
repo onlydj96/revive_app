@@ -106,22 +106,34 @@ class MediaGridItem extends ConsumerWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        InkWell(
-                          onTap: onCollect,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.7),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              mediaItem.isCollected
-                                  ? Icons.bookmark
-                                  : Icons.bookmark_border,
-                              size: 20,
-                              color: mediaItem.isCollected
-                                  ? Colors.yellow
-                                  : Colors.white,
+                        Semantics(
+                          label: mediaItem.isCollected
+                              ? 'Remove from saved items'
+                              : 'Save this item',
+                          button: true,
+                          child: Tooltip(
+                            message: mediaItem.isCollected
+                                ? 'Remove from saved'
+                                : 'Save',
+                            child: InkWell(
+                              onTap: onCollect,
+                              customBorder: const CircleBorder(),
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.7),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  mediaItem.isCollected
+                                      ? Icons.bookmark
+                                      : Icons.bookmark_border,
+                                  size: 20,
+                                  color: mediaItem.isCollected
+                                      ? Colors.yellow
+                                      : Colors.white,
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -154,7 +166,7 @@ class MediaGridItem extends ConsumerWidget {
                                     Icon(Icons.delete,
                                         size: 18, color: Colors.red),
                                     SizedBox(width: 8),
-                                    Text('삭제',
+                                    Text('Delete',
                                         style: TextStyle(color: Colors.red)),
                                   ],
                                 ),
@@ -260,12 +272,12 @@ class MediaGridItem extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('미디어 삭제 확인'),
+        title: const Text('Delete Media'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('정말로 "${mediaItem.title}"을(를) 삭제하시겠습니까?'),
+            Text('Are you sure you want to delete "${mediaItem.title}"?'),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
@@ -280,7 +292,7 @@ class MediaGridItem extends ConsumerWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '이 작업은 되돌릴 수 있습니다. 미디어가 숨겨지지만 완전히 삭제되지는 않습니다.',
+                      'This action can be undone. The media will be hidden but not permanently deleted.',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.orange[700],
@@ -295,7 +307,7 @@ class MediaGridItem extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('취소'),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -310,7 +322,7 @@ class MediaGridItem extends ConsumerWidget {
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
             ),
-            child: const Text('삭제'),
+            child: const Text('Delete'),
           ),
         ],
       ),

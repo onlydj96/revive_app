@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../l10n/app_localizations.dart';
 import '../models/notification.dart';
 import '../providers/notification_provider.dart';
 import '../widgets/feedback_detail_dialog.dart';
@@ -18,6 +19,8 @@ class MainScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+
     // PERF: Removed provider watches from build method
     // Notification providers now isolated in Consumer to prevent full rebuild
 
@@ -56,43 +59,55 @@ class MainScreen extends ConsumerWidget {
               final hasUnreadNotifications = ref.watch(hasUnreadNotificationsProvider);
               final unreadCount = ref.watch(unreadNotificationCountProvider);
 
-              return Stack(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.notifications),
-                    onPressed: () => _showNotifications(context, ref),
-                  ),
-                  if (hasUnreadNotifications)
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        child: Text(
-                          unreadCount > 9 ? '9+' : unreadCount.toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+              return Semantics(
+                label: hasUnreadNotifications
+                    ? '${l10n.notifications}, $unreadCount'
+                    : l10n.notifications,
+                button: true,
+                child: Stack(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.notifications),
+                      tooltip: hasUnreadNotifications
+                          ? '${l10n.notifications} ($unreadCount)'
+                          : l10n.notifications,
+                      onPressed: () => _showNotifications(context, ref, l10n),
+                    ),
+                    if (hasUnreadNotifications)
+                      Positioned(
+                        right: 8,
+                        top: 8,
+                        child: IgnorePointer(
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            child: Text(
+                              unreadCount > 9 ? '9+' : unreadCount.toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
                           ),
-                          textAlign: TextAlign.center,
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               );
             },
           ),
           IconButton(
             icon: const Icon(Icons.person),
+            tooltip: l10n.profile,
             onPressed: () => context.push('/profile'),
           ),
         ],
@@ -117,26 +132,26 @@ class MainScreen extends ConsumerWidget {
         onTap: (index) => _onItemTapped(index, context),
         selectedItemColor: Theme.of(context).primaryColor,
         unselectedItemColor: Colors.grey,
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
+            icon: const Icon(Icons.home),
+            label: l10n.home,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.photo_library),
-            label: 'Resources',
+            icon: const Icon(Icons.photo_library),
+            label: l10n.resources,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month),
-            label: 'Schedule',
+            icon: const Icon(Icons.calendar_month),
+            label: l10n.schedule,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.groups),
-            label: 'Teams',
+            icon: const Icon(Icons.groups),
+            label: l10n.teams,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label: 'Updates',
+            icon: const Icon(Icons.article),
+            label: l10n.updates,
           ),
         ],
       ),
@@ -145,22 +160,23 @@ class MainScreen extends ConsumerWidget {
   }
 
   Future<bool?> _showExitConfirmationDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('앱 종료'),
-        content: const Text('앱을 종료하시겠습니까?'),
+        title: Text(l10n.exitApp),
+        content: Text(l10n.exitAppConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('취소'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: TextButton.styleFrom(
               foregroundColor: Colors.red,
             ),
-            child: const Text('종료'),
+            child: Text(l10n.exit),
           ),
         ],
       ),
@@ -207,7 +223,7 @@ class MainScreen extends ConsumerWidget {
     }
   }
 
-  void _showNotifications(BuildContext context, WidgetRef ref) {
+  void _showNotifications(BuildContext context, WidgetRef ref, AppLocalizations l10n) {
     final notifications = ref.read(notificationProvider);
 
     showModalBottomSheet(
@@ -238,7 +254,7 @@ class MainScreen extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Notifications',
+                    l10n.notifications,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -248,7 +264,7 @@ class MainScreen extends ConsumerWidget {
                       onPressed: () {
                         ref.read(notificationProvider.notifier).markAllAsRead();
                       },
-                      child: const Text('Mark all as read'),
+                      child: Text(l10n.markAllAsRead),
                     ),
                 ],
               ),
@@ -266,7 +282,7 @@ class MainScreen extends ConsumerWidget {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'No notifications',
+                              l10n.noNotifications,
                               style: Theme.of(context)
                                   .textTheme
                                   .bodyLarge
@@ -343,7 +359,7 @@ class MainScreen extends ConsumerWidget {
                                               ),
                                               const SizedBox(width: 2),
                                               Text(
-                                                'Location',
+                                                l10n.location,
                                                 style: Theme.of(context)
                                                     .textTheme
                                                     .bodySmall

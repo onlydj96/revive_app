@@ -43,7 +43,8 @@ class HangoutJoinsNotifier extends StateNotifier<HangoutJoinsState> {
       final userId = SupabaseService.currentUser?.id;
       if (userId == null) return;
 
-      final response = await SupabaseService.from('team_memberships')
+      // FIX: Query hangout_joins table (not team_memberships) for hangout membership
+      final response = await SupabaseService.from('hangout_joins')
           .select('team_id')
           .eq('user_id', userId)
           .eq('status', 'active');

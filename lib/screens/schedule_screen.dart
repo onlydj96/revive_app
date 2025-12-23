@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../l10n/app_localizations.dart';
 import '../providers/events_provider.dart';
 import '../providers/permissions_provider.dart';
 import '../providers/hangout_joins_provider.dart';
@@ -168,6 +169,7 @@ class ScheduleScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final events = ref.watch(expandedEventsProvider);
     final upcomingEvents = ref.watch(upcomingEventsBannerProvider);
     final selectedDate = ref.watch(selectedDateProvider);
@@ -176,7 +178,7 @@ class ScheduleScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Schedule'),
+        title: Text(l10n.schedule),
         actions: [
           if (permissions.isAdmin)
             IconButton(
@@ -318,7 +320,7 @@ class ScheduleScreen extends ConsumerWidget {
                 child: Row(
                   children: [
                     Text(
-                      'Events for ${DateFormat('MMMM d, yyyy').format(selectedDate)}',
+                      l10n.eventsFor(DateFormat('MMMM d, yyyy').format(selectedDate)),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -347,13 +349,13 @@ class ScheduleScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'No events scheduled',
+                      l10n.noEventsScheduled,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             color: Colors.grey[600],
                           ),
                     ),
                     Text(
-                      'for ${DateFormat('MMMM d, yyyy').format(selectedDate)}',
+                      l10n.forDate(DateFormat('MMMM d, yyyy').format(selectedDate)),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Colors.grey[500],
                           ),
@@ -363,7 +365,7 @@ class ScheduleScreen extends ConsumerWidget {
                       OutlinedButton.icon(
                         onPressed: () => _showCreateEventDialog(context, ref, selectedDate: selectedDate),
                         icon: const Icon(Icons.add),
-                        label: const Text('Add Event'),
+                        label: Text(l10n.addEvent),
                       ),
                     ],
                   ],
@@ -388,6 +390,7 @@ class EventBannerCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final eventDate = DateTime(
@@ -404,19 +407,19 @@ class EventBannerCard extends ConsumerWidget {
     String timeUntilText;
     if (isToday) {
       if (minutesUntil <= 0) {
-        timeUntilText = '진행 중'; // Ongoing
+        timeUntilText = l10n.ongoing;
       } else if (minutesUntil < 60) {
-        timeUntilText = '$minutesUntil분 후';
+        timeUntilText = l10n.inMinutes(minutesUntil);
       } else {
-        timeUntilText = '$hoursUntil시간 후';
+        timeUntilText = l10n.inHours(hoursUntil);
       }
     } else if (daysUntil == 0) {
       // Tomorrow (less than 24 hours but not today)
-      timeUntilText = '내일';
+      timeUntilText = l10n.tomorrow;
     } else if (daysUntil == 1) {
-      timeUntilText = '내일';
+      timeUntilText = l10n.tomorrow;
     } else {
-      timeUntilText = '$daysUntil일 후';
+      timeUntilText = l10n.inDays(daysUntil);
     }
 
     return Container(
@@ -568,9 +571,9 @@ class EventBannerCard extends ConsumerWidget {
                                   color: Colors.white,
                                 ),
                                 const SizedBox(width: 4),
-                                const Text(
-                                  '오늘',
-                                  style: TextStyle(
+                                Text(
+                                  l10n.today,
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
@@ -660,7 +663,7 @@ class EventBannerCard extends ConsumerWidget {
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
-                              'FEATURED',
+                              l10n.featured,
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 11,
@@ -836,10 +839,10 @@ class EventBannerCard extends ConsumerWidget {
                                         ),
                                         child: Text(
                                           isFull && !isSignedUp
-                                              ? 'Full'
+                                              ? l10n.full
                                               : isSignedUp
-                                                  ? 'Joined'
-                                                  : 'Join',
+                                                  ? l10n.joined
+                                                  : l10n.join,
                                           style: TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.bold,
@@ -874,6 +877,7 @@ class EventListItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final eventTypeIcon = _getEventTypeIcon(event.type);
     final eventTypeColor = _getEventTypeColor(event.type, context);
 
@@ -1106,7 +1110,7 @@ class EventListItem extends ConsumerWidget {
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
-                                          '${event.currentParticipants}/${event.maxParticipants} joined',
+                                          l10n.joinedCount(event.currentParticipants, event.maxParticipants!),
                                           style: TextStyle(
                                             fontSize: 12,
                                             color: Colors.grey[600],
@@ -1184,11 +1188,11 @@ class EventListItem extends ConsumerWidget {
                                                   content: Text(event.type ==
                                                           EventType.hangout
                                                       ? (isSignedUp
-                                                          ? 'Left ${event.title}'
-                                                          : 'Joined ${event.title}!')
+                                                          ? l10n.leftEvent(event.title)
+                                                          : l10n.joinedEvent(event.title))
                                                       : (isSignedUp
-                                                          ? 'Cancelled registration'
-                                                          : 'Successfully registered!')),
+                                                          ? l10n.cancelledRegistration
+                                                          : l10n.successfullyRegistered)),
                                                   backgroundColor: isSignedUp
                                                       ? Colors.orange
                                                       : Colors.green,
@@ -1228,10 +1232,10 @@ class EventListItem extends ConsumerWidget {
                                       ),
                                       child: Text(
                                         isFull && !isSignedUp
-                                            ? 'Full'
+                                            ? l10n.full
                                             : isSignedUp
-                                                ? 'Cancel'
-                                                : 'Join',
+                                                ? l10n.cancel
+                                                : l10n.join,
                                         style: TextStyle(
                                           color: isFull && !isSignedUp
                                               ? Colors.grey[600]

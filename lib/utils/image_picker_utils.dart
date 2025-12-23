@@ -61,19 +61,20 @@ class ImagePickerUtils {
         );
       } catch (platformException) {
         // Fallback to single image picker
-        if (context.mounted) {
-          final shouldTrySingle = await UIUtils.showConfirmation(
-            context,
-            title: '다중 선택 실패',
-            content: '여러 사진 선택에 실패했습니다. 한 장씩 선택하시겠습니까?',
-            confirmText: '한 장씩 선택',
-          );
+        if (!context.mounted) return [];
 
-          if (shouldTrySingle == true) {
-            final singleImage = await pickSingleImage(context);
-            if (singleImage != null) {
-              images = [singleImage];
-            }
+        final shouldTrySingle = await UIUtils.showConfirmation(
+          context,
+          title: '다중 선택 실패',
+          content: '여러 사진 선택에 실패했습니다. 한 장씩 선택하시겠습니까?',
+          confirmText: '한 장씩 선택',
+        );
+
+        // Check context.mounted again after async gap
+        if (shouldTrySingle == true && context.mounted) {
+          final singleImage = await pickSingleImage(context);
+          if (singleImage != null) {
+            images = [singleImage];
           }
         }
       }

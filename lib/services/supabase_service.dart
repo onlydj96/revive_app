@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../config/supabase_config.dart';
 import '../utils/logger.dart';
 
@@ -224,6 +225,50 @@ class SupabaseService {
 
   static Future<void> resetPassword(String email) async {
     await client.auth.resetPasswordForEmail(email);
+  }
+
+  static Future<void> resendVerificationEmail(String email) async {
+    await client.auth.resend(
+      type: OtpType.signup,
+      email: email,
+      emailRedirectTo: 'ezer://auth-callback',
+    );
+  }
+
+  // Google Sign-In
+  static Future<AuthResponse> signInWithGoogle() async {
+    // Web client ID from google-services.json (client_type: 3)
+    // This must match the one configured in Supabase Auth settings
+    const webClientId = '804648859472-tcrtkacbhagb2uen0p1fberh2phlk9el.apps.googleusercontent.com';
+
+    final googleSignIn = GoogleSignIn(
+      clientId: webClientId,
+      serverClientId: webClientId,
+    );
+
+    final googleUser = await googleSignIn.signIn();
+    if (googleUser == null) {
+      throw const AuthException('Google sign-in was cancelled');
+    }
+
+    final googleAuth = await googleUser.authentication;
+    final accessToken = googleAuth.accessToken;
+    final idToken = googleAuth.idToken;
+
+    if (accessToken == null || idToken == null) {
+      throw const AuthException('Failed to get Google authentication tokens');
+    }
+
+    _logger.debug('🔗 Signing in with Google...');
+
+    final response = await client.auth.signInWithIdToken(
+      provider: OAuthProvider.google,
+      idToken: idToken,
+      accessToken: accessToken,
+    );
+
+    _logger.debug('✅ Google sign-in successful');
+    return response;
   }
 
   // Real-time subscription helper

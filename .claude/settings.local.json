@@ -35,7 +35,14 @@
       "Bash(tee:*)",
       "Bash(del \"c:\\workspace\\mobile\\revive_app\\lib\\themes\\app_colors.dart\")",
       "Bash(git add:*)",
-      "Bash(git commit -m \"$(cat <<''EOF''\nrefactor: 코드 품질 개선 및 Resources 페이지네이션 UX 최적화\n\n중복 유틸리티 통합(UIUtils), DatabaseService 마이그레이션, Logger 도입, Resources 페이지네이션 성능 개선(65% 트리거, 80/50 페이지 크기), 코드 스타일 수정. Flutter analyze 이슈 273→92개로 66% 감소.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash(git commit -m \"$(cat <<''EOF''\nrefactor: 코드 품질 개선 및 Resources 페이지네이션 UX 최적화\n\n중복 유틸리티 통합(UIUtils), DatabaseService 마이그레이션, Logger 도입, Resources 페이지네이션 성능 개선(65% 트리거, 80/50 페이지 크기), 코드 스타일 수정. Flutter analyze 이슈 273→92개로 66% 감소.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(keytool -list -v -keystore c:\\workspace\\mobile\\revive_app\\android\\app\\ezer-key.jks -alias ezer -storepass:*)",
+      "Bash(findstr:*)",
+      "Bash(dir c:workspacemobilerevive_appandroidappezer-key.jks)",
+      "Bash(del \"c:\\workspace\\mobile\\revive_app\\lib\\services\\database_service.dart\")",
+      "Bash(del \"c:\\workspace\\mobile\\revive_app\\lib\\utils\\snackbar_utils.dart\")",
+      "Bash(del \"c:\\workspace\\mobile\\revive_app\\lib\\utils\\dialog_utils.dart\")",
+      "Bash(del \"c:\\workspace\\mobile\\revive_app\\lib\\utils\\confirmation_dialog.dart\")"
     ],
     "deny": []
   },

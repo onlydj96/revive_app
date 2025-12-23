@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/team.dart';
 import '../screens/teams_screen.dart' show TeamCard;
+import 'common/empty_state.dart';
+import '../config/app_theme.dart';
 
 // FIXED P0-8: Extracted unified tab content widget to eliminate duplication
 /// Reusable tab content widget for both Connect Groups and Hangouts tabs
@@ -83,32 +85,15 @@ class TeamTabContent extends StatelessWidget {
           const SizedBox(height: 12),
           // Teams list or empty state
           if (teams.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  children: [
-                    Icon(emptyIcon, size: 64, color: Colors.grey[400]),
-                    const SizedBox(height: 16),
-                    Text(
-                      emptyTitle,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: Colors.grey[600],
-                          ),
-                    ),
-                    Text(
-                      emptySubtitle,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[500],
-                          ),
-                    ),
-                  ],
-                ),
-              ),
+            EmptyState(
+              icon: emptyIcon,
+              message: emptyTitle,
+              description: emptySubtitle,
+              padding: AppSpacing.xxl,
             )
           else
             ...teams.map((team) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
                   child: TeamCard(team: team),
                 )),
         ],

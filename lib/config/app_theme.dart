@@ -659,6 +659,91 @@ class AppTheme {
   static const Color scrimSubtle = Color(0x33000000); // black with 20% opacity
 }
 
+// ============================================================================
+// Spacing System - Consistent spacing values across the app
+// ============================================================================
+
+/// Material Design 3 기반 spacing 시스템
+/// 일관된 간격을 위한 상수 정의
+class AppSpacing {
+  AppSpacing._();
+
+  // Base unit: 4dp (following Material Design)
+  static const double unit = 4.0;
+
+  /// Extra small spacing (4dp) - Minimal spacing
+  static const double xs = 4.0;
+
+  /// Small spacing (8dp) - Compact spacing
+  static const double sm = 8.0;
+
+  /// Medium spacing (12dp) - Default item spacing
+  static const double md = 12.0;
+
+  /// Large spacing (16dp) - Section spacing, padding
+  static const double lg = 16.0;
+
+  /// Extra large spacing (24dp) - Large section gaps
+  static const double xl = 24.0;
+
+  /// Double extra large spacing (32dp) - Major section dividers
+  static const double xxl = 32.0;
+
+  /// Triple extra large spacing (48dp) - Page-level spacing
+  static const double xxxl = 48.0;
+
+  /// Huge spacing (64dp) - Empty state padding
+  static const double huge = 64.0;
+
+  // ============================================================================
+  // Semantic Spacing
+  // ============================================================================
+
+  /// Default screen padding
+  static const EdgeInsets screenPadding = EdgeInsets.all(lg);
+
+  /// Card content padding
+  static const EdgeInsets cardPadding = EdgeInsets.all(lg);
+
+  /// Compact card padding
+  static const EdgeInsets cardPaddingCompact = EdgeInsets.all(md);
+
+  /// List item padding
+  static const EdgeInsets listItemPadding = EdgeInsets.symmetric(
+    horizontal: lg,
+    vertical: md,
+  );
+
+  /// Section title margin bottom
+  static const double sectionTitleSpacing = md;
+
+  /// Space between cards/items in a list
+  static const double listItemSpacing = md;
+
+  /// Space between sections
+  static const double sectionSpacing = xl;
+
+  /// Space between groups within a section
+  static const double groupSpacing = lg;
+
+  // ============================================================================
+  // SizedBox helpers
+  // ============================================================================
+
+  static const SizedBox verticalXs = SizedBox(height: xs);
+  static const SizedBox verticalSm = SizedBox(height: sm);
+  static const SizedBox verticalMd = SizedBox(height: md);
+  static const SizedBox verticalLg = SizedBox(height: lg);
+  static const SizedBox verticalXl = SizedBox(height: xl);
+  static const SizedBox verticalXxl = SizedBox(height: xxl);
+
+  static const SizedBox horizontalXs = SizedBox(width: xs);
+  static const SizedBox horizontalSm = SizedBox(width: sm);
+  static const SizedBox horizontalMd = SizedBox(width: md);
+  static const SizedBox horizontalLg = SizedBox(width: lg);
+  static const SizedBox horizontalXl = SizedBox(width: xl);
+}
+
 /// Material Design 3 색상 시스템을 위한 BuildContext 확장
 /// Extension for Material Design 3 color system with brightness awareness
 extension AppThemeExtension on BuildContext {

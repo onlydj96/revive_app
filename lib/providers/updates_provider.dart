@@ -2,6 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/update.dart';
 import '../services/supabase_service.dart';
+import '../utils/logger.dart';
+
+final _logger = Logger('UpdatesProvider');
 
 // PERF: StateNotifierProvider automatically keeps alive
 final updatesProvider =
@@ -98,6 +101,17 @@ class UpdatesNotifier extends StateNotifier<AsyncValue<List<Update>>> {
     List<String> tags = const [],
   }) async {
     try {
+      // Get current user info for author fields
+      final currentUser = SupabaseService.currentUser;
+      if (currentUser == null) {
+        throw Exception('User must be logged in to create updates');
+      }
+
+      // Get author name from user metadata or email
+      final authorName = currentUser.userMetadata?['full_name'] as String? ??
+          currentUser.email?.split('@').first ??
+          'Unknown';
+
       final data = {
         'title': title,
         'content': content,
@@ -105,13 +119,72 @@ class UpdatesNotifier extends StateNotifier<AsyncValue<List<Update>>> {
         'image_url': imageUrl,
         'is_pinned': isPinned,
         'tags': tags,
+        'author_id': currentUser.id,
+        'author_name': authorName,
+        'created_by': currentUser.id,
       };
 
-      await SupabaseService.create('updates', data);
+      final result = await SupabaseService.create('updates', data);
       // The real-time subscription will handle updating the state
+
+      // Send push notification to all users
+      if (result != null) {
+        await _sendPushNotification(
+          title: title,
+          content: content,
+          type: type,
+          updateId: result['id'] as String,
+          isPinned: isPinned,
+        );
+      }
     } catch (error) {
       // Handle error appropriately
       rethrow;
+    }
+  }
+
+  /// Send push notification when a new update is created
+  Future<void> _sendPushNotification({
+    required String title,
+    required String content,
+    required UpdateType type,
+    required String updateId,
+    required bool isPinned,
+  }) async {
+    try {
+      // Build notification title with emoji based on type
+      final notificationTitle = switch (type) {
+        UpdateType.urgent => '🚨 $title',
+        UpdateType.announcement => '📢 $title',
+        UpdateType.prayer => '🙏 $title',
+        UpdateType.celebration => '🎉 $title',
+        UpdateType.news => '📰 $title',
+      };
+
+      // Truncate content for notification body
+      final notificationBody = content.length > 200
+          ? '${content.substring(0, 200)}...'
+          : content;
+
+      // Call Edge Function to send push notifications
+      await SupabaseService.client.functions.invoke(
+        'send-push-notification',
+        body: {
+          'title': notificationTitle,
+          'body': notificationBody,
+          'notification_type': 'update',
+          'related_id': updateId,
+          'data': {
+            'update_type': type.name,
+            'is_pinned': isPinned.toString(),
+          },
+        },
+      );
+
+      _logger.debug('Push notification sent for update: $updateId');
+    } catch (e) {
+      // Don't fail the update creation if notification fails
+      _logger.error('Failed to send push notification: $e');
     }
   }
 
@@ -125,6 +198,8 @@ class UpdatesNotifier extends StateNotifier<AsyncValue<List<Update>>> {
     List<String>? tags,
   }) async {
     try {
+      final currentUser = SupabaseService.currentUser;
+
       final data = <String, dynamic>{};
       if (title != null) data['title'] = title;
       if (content != null) data['content'] = content;
@@ -132,6 +207,7 @@ class UpdatesNotifier extends StateNotifier<AsyncValue<List<Update>>> {
       if (imageUrl != null) data['image_url'] = imageUrl;
       if (isPinned != null) data['is_pinned'] = isPinned;
       if (tags != null) data['tags'] = tags;
+      if (currentUser != null) data['updated_by'] = currentUser.id;
 
       await SupabaseService.update('updates', id, data);
       // The real-time subscription will handle updating the state

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../l10n/app_localizations.dart';
 
 class WorshipFeedbackMapCard extends StatelessWidget {
   const WorshipFeedbackMapCard({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       child: InkWell(
         onTap: () => context.push('/worship-feedback-map'),
@@ -35,14 +37,14 @@ class WorshipFeedbackMapCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Worship Feedback Map',
+                          l10n.worshipFeedbackMap,
                           style:
                               Theme.of(context).textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
                                   ),
                         ),
                         Text(
-                          'Share your location & feedback',
+                          l10n.shareLocationFeedback,
                           style:
                               Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: Colors.grey[600],
@@ -72,7 +74,7 @@ class WorshipFeedbackMapCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Help us improve your worship experience',
+                        l10n.helpImproveWorship,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: Colors.grey[700],
                             ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/app_localizations.dart';
 import '../models/bulletin.dart';
 import '../providers/user_provider.dart';
 import '../providers/bulletin_provider.dart';
@@ -29,6 +30,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final user = ref.watch(userProvider);
     final bulletinsAsync = ref.watch(bulletinsProvider);
     final latestSermon = ref.watch(latestSermonProvider);
@@ -41,6 +43,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ref.invalidate(sermonsProvider);
         ref.invalidate(updatesProvider);
         ref.invalidate(eventsProvider);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.refresh),
+              duration: const Duration(seconds: 1),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       },
       child: SafeArea(
         child: SingleChildScrollView(
@@ -105,7 +116,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
             if (upcomingEvents.isNotEmpty) ...[
               Text(
-                'Upcoming Events',
+                l10n.upcomingEvents,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),

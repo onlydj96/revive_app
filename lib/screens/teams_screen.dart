@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../l10n/app_localizations.dart';
 import '../providers/teams_provider.dart';
 import '../providers/permissions_provider.dart';
 import '../providers/team_applications_provider.dart';
@@ -9,12 +10,14 @@ import '../providers/team_members_provider.dart';
 import '../models/team.dart';
 import '../widgets/team_info_row.dart';
 import '../widgets/team_tab_content.dart';
+import '../utils/ui_utils.dart';
 
 class TeamsScreen extends ConsumerWidget {
   const TeamsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final connectGroups = ref.watch(connectGroupsProvider);
     final hangouts = ref.watch(hangoutsProvider);
     final permissions = ref.watch(permissionsProvider);
@@ -23,14 +26,14 @@ class TeamsScreen extends ConsumerWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Teams'),
+          title: Text(l10n.teams),
           bottom: TabBar(
             labelColor: Theme.of(context).primaryColor,
             unselectedLabelColor: Colors.grey,
             indicatorColor: Theme.of(context).primaryColor,
-            tabs: const [
-              Tab(text: 'Connect Groups'),
-              Tab(text: 'Hangouts'),
+            tabs: [
+              Tab(text: l10n.connectGroups),
+              Tab(text: l10n.hangouts),
             ],
           ),
         ),
@@ -45,7 +48,7 @@ class TeamsScreen extends ConsumerWidget {
                 heroTag: 'teams_fab',
                 onPressed: () => context.push('/create-team'),
                 icon: const Icon(Icons.add),
-                label: const Text('Create Team'),
+                label: Text(l10n.createTeam),
               )
             : null,
       ),
@@ -61,17 +64,17 @@ class ConnectGroupsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return TeamTabContent(
       teams: teams,
-      title: 'About Connect Groups',
-      description:
-          'Connect Groups are regular, application-based gatherings focused on spiritual growth, fellowship, and discipleship. These groups require commitment and may have specific requirements.',
-      sectionTitle: 'Available Groups',
+      title: l10n.aboutConnectGroups,
+      description: l10n.connectGroupsDescription,
+      sectionTitle: l10n.availableGroups,
       icon: Icons.info_outline,
       color: Theme.of(context).primaryColor,
       emptyIcon: Icons.groups_outlined,
-      emptyTitle: 'No Connect Groups Available',
-      emptySubtitle: 'Check back later for new groups',
+      emptyTitle: l10n.noConnectGroupsAvailable,
+      emptySubtitle: l10n.checkBackLaterForGroups,
     );
   }
 }
@@ -84,19 +87,27 @@ class HangoutsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return TeamTabContent(
       teams: teams,
-      title: 'About Hangouts',
-      description:
-          'Hangouts are open, casual events for fellowship, fun, and building relationships. Everyone is welcome to join - no application required!',
-      sectionTitle: 'Join a Hangout',
+      title: l10n.aboutHangouts,
+      description: l10n.hangoutsDescription,
+      sectionTitle: l10n.joinAHangout,
       icon: Icons.celebration,
       color: Colors.orange,
       emptyIcon: Icons.sports_soccer,
-      emptyTitle: 'No Hangouts Available',
-      emptySubtitle: 'Check back later for new activities',
+      emptyTitle: l10n.noHangoutsAvailable,
+      emptySubtitle: l10n.checkBackLaterForActivities,
     );
   }
+}
+
+/// Enum representing the possible action states for a team button
+enum _TeamActionState {
+  full,     // Team is at capacity
+  member,   // User is already a member
+  applied,  // User has pending application
+  joinable, // User can join/apply
 }
 
 class TeamCard extends ConsumerWidget {
@@ -112,9 +123,13 @@ class TeamCard extends ConsumerWidget {
 
     // Unified state tracking for both team types
     final hasApplied = applicationsState.appliedTeams.contains(team.id);
-    final isLoading = team.requiresApplication
+    final isLoading = team.type == TeamType.connectGroup
         ? applicationsState.loadingTeams.contains(team.id)
         : hangoutJoinsState.loadingHangouts.contains(team.id);
+
+    // Determine the current action state
+    final actionState = _getActionState(isMember, hasApplied);
+    final isFull = _isTeamFull(isMember, hasApplied);
 
     return Card(
       child: InkWell(
@@ -125,413 +140,329 @@ class TeamCard extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      team.name,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                  ),
-                  if (team.requiresApplication)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'APPLICATION REQUIRED',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).primaryColor,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 10,
-                            ),
-                      ),
-                    )
-                  else
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'OPEN TO ALL',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.green,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 10,
-                            ),
-                      ),
-                    ),
-                ],
-              ),
+              _buildHeader(context),
               const SizedBox(height: 8),
-              Text(
-                team.description,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
-                    ),
-              ),
+              _buildDescription(context),
               const SizedBox(height: 12),
-              Row(
-                children: [
-                  Icon(
-                    Icons.person,
-                    size: 16,
-                    color: Colors.grey[600],
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Led by ${team.leader}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
-                        ),
-                  ),
-                  const SizedBox(width: 16),
-                  Icon(
-                    Icons.group,
-                    size: 16,
-                    color: Colors.grey[600],
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${team.currentMembers} members',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
-                        ),
-                  ),
-                ],
-              ),
-              // Meeting time and location info
+              _buildLeaderAndMemberInfo(context),
               if (team.meetingTime != null || team.meetingLocation != null) ...[
                 const SizedBox(height: 8),
                 TeamMeetingInfo(team: team),
               ],
-              if (team.maxMembers != null) ...[
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${team.currentMembers}/${team.maxMembers} spots filled',
-                            style:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Colors.grey[600],
-                                    ),
-                          ),
-                          const SizedBox(height: 4),
-                          LinearProgressIndicator(
-                            value: team.currentMembers / team.maxMembers!,
-                            backgroundColor: Colors.grey[300],
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              team.currentMembers >= team.maxMembers!
-                                  ? Colors.orange
-                                  : Theme.of(context).primaryColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    ElevatedButton(
-                      onPressed: (team.maxMembers != null &&
-                                  team.currentMembers >= team.maxMembers! &&
-                                  !isMember &&
-                                  !hasApplied) ||
-                              isLoading
-                          ? null
-                          : () async {
-                              // Unified logic for both Connect Groups and Hangouts
-                              if (isMember) {
-                                // Already a member → Leave
-                                if (!context.mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Left ${team.name}'),
-                                    backgroundColor: Colors.orange,
-                                    duration: const Duration(seconds: 2),
-                                  ),
-                                );
-
-                                try {
-                                  if (team.requiresApplication) {
-                                    await ref
-                                        .read(teamsProvider.notifier)
-                                        .leaveTeam(team.id);
-                                  } else {
-                                    await ref
-                                        .read(hangoutJoinsProvider.notifier)
-                                        .leaveHangout(team.id);
-                                  }
-                                  ref.read(teamMembershipProvider.notifier)
-                                      .invalidateMembership(team.id);
-                                  ref.invalidate(teamMembersProvider(team.id));
-                                } catch (e) {
-                                  if (!context.mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                          'Failed to leave ${team.name}. Please try again.'),
-                                      backgroundColor: Colors.red,
-                                      duration: const Duration(seconds: 3),
-                                    ),
-                                  );
-                                }
-                              } else if (hasApplied) {
-                                // Application pending → Cancel
-                                if (!context.mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Cancelled application to ${team.name}'),
-                                    backgroundColor: Colors.orange,
-                                    duration: const Duration(seconds: 2),
-                                  ),
-                                );
-
-                                try {
-                                  await ref
-                                      .read(teamApplicationsProvider.notifier)
-                                      .cancelApplication(team.id);
-                                  ref.read(teamMembershipProvider.notifier)
-                                      .invalidateMembership(team.id);
-                                  ref.invalidate(teamMembersProvider(team.id));
-                                } catch (e) {
-                                  if (!context.mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                          'Failed to cancel application. Please try again.'),
-                                      backgroundColor: Colors.red,
-                                      duration: const Duration(seconds: 3),
-                                    ),
-                                  );
-                                }
-                              } else {
-                                // Not a member and no pending application → Join/Apply
-                                if (!context.mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(team.requiresApplication
-                                        ? 'Applied to ${team.name}!'
-                                        : 'Joined ${team.name}!'),
-                                    backgroundColor: Colors.green,
-                                    duration: const Duration(seconds: 2),
-                                  ),
-                                );
-
-                                try {
-                                  if (team.requiresApplication) {
-                                    await ref
-                                        .read(teamApplicationsProvider.notifier)
-                                        .applyToTeam(team.id);
-                                  } else {
-                                    await ref
-                                        .read(hangoutJoinsProvider.notifier)
-                                        .joinHangout(team.id);
-                                  }
-                                  ref.read(teamMembershipProvider.notifier)
-                                      .invalidateMembership(team.id);
-                                  ref.invalidate(teamMembersProvider(team.id));
-                                } catch (e) {
-                                  if (!context.mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(team.requiresApplication
-                                          ? 'Failed to apply to ${team.name}. Please try again.'
-                                          : 'Failed to join ${team.name}. Please try again.'),
-                                      backgroundColor: Colors.red,
-                                      duration: const Duration(seconds: 3),
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                      style: (isMember || hasApplied)
-                          ? ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                              foregroundColor: Colors.white,
-                            )
-                          : null,
-                      child: isLoading
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Text(
-                              team.maxMembers != null &&
-                                      team.currentMembers >= team.maxMembers! &&
-                                      !isMember &&
-                                      !hasApplied
-                                  ? 'Full'
-                                  : isMember
-                                      ? 'Leave'
-                                      : hasApplied
-                                          ? 'Cancel'
-                                          : team.requiresApplication
-                                              ? 'Apply'
-                                              : 'Join',
-                            ),
-                    ),
-                  ],
-                ),
-              ] else ...[
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '${team.currentMembers} active members',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey[600],
-                            ),
-                      ),
-                    ),
-                    ElevatedButton(
-                      onPressed: isLoading
-                          ? null
-                          : () async {
-                              // Unified logic for both Connect Groups and Hangouts
-                              if (isMember) {
-                                // Already a member → Leave
-                                if (!context.mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Left ${team.name}'),
-                                    backgroundColor: Colors.orange,
-                                    duration: const Duration(seconds: 2),
-                                  ),
-                                );
-
-                                try {
-                                  if (team.requiresApplication) {
-                                    await ref
-                                        .read(teamsProvider.notifier)
-                                        .leaveTeam(team.id);
-                                  } else {
-                                    await ref
-                                        .read(hangoutJoinsProvider.notifier)
-                                        .leaveHangout(team.id);
-                                  }
-                                  ref.read(teamMembershipProvider.notifier)
-                                      .invalidateMembership(team.id);
-                                  ref.invalidate(teamMembersProvider(team.id));
-                                } catch (e) {
-                                  if (!context.mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                          'Failed to leave ${team.name}. Please try again.'),
-                                      backgroundColor: Colors.red,
-                                      duration: const Duration(seconds: 3),
-                                    ),
-                                  );
-                                }
-                              } else if (hasApplied) {
-                                // Application pending → Cancel
-                                if (!context.mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Cancelled application to ${team.name}'),
-                                    backgroundColor: Colors.orange,
-                                    duration: const Duration(seconds: 2),
-                                  ),
-                                );
-
-                                try {
-                                  await ref
-                                      .read(teamApplicationsProvider.notifier)
-                                      .cancelApplication(team.id);
-                                  ref.read(teamMembershipProvider.notifier)
-                                      .invalidateMembership(team.id);
-                                  ref.invalidate(teamMembersProvider(team.id));
-                                } catch (e) {
-                                  if (!context.mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                          'Failed to cancel application. Please try again.'),
-                                      backgroundColor: Colors.red,
-                                      duration: const Duration(seconds: 3),
-                                    ),
-                                  );
-                                }
-                              } else {
-                                // Not a member and no pending application → Join/Apply
-                                if (!context.mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(team.requiresApplication
-                                        ? 'Applied to ${team.name}!'
-                                        : 'Joined ${team.name}!'),
-                                    backgroundColor: Colors.green,
-                                    duration: const Duration(seconds: 2),
-                                  ),
-                                );
-
-                                try {
-                                  if (team.requiresApplication) {
-                                    await ref
-                                        .read(teamApplicationsProvider.notifier)
-                                        .applyToTeam(team.id);
-                                  } else {
-                                    await ref
-                                        .read(hangoutJoinsProvider.notifier)
-                                        .joinHangout(team.id);
-                                  }
-                                  ref.read(teamMembershipProvider.notifier)
-                                      .invalidateMembership(team.id);
-                                  ref.invalidate(teamMembersProvider(team.id));
-                                } catch (e) {
-                                  if (!context.mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(team.requiresApplication
-                                          ? 'Failed to apply to ${team.name}. Please try again.'
-                                          : 'Failed to join ${team.name}. Please try again.'),
-                                      backgroundColor: Colors.red,
-                                      duration: const Duration(seconds: 3),
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                      style: (isMember || hasApplied)
-                          ? ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                              foregroundColor: Colors.white,
-                            )
-                          : null,
-                      child: isLoading
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Text(isMember
-                              ? 'Leave'
-                              : hasApplied
-                                  ? 'Cancel'
-                                  : team.requiresApplication
-                                      ? 'Apply'
-                                      : 'Join'),
-                    ),
-                  ],
-                ),
-              ],
+              const SizedBox(height: 12),
+              _buildFooter(context, ref, actionState, isFull, isLoading),
             ],
           ),
         ),
       ),
     );
+  }
+
+  /// Determines the current action state based on membership and application status
+  _TeamActionState _getActionState(bool isMember, bool hasApplied) {
+    if (isMember) return _TeamActionState.member;
+    if (hasApplied) return _TeamActionState.applied;
+    return _TeamActionState.joinable;
+  }
+
+  /// Checks if the team is full (only for non-members without pending applications)
+  bool _isTeamFull(bool isMember, bool hasApplied) {
+    if (isMember || hasApplied) return false;
+    if (team.maxMembers == null) return false;
+    return team.currentMembers >= team.maxMembers!;
+  }
+
+  /// Builds the header row with team name and status badge
+  Widget _buildHeader(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            team.name,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        _buildStatusBadge(context),
+      ],
+    );
+  }
+
+  /// Builds the status badge (APPLICATION REQUIRED or OPEN TO ALL)
+  Widget _buildStatusBadge(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final isApplicationRequired = team.requiresApplication;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isApplicationRequired
+            ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
+            : Colors.green.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        isApplicationRequired ? l10n.applicationRequired : l10n.openToAll,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: isApplicationRequired
+                  ? Theme.of(context).primaryColor
+                  : Colors.green,
+              fontWeight: FontWeight.bold,
+              fontSize: 10,
+            ),
+      ),
+    );
+  }
+
+  /// Builds the description text
+  Widget _buildDescription(BuildContext context) {
+    return Text(
+      team.description,
+      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Colors.grey[600],
+          ),
+      maxLines: 3,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  /// Builds the leader and member count info row
+  Widget _buildLeaderAndMemberInfo(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Row(
+      children: [
+        Icon(Icons.person, size: 16, color: Colors.grey[600]),
+        const SizedBox(width: 4),
+        Text(
+          l10n.ledBy(team.leader),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.grey[600],
+              ),
+        ),
+        const SizedBox(width: 16),
+        Icon(Icons.group, size: 16, color: Colors.grey[600]),
+        const SizedBox(width: 4),
+        Text(
+          l10n.membersCount(team.currentMembers),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.grey[600],
+              ),
+        ),
+      ],
+    );
+  }
+
+  /// Builds the footer with capacity info (if applicable) and action button
+  Widget _buildFooter(
+    BuildContext context,
+    WidgetRef ref,
+    _TeamActionState actionState,
+    bool isFull,
+    bool isLoading,
+  ) {
+    return Row(
+      children: [
+        Expanded(child: _buildCapacityInfo(context)),
+        _buildActionButton(context, ref, actionState, isFull, isLoading),
+      ],
+    );
+  }
+
+  /// Builds the capacity info (progress bar or member count)
+  Widget _buildCapacityInfo(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    if (team.maxMembers != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.spotsFilled(team.currentMembers, team.maxMembers!),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.grey[600],
+                ),
+          ),
+          const SizedBox(height: 4),
+          LinearProgressIndicator(
+            value: team.currentMembers / team.maxMembers!,
+            backgroundColor: Colors.grey[300],
+            valueColor: AlwaysStoppedAnimation<Color>(
+              team.currentMembers >= team.maxMembers!
+                  ? Colors.orange
+                  : Theme.of(context).primaryColor,
+            ),
+          ),
+        ],
+      );
+    }
+    return Text(
+      l10n.activeMembers(team.currentMembers),
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Colors.grey[600],
+          ),
+    );
+  }
+
+  /// Builds the action button (Join/Apply/Leave/Cancel)
+  Widget _buildActionButton(
+    BuildContext context,
+    WidgetRef ref,
+    _TeamActionState actionState,
+    bool isFull,
+    bool isLoading,
+  ) {
+    final isDisabled = isFull || isLoading;
+
+    return ElevatedButton(
+      onPressed: isDisabled ? null : () => _handleButtonPress(context, ref, actionState),
+      style: _getButtonStyle(actionState),
+      child: isLoading
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : Text(_getButtonText(context, actionState, isFull)),
+    );
+  }
+
+  /// Returns the appropriate button style based on action state
+  ButtonStyle? _getButtonStyle(_TeamActionState actionState) {
+    if (actionState == _TeamActionState.member ||
+        actionState == _TeamActionState.applied) {
+      return ElevatedButton.styleFrom(
+        backgroundColor: Colors.orange,
+        foregroundColor: Colors.white,
+      );
+    }
+    return null;
+  }
+
+  /// Returns the button text based on action state
+  String _getButtonText(BuildContext context, _TeamActionState actionState, bool isFull) {
+    final l10n = AppLocalizations.of(context)!;
+    if (isFull) return l10n.full;
+    switch (actionState) {
+      case _TeamActionState.member:
+        return l10n.leave;
+      case _TeamActionState.applied:
+        return l10n.cancel;
+      case _TeamActionState.joinable:
+        return team.type == TeamType.connectGroup ? l10n.apply : l10n.join;
+      case _TeamActionState.full:
+        return l10n.full;
+    }
+  }
+
+  /// Handles button press based on action state
+  Future<void> _handleButtonPress(
+    BuildContext context,
+    WidgetRef ref,
+    _TeamActionState actionState,
+  ) async {
+    switch (actionState) {
+      case _TeamActionState.member:
+        await _handleLeave(context, ref);
+        break;
+      case _TeamActionState.applied:
+        await _handleCancelApplication(context, ref);
+        break;
+      case _TeamActionState.joinable:
+        await _handleJoinOrApply(context, ref);
+        break;
+      case _TeamActionState.full:
+        // Button should be disabled, no action needed
+        break;
+    }
+  }
+
+  /// Handles leaving a team
+  Future<void> _handleLeave(BuildContext context, WidgetRef ref) async {
+    if (!context.mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+
+    try {
+      if (team.type == TeamType.connectGroup) {
+        await ref.read(teamsProvider.notifier).leaveTeam(team.id);
+      } else {
+        await ref.read(hangoutJoinsProvider.notifier).leaveHangout(team.id);
+      }
+      ref.invalidate(teamMembersProvider(team.id));
+
+      // Show success message with undo action AFTER successful operation
+      if (!context.mounted) return;
+      UIUtils.showWarning(
+        context,
+        l10n.leftTeam(team.name),
+        action: SnackBarAction(
+          label: l10n.undo,
+          textColor: Colors.white,
+          onPressed: () => _handleJoinOrApply(context, ref),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      UIUtils.showError(context, l10n.failedToLeaveTeam(team.name));
+    }
+  }
+
+  /// Handles cancelling an application
+  Future<void> _handleCancelApplication(BuildContext context, WidgetRef ref) async {
+    if (!context.mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+
+    try {
+      await ref.read(teamApplicationsProvider.notifier).cancelApplication(team.id);
+      ref.invalidate(teamMembersProvider(team.id));
+
+      // Show success message AFTER successful operation
+      if (!context.mounted) return;
+      UIUtils.showWarning(
+        context,
+        l10n.cancelledApplication(team.name),
+        action: SnackBarAction(
+          label: l10n.reapply,
+          textColor: Colors.white,
+          onPressed: () => _handleJoinOrApply(context, ref),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      UIUtils.showError(context, l10n.failedToCancelApplication);
+    }
+  }
+
+  /// Handles joining or applying to a team
+  Future<void> _handleJoinOrApply(BuildContext context, WidgetRef ref) async {
+    if (!context.mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    final isConnectGroup = team.type == TeamType.connectGroup;
+
+    try {
+      if (isConnectGroup) {
+        await ref.read(teamApplicationsProvider.notifier).applyToTeam(team.id);
+      } else {
+        await ref.read(hangoutJoinsProvider.notifier).joinHangout(team.id);
+      }
+      ref.invalidate(teamMembersProvider(team.id));
+
+      // Show success message AFTER successful operation
+      if (!context.mounted) return;
+      UIUtils.showSuccess(
+        context,
+        isConnectGroup
+            ? l10n.applicationSubmitted(team.name)
+            : l10n.joinedTeam(team.name),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      UIUtils.showError(
+        context,
+        isConnectGroup
+            ? l10n.failedToApplyTeam(team.name)
+            : l10n.failedToJoinTeam(team.name),
+      );
+    }
   }
 }

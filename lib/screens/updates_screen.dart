@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../l10n/app_localizations.dart';
 import '../providers/updates_provider.dart';
 import '../providers/permissions_provider.dart';
 import '../providers/user_pins_provider.dart';
 import '../models/update.dart';
 import '../widgets/create_update_dialog.dart';
 import '../widgets/update_detail_dialog.dart';
+import '../widgets/common/empty_state.dart';
+import '../widgets/common/shimmer_loading.dart';
 import '../config/app_theme.dart';
 
 class UpdatesScreen extends ConsumerWidget {
@@ -14,12 +17,13 @@ class UpdatesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final updatesAsyncValue = ref.watch(updatesProvider);
     final permissions = ref.watch(permissionsProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Updates'),
+        title: Text(l10n.updates),
       ),
       floatingActionButton: permissions.canCreateContent
           ? FloatingActionButton(
@@ -41,6 +45,15 @@ class UpdatesScreen extends ConsumerWidget {
           return RefreshIndicator(
             onRefresh: () async {
               await ref.read(updatesProvider.notifier).refresh();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(l10n.updatesRefreshed),
+                    duration: const Duration(seconds: 1),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
             },
             child: SafeArea(
               child: SingleChildScrollView(
@@ -58,7 +71,7 @@ class UpdatesScreen extends ConsumerWidget {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Pinned Updates',
+                          l10n.pinnedUpdates,
                           style:
                               Theme.of(context).textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.bold,
@@ -79,7 +92,7 @@ class UpdatesScreen extends ConsumerWidget {
                   ],
                   if (recentUpdates.isNotEmpty) ...[
                     Text(
-                      'Recent Updates',
+                      l10n.recentUpdates,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -95,39 +108,10 @@ class UpdatesScreen extends ConsumerWidget {
                         )),
                   ],
                   if (pinnedUpdates.isEmpty && recentUpdates.isEmpty)
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(64),
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.notifications_none,
-                              size: 64,
-                              color: Colors.grey[400],
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No Updates',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                    color: Colors.grey[600],
-                                  ),
-                            ),
-                            Text(
-                              'Check back later for church news and announcements',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(
-                                    color: Colors.grey[500],
-                                  ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
+                    EmptyState.noData(
+                      icon: Icons.article_outlined,
+                      message: l10n.noUpdates,
+                      description: l10n.checkBackLater,
                     ),
                 ],
                 ),
@@ -135,21 +119,11 @@ class UpdatesScreen extends ConsumerWidget {
             ),
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error, size: 64, color: Colors.red),
-              const SizedBox(height: 16),
-              Text('Error loading updates: $error'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => ref.read(updatesProvider.notifier).refresh(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
+        loading: () => const UpdatesLoadingSkeleton(),
+        error: (error, stack) => EmptyState.error(
+          message: l10n.errorLoadingData,
+          description: error.toString(),
+          onRetry: () => ref.read(updatesProvider.notifier).refresh(),
         ),
       ),
     );
@@ -171,14 +145,16 @@ class UpdatesScreen extends ConsumerWidget {
                 );
 
             if (context.mounted) {
+              final l10n = AppLocalizations.of(context)!;
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Update created successfully!')),
+                SnackBar(content: Text(l10n.updateCreatedSuccess)),
               );
             }
           } catch (e) {
             if (context.mounted) {
+              final l10n = AppLocalizations.of(context)!;
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Failed to create update: $e')),
+                SnackBar(content: Text('${l10n.failedToCreateUpdate}: $e')),
               );
             }
           }
@@ -202,6 +178,7 @@ class UpdateCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final permissions = ref.watch(permissionsProvider);
     return Card(
       elevation: isPinned ? 4 : 2,
@@ -288,7 +265,7 @@ class UpdateCard extends ConsumerWidget {
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
-                                      _getUpdateTypeLabel(update.type),
+                                      _getUpdateTypeLabel(update.type, l10n),
                                       style: Theme.of(context)
                                           .textTheme
                                           .bodySmall
@@ -337,29 +314,29 @@ class UpdateCard extends ConsumerWidget {
                               if (value == 'edit') {
                                 _showEditDialog(context, update);
                               } else if (value == 'delete') {
-                                _showDeleteDialog(context, update);
+                                _showDeleteDialog(context, ref, update);
                               }
                             },
                             itemBuilder: (context) => [
                               if (permissions.canEditContent)
-                                const PopupMenuItem(
+                                PopupMenuItem(
                                   value: 'edit',
                                   child: Row(
                                     children: [
-                                      Icon(Icons.edit, size: 18),
-                                      SizedBox(width: 8),
-                                      Text('Edit'),
+                                      const Icon(Icons.edit, size: 18),
+                                      const SizedBox(width: 8),
+                                      Text(l10n.edit),
                                     ],
                                   ),
                                 ),
                               if (permissions.canDeleteContent)
-                                const PopupMenuItem(
+                                PopupMenuItem(
                                   value: 'delete',
                                   child: Row(
                                     children: [
-                                      Icon(Icons.delete, size: 18),
-                                      SizedBox(width: 8),
-                                      Text('Delete'),
+                                      const Icon(Icons.delete, size: 18),
+                                      const SizedBox(width: 8),
+                                      Text(l10n.delete),
                                     ],
                                   ),
                                 ),
@@ -375,6 +352,8 @@ class UpdateCard extends ConsumerWidget {
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -453,68 +432,103 @@ class UpdateCard extends ConsumerWidget {
     }
   }
 
-  String _getUpdateTypeLabel(UpdateType type) {
+  String _getUpdateTypeLabel(UpdateType type, AppLocalizations l10n) {
     switch (type) {
       case UpdateType.announcement:
-        return 'ANNOUNCEMENT';
+        return l10n.updateTypeAnnouncement;
       case UpdateType.news:
-        return 'NEWS';
+        return l10n.updateTypeNews;
       case UpdateType.prayer:
-        return 'PRAYER';
+        return l10n.updateTypePrayer;
       case UpdateType.celebration:
-        return 'CELEBRATION';
+        return l10n.updateTypeCelebration;
       case UpdateType.urgent:
-        return 'URGENT';
+        return l10n.updateTypeUrgent;
     }
   }
 
   void _showEditDialog(BuildContext context, Update update) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Edit Update'),
-        content: Text(
-            'Edit functionality for "${update.title}" would be implemented here.'),
+        title: Text(l10n.editUpdate),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.editing(update.title)),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.construction,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      l10n.comingSoon,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Edit feature coming soon!')),
-              );
-            },
-            child: const Text('Save'),
+            child: Text(l10n.close),
           ),
         ],
       ),
     );
   }
 
-  void _showDeleteDialog(BuildContext context, Update update) {
+  void _showDeleteDialog(BuildContext context, WidgetRef ref, Update update) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Update'),
-        content: Text(
-            'Are you sure you want to delete "${update.title}"? This action cannot be undone.'),
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.deleteConfirmTitle),
+        content: Text(l10n.deleteConfirmMessage(update.title)),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(l10n.cancel),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Deleted "${update.title}"')),
-              );
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              try {
+                await ref.read(updatesProvider.notifier).deleteUpdate(update.id);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(l10n.deleted(update.title))),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('${l10n.failedToDelete}: $e')),
+                  );
+                }
+              }
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+            child: Text(l10n.delete),
           ),
         ],
       ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
+import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
 import '../providers/user_provider.dart';
 
@@ -10,6 +11,7 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final authState = ref.watch(authProvider);
     final user = authState.user;
     final currentUser = ref.watch(userProvider);
@@ -17,21 +19,27 @@ class ProfileScreen extends ConsumerWidget {
 
     if (user == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Profile')),
-        body: const Center(
-          child: Text('No user data available'),
+        appBar: AppBar(title: Text(l10n.profile)),
+        body: Center(
+          child: Text(l10n.noUserData),
         ),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: Text(l10n.profile),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
+            tooltip: l10n.editProfile,
             onPressed: () {
-              // TODO: Navigate to edit profile screen
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(l10n.editProfileComingSoon),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
             },
           ),
         ],
@@ -145,7 +153,7 @@ class ProfileScreen extends ConsumerWidget {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'ADMINISTRATOR',
+                              l10n.administrator,
                               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
@@ -160,7 +168,7 @@ class ProfileScreen extends ConsumerWidget {
                     Text(
                       user.email ?? 'No email',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[600],
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                     ),
                   ],
@@ -175,7 +183,7 @@ class ProfileScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Church Information',
+                      l10n.churchInformation,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -183,13 +191,13 @@ class ProfileScreen extends ConsumerWidget {
                     const SizedBox(height: 16),
                     ProfileInfoRow(
                       icon: Icons.badge,
-                      label: 'Role',
-                      value: user.userMetadata?['role'] ?? 'Member',
+                      label: l10n.role,
+                      value: user.userMetadata?['role'] ?? l10n.member,
                     ),
                     const SizedBox(height: 12),
                     ProfileInfoRow(
                       icon: Icons.calendar_today,
-                      label: 'Member Since',
+                      label: l10n.memberSince,
                       value: DateFormat('MMMM d, yyyy')
                           .format(DateTime.parse(user.createdAt)),
                     ),
@@ -201,31 +209,19 @@ class ProfileScreen extends ConsumerWidget {
             Card(
               child: Column(
                 children: [
-                  ListTile(
-                    leading: const Icon(Icons.bookmark),
-                    title: const Text('My Saved Resources'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      // TODO: Navigate to saved resources
-                    },
+                  ComingSoonListTile(
+                    icon: Icons.bookmark,
+                    title: l10n.mySavedResources,
                   ),
                   const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.event),
-                    title: const Text('My Events'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      // TODO: Navigate to user events
-                    },
+                  ComingSoonListTile(
+                    icon: Icons.event,
+                    title: l10n.myEvents,
                   ),
                   const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.groups),
-                    title: const Text('My Teams'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      // TODO: Navigate to user teams
-                    },
+                  ComingSoonListTile(
+                    icon: Icons.groups,
+                    title: l10n.myTeams,
                   ),
                 ],
               ),
@@ -236,28 +232,24 @@ class ProfileScreen extends ConsumerWidget {
                 children: [
                   ListTile(
                     leading: const Icon(Icons.settings),
-                    title: const Text('Settings'),
+                    title: Text(l10n.settings),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
                       context.push('/settings');
                     },
                   ),
                   const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.help),
-                    title: const Text('Help & Support'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      // TODO: Navigate to help
-                    },
+                  ComingSoonListTile(
+                    icon: Icons.help,
+                    title: l10n.helpAndSupport,
                   ),
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.logout, color: Colors.red),
-                    title: const Text('Sign Out',
-                        style: TextStyle(color: Colors.red)),
+                    title: Text(l10n.signOut,
+                        style: const TextStyle(color: Colors.red)),
                     onTap: () {
-                      _showSignOutDialog(context, ref);
+                      _showSignOutDialog(context, ref, l10n);
                     },
                   ),
                 ],
@@ -270,23 +262,23 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  void _showSignOutDialog(BuildContext context, WidgetRef ref) {
+  void _showSignOutDialog(BuildContext context, WidgetRef ref, AppLocalizations l10n) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Sign Out'),
-        content: const Text('Are you sure you want to sign out?'),
+        title: Text(l10n.signOutConfirmTitle),
+        content: Text(l10n.signOutConfirmMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () async {
               Navigator.of(context).pop();
               await ref.read(authProvider.notifier).signOut();
             },
-            child: const Text('Sign Out'),
+            child: Text(l10n.signOut),
           ),
         ],
       ),
@@ -313,13 +305,13 @@ class ProfileInfoRow extends StatelessWidget {
         Icon(
           icon,
           size: 20,
-          color: Colors.grey[600],
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
         const SizedBox(width: 12),
         Text(
           label,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
         ),
         const SizedBox(width: 16),
@@ -333,6 +325,59 @@ class ProfileInfoRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// A ListTile widget for features that are not yet implemented
+class ComingSoonListTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+
+  const ComingSoonListTile({
+    super.key,
+    required this.icon,
+    required this.title,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return ListTile(
+      leading: Icon(icon, color: Theme.of(context).colorScheme.outline),
+      title: Text(
+        title,
+        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              l10n.comingSoon,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w500,
+                  ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.outline),
+        ],
+      ),
+      onTap: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.featureComingSoon(title)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      },
     );
   }
 }

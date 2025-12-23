@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../l10n/app_localizations.dart';
 import '../models/bulletin.dart';
 import '../providers/bulletin_provider.dart';
 import '../providers/permissions_provider.dart';
@@ -12,12 +13,13 @@ class BulletinListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final bulletins = ref.watch(bulletinsByYearProvider(2025));
     final permissions = ref.watch(permissionsProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('2025 Bulletins'),
+        title: Text(l10n.yearBulletins(2025)),
       ),
       floatingActionButton: permissions.canCreateContent
           ? FloatingActionButton(
@@ -29,12 +31,21 @@ class BulletinListScreen extends ConsumerWidget {
             )
           : null,
       body: bulletins.isEmpty
-          ? const Center(
-              child: Text('No bulletins available'),
+          ? Center(
+              child: Text(l10n.noBulletinsAvailable),
             )
           : RefreshIndicator(
               onRefresh: () async {
                 ref.invalidate(bulletinsProvider);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(l10n.bulletinsRefreshed),
+                      duration: const Duration(seconds: 1),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
               },
               child: ListView.builder(
                 padding: const EdgeInsets.all(16),
@@ -63,6 +74,7 @@ class BulletinListCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final isCurrentWeek = _isCurrentWeek(bulletin.weekOf);
     final permissions = ref.watch(permissionsProvider);
 
@@ -142,7 +154,7 @@ class BulletinListCard extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            'THIS WEEK',
+                            l10n.thisWeek,
                             style: TextStyle(
                               color: Theme.of(context).primaryColor,
                               fontSize: 10,
@@ -169,7 +181,7 @@ class BulletinListCard extends ConsumerWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${bulletin.items.length} items',
+                        l10n.itemsCount(bulletin.items.length),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: Colors.grey[500],
                             ),
@@ -217,19 +229,20 @@ class BulletinListCard extends ConsumerWidget {
 
   void _showDeleteConfirmationDialog(
       BuildContext context, WidgetRef ref, Bulletin bulletin) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete Bulletin'),
+        title: Text(l10n.deleteBulletin),
         content: Text(
-          'Are you sure you want to delete the bulletin for ${DateFormat('MMMM d, yyyy').format(bulletin.weekOf)}?\n\n'
+          '${l10n.deleteBulletinConfirm(DateFormat('MMMM d, yyyy').format(bulletin.weekOf))}\n\n'
           'Theme: "${bulletin.theme}"\n\n'
-          'This action cannot be undone.',
+          '${l10n.cannotBeUndone}',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () async {
@@ -239,7 +252,7 @@ class BulletinListCard extends ConsumerWidget {
             style: FilledButton.styleFrom(
               backgroundColor: Colors.red,
             ),
-            child: const Text('Delete'),
+            child: Text(l10n.delete),
           ),
         ],
       ),
@@ -248,15 +261,16 @@ class BulletinListCard extends ConsumerWidget {
 
   Future<void> _deleteBulletin(
       BuildContext context, WidgetRef ref, Bulletin bulletin) async {
+    final l10n = AppLocalizations.of(context)!;
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     try {
       // Show loading indicator
       scaffoldMessenger.showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Row(
             children: [
-              SizedBox(
+              const SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
@@ -264,11 +278,11 @@ class BulletinListCard extends ConsumerWidget {
                   color: Colors.white,
                 ),
               ),
-              SizedBox(width: 16),
-              Text('Deleting bulletin...'),
+              const SizedBox(width: 16),
+              Text(l10n.deletingBulletin),
             ],
           ),
-          duration: Duration(seconds: 2),
+          duration: const Duration(seconds: 2),
         ),
       );
 
@@ -279,10 +293,10 @@ class BulletinListCard extends ConsumerWidget {
       scaffoldMessenger.hideCurrentSnackBar();
       scaffoldMessenger.showSnackBar(
         SnackBar(
-          content: const Text('Bulletin deleted successfully'),
+          content: Text(l10n.bulletinDeletedSuccess),
           backgroundColor: Colors.green,
           action: SnackBarAction(
-            label: 'OK',
+            label: l10n.ok,
             textColor: Colors.white,
             onPressed: () {},
           ),
@@ -293,7 +307,7 @@ class BulletinListCard extends ConsumerWidget {
       scaffoldMessenger.hideCurrentSnackBar();
       scaffoldMessenger.showSnackBar(
         SnackBar(
-          content: Text('Failed to delete bulletin: $error'),
+          content: Text('${l10n.failedToDeleteBulletin}: $error'),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 4),
         ),

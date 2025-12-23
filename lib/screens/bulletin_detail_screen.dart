@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../l10n/app_localizations.dart';
 import '../models/bulletin.dart';
 import '../providers/bulletin_provider.dart';
 import '../providers/permissions_provider.dart';
@@ -39,6 +40,7 @@ class _BulletinDetailScreenState extends ConsumerState<BulletinDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final bulletin = ref.watch(bulletinByIdProvider(widget.bulletinId));
     final permissions = ref.watch(permissionsProvider);
 
@@ -51,16 +53,16 @@ class _BulletinDetailScreenState extends ConsumerState<BulletinDetailScreen> {
 
     if (bulletin == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Bulletin')),
-        body: const Center(
-          child: Text('Bulletin not found'),
+        appBar: AppBar(title: Text(l10n.bulletin)),
+        body: Center(
+          child: Text(l10n.bulletinNotFound),
         ),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Weekly Bulletin'),
+        title: Text(l10n.weeklyBulletin),
         actions: [
           if (permissions.canEditContent)
             IconButton(
@@ -240,7 +242,7 @@ class _BulletinDetailScreenState extends ConsumerState<BulletinDetailScreen> {
                         ),
                         const SizedBox(width: 16),
                         Text(
-                          'Worship Schedule',
+                          l10n.worshipSchedule,
                           style:
                               Theme.of(context).textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.bold,
@@ -375,7 +377,7 @@ class _BulletinDetailScreenState extends ConsumerState<BulletinDetailScreen> {
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Details',
+                          l10n.details,
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -613,22 +615,18 @@ class _BulletinDetailScreenState extends ConsumerState<BulletinDetailScreen> {
   }
 
   void _showDeleteConfirmationDialog(BuildContext context, Bulletin bulletin) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Bulletin'),
+        title: Text(l10n.deleteBulletin),
         content: Text(
-          'Are you sure you want to delete the bulletin for ${DateFormat('MMMM d, yyyy').format(bulletin.weekOf)}?\n\n'
-          'This will permanently delete:\n'
-          '• The bulletin "${bulletin.theme}"\n'
-          '• All ${bulletin.items.length} bulletin items\n'
-          '• All ${bulletin.schedule.length} worship schedule items\n\n'
-          'This action cannot be undone.',
+          '${l10n.deleteBulletinConfirm(DateFormat('MMMM d, yyyy').format(bulletin.weekOf))}\n\n${l10n.deleteBulletinDetails(bulletin.theme, bulletin.items.length, bulletin.schedule.length)}',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () async {
@@ -638,7 +636,7 @@ class _BulletinDetailScreenState extends ConsumerState<BulletinDetailScreen> {
             style: FilledButton.styleFrom(
               backgroundColor: Colors.red,
             ),
-            child: const Text('Delete'),
+            child: Text(l10n.delete),
           ),
         ],
       ),
@@ -646,16 +644,17 @@ class _BulletinDetailScreenState extends ConsumerState<BulletinDetailScreen> {
   }
 
   Future<void> _deleteBulletin(BuildContext context, Bulletin bulletin) async {
+    final l10n = AppLocalizations.of(context)!;
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
 
     try {
       // Show loading indicator
       scaffoldMessenger.showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Row(
             children: [
-              SizedBox(
+              const SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
@@ -663,11 +662,11 @@ class _BulletinDetailScreenState extends ConsumerState<BulletinDetailScreen> {
                   color: Colors.white,
                 ),
               ),
-              SizedBox(width: 16),
-              Text('Deleting bulletin...'),
+              const SizedBox(width: 16),
+              Text(l10n.deletingBulletin),
             ],
           ),
-          duration: Duration(seconds: 2),
+          duration: const Duration(seconds: 2),
         ),
       );
 
@@ -678,10 +677,10 @@ class _BulletinDetailScreenState extends ConsumerState<BulletinDetailScreen> {
       scaffoldMessenger.hideCurrentSnackBar();
       scaffoldMessenger.showSnackBar(
         SnackBar(
-          content: const Text('Bulletin deleted successfully'),
+          content: Text(l10n.bulletinDeletedSuccess),
           backgroundColor: Colors.green,
           action: SnackBarAction(
-            label: 'OK',
+            label: l10n.ok,
             textColor: Colors.white,
             onPressed: () {},
           ),
@@ -695,7 +694,7 @@ class _BulletinDetailScreenState extends ConsumerState<BulletinDetailScreen> {
       scaffoldMessenger.hideCurrentSnackBar();
       scaffoldMessenger.showSnackBar(
         SnackBar(
-          content: Text('Failed to delete bulletin: $error'),
+          content: Text('${l10n.failedToDeleteBulletin}: $error'),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 4),
         ),

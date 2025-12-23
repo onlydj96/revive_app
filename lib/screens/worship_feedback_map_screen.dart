@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/app_localizations.dart';
 import '../models/notification.dart';
 import '../providers/notification_provider.dart';
 
@@ -22,12 +23,13 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final selectedLocation = ref.watch(selectedLocationProvider);
     final environmentFeedback = ref.watch(environmentFeedbackProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Worship Feedback Map'),
+        title: Text(l10n.worshipFeedbackMap),
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
       ),
@@ -49,7 +51,7 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
                 child: Column(
                   children: [
                     Text(
-                      'Help Us Improve Your Experience',
+                      l10n.helpUsImproveExperience,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -58,7 +60,7 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Tap on the map to indicate your approximate location, then share your environmental feedback.',
+                      l10n.tapMapInstruction,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Colors.white70,
                           ),
@@ -104,7 +106,10 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
                                 height: double.infinity,
                                 child: CustomPaint(
                                   painter: WorshipFeedbackMapPainter(
-                                      selectedLocation: selectedLocation),
+                                    selectedLocation: selectedLocation,
+                                    stageLabel: l10n.stage,
+                                    entranceLabel: l10n.entrance,
+                                  ),
                                 ),
                               ),
                             );
@@ -159,7 +164,7 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Tap anywhere on the worship area map to indicate your location',
+                        l10n.tapMapHint,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: Colors.grey[600],
                             ),
@@ -215,7 +220,7 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'How\'s the environment?',
+                              l10n.howsEnvironment,
                               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -237,7 +242,7 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
                           runSpacing: 8,
                           children: [
                             FeedbackChip(
-                              label: 'Too Cold',
+                              label: l10n.feedbackTooCold,
                               icon: Icons.ac_unit,
                               feedback: EnvironmentFeedback.tooCold,
                               selectedFeedback: environmentFeedback,
@@ -247,7 +252,7 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
                               },
                             ),
                             FeedbackChip(
-                              label: 'Too Hot',
+                              label: l10n.feedbackTooHot,
                               icon: Icons.local_fire_department,
                               feedback: EnvironmentFeedback.tooHot,
                               selectedFeedback: environmentFeedback,
@@ -257,7 +262,7 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
                               },
                             ),
                             FeedbackChip(
-                              label: 'Just Right',
+                              label: l10n.feedbackJustRight,
                               icon: Icons.check_circle,
                               feedback: EnvironmentFeedback.justRight,
                               selectedFeedback: environmentFeedback,
@@ -267,7 +272,7 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
                               },
                             ),
                             FeedbackChip(
-                              label: 'Too Loud',
+                              label: l10n.feedbackTooLoud,
                               icon: Icons.volume_up,
                               feedback: EnvironmentFeedback.tooLoud,
                               selectedFeedback: environmentFeedback,
@@ -277,7 +282,7 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
                               },
                             ),
                             FeedbackChip(
-                              label: 'Too Quiet',
+                              label: l10n.feedbackTooQuiet,
                               icon: Icons.volume_down,
                               feedback: EnvironmentFeedback.tooQuiet,
                               selectedFeedback: environmentFeedback,
@@ -287,7 +292,7 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
                               },
                             ),
                             FeedbackChip(
-                              label: 'Lighting Issue',
+                              label: l10n.feedbackLighting,
                               icon: Icons.lightbulb,
                               feedback: EnvironmentFeedback.lighting,
                               selectedFeedback: environmentFeedback,
@@ -304,7 +309,7 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
                           child: ElevatedButton(
                             onPressed: environmentFeedback != null
                                 ? () {
-                                    _submitFeedback(context, ref, selectedLocation,
+                                    _submitFeedback(context, ref, l10n, selectedLocation,
                                         environmentFeedback);
                                   }
                                 : null,
@@ -313,7 +318,7 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                             ),
-                            child: const Text('Submit Feedback'),
+                            child: Text(l10n.submitFeedback),
                           ),
                         ),
                       ],
@@ -328,8 +333,8 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
     );
   }
 
-  void _submitFeedback(BuildContext context, WidgetRef ref, Offset location,
-      EnvironmentFeedback feedback) {
+  void _submitFeedback(BuildContext context, WidgetRef ref, AppLocalizations l10n,
+      Offset location, EnvironmentFeedback feedback) {
     // Get the map size from provider
     final mapSize = ref.read(mapSizeProvider) ?? Size.zero;
 
@@ -340,7 +345,7 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
     final notification = AppNotification(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: 'New Worship Feedback',
-      message: 'Someone reported: ${_getFeedbackDescription(feedback)}',
+      message: 'Someone reported: ${_getFeedbackDescription(l10n, feedback)}',
       type: NotificationType.feedbackSubmitted,
       timestamp: DateTime.now(),
       data: {
@@ -360,9 +365,8 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
     ref.read(environmentFeedbackProvider.notifier).state = null;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-            'Thank you for your feedback! We\'ll work to improve the experience.'),
+      SnackBar(
+        content: Text(l10n.thankYouFeedback),
         backgroundColor: Colors.green,
       ),
     );
@@ -370,20 +374,20 @@ class WorshipFeedbackMapScreen extends ConsumerWidget {
     Navigator.of(context).pop();
   }
 
-  String _getFeedbackDescription(EnvironmentFeedback feedback) {
+  String _getFeedbackDescription(AppLocalizations l10n, EnvironmentFeedback feedback) {
     switch (feedback) {
       case EnvironmentFeedback.tooCold:
-        return 'Too Cold';
+        return l10n.feedbackTooCold;
       case EnvironmentFeedback.tooHot:
-        return 'Too Hot';
+        return l10n.feedbackTooHot;
       case EnvironmentFeedback.justRight:
-        return 'Just Right';
+        return l10n.feedbackJustRight;
       case EnvironmentFeedback.tooLoud:
-        return 'Too Loud';
+        return l10n.feedbackTooLoud;
       case EnvironmentFeedback.tooQuiet:
-        return 'Too Quiet';
+        return l10n.feedbackTooQuiet;
       case EnvironmentFeedback.lighting:
-        return 'Lighting Issue';
+        return l10n.feedbackLighting;
     }
   }
 }
@@ -429,8 +433,14 @@ class FeedbackChip extends StatelessWidget {
 
 class WorshipFeedbackMapPainter extends CustomPainter {
   final Offset? selectedLocation;
+  final String stageLabel;
+  final String entranceLabel;
 
-  WorshipFeedbackMapPainter({this.selectedLocation});
+  WorshipFeedbackMapPainter({
+    this.selectedLocation,
+    required this.stageLabel,
+    required this.entranceLabel,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -467,7 +477,7 @@ class WorshipFeedbackMapPainter extends CustomPainter {
     // Draw text
     final textPainter = TextPainter(
       text: TextSpan(
-        text: 'STAGE',
+        text: stageLabel,
         style: TextStyle(
           color: Colors.grey[600],
           fontSize: 14,
@@ -515,7 +525,7 @@ class WorshipFeedbackMapPainter extends CustomPainter {
 
     final entranceTextPainter = TextPainter(
       text: TextSpan(
-        text: 'ENTRANCE',
+        text: entranceLabel,
         style: TextStyle(
           color: Colors.grey[600],
           fontSize: 10,

@@ -45,8 +45,9 @@ final upcomingEventsProvider = Provider<List<Event>>((ref) {
 // Provider for upcoming events sorted by date (replaces highlighted events for banner)
 // PERF: AutoDispose disabled to cache banner events across page transitions
 // Priority: Today's events first, then upcoming events by date
+// FIXED: Now uses expandedEventsProvider to include recurring event instances
 final upcomingEventsBannerProvider = Provider<List<Event>>((ref) {
-  final events = ref.watch(eventsProvider);
+  final events = ref.watch(expandedEventsProvider);
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
 

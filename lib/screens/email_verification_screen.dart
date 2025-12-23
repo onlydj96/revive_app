@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
+import '../utils/ui_utils.dart';
 
 class EmailVerificationScreen extends ConsumerStatefulWidget {
   final String email;
@@ -18,6 +20,9 @@ class _EmailVerificationScreenState
     with TickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
+  bool _isResending = false;
+  int _cooldownSeconds = 0;
+  Timer? _cooldownTimer;
 
   @override
   void initState() {
@@ -42,17 +47,53 @@ class _EmailVerificationScreenState
   @override
   void dispose() {
     _pulseController.dispose();
+    _cooldownTimer?.cancel();
     super.dispose();
   }
 
-  void _resendEmail() {
-    // TODO: Implement resend email functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Verification email resent!'),
-        backgroundColor: Colors.green,
-      ),
-    );
+  void _startCooldown() {
+    setState(() {
+      _cooldownSeconds = 60;
+    });
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_cooldownSeconds > 0) {
+        setState(() {
+          _cooldownSeconds--;
+        });
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  Future<void> _resendEmail() async {
+    if (_isResending || _cooldownSeconds > 0) return;
+
+    setState(() {
+      _isResending = true;
+    });
+
+    final success = await ref
+        .read(authProvider.notifier)
+        .resendVerificationEmail(widget.email);
+
+    if (!mounted) return;
+
+    setState(() {
+      _isResending = false;
+    });
+
+    if (success) {
+      UIUtils.showSuccess(context, 'Verification email resent!');
+      _startCooldown();
+    } else {
+      final authState = ref.read(authProvider);
+      UIUtils.showError(
+        context,
+        authState.errorMessage ?? 'Failed to resend verification email',
+      );
+      ref.read(authProvider.notifier).clearError();
+    }
   }
 
   @override
@@ -207,9 +248,22 @@ class _EmailVerificationScreenState
 
               // Resend Email Button
               TextButton.icon(
-                onPressed: _resendEmail,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Resend Email'),
+                onPressed: (_isResending || _cooldownSeconds > 0) ? null : _resendEmail,
+                icon: _isResending
+                    ? SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Theme.of(context).primaryColor,
+                        ),
+                      )
+                    : const Icon(Icons.refresh),
+                label: Text(
+                  _cooldownSeconds > 0
+                      ? 'Resend in ${_cooldownSeconds}s'
+                      : 'Resend Email',
+                ),
                 style: TextButton.styleFrom(
                   foregroundColor: Theme.of(context).primaryColor,
                 ),

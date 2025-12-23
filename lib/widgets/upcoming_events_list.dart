@@ -79,6 +79,8 @@ class UpcomingEventsList extends StatelessWidget {
                                     ?.copyWith(
                                       fontWeight: FontWeight.bold,
                                     ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             if (event.isHighlighted)

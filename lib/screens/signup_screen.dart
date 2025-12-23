@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
 import '../models/auth_state.dart' as app_auth;
+import '../utils/form_validators.dart';
+import '../utils/ui_utils.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
   const SignUpScreen({super.key});
@@ -31,6 +34,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   }
 
   void _handleSignUp() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_formKey.currentState!.validate() && _acceptTerms) {
       await ref.read(authProvider.notifier).signUpWithEmail(
             email: _emailController.text.trim(),
@@ -38,17 +42,13 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
             fullName: _fullNameController.text.trim(),
           );
     } else if (!_acceptTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please accept the terms and conditions'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      UIUtils.showWarning(context, l10n.acceptTerms);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final authState = ref.watch(authProvider);
 
     // Listen to auth state changes
@@ -140,7 +140,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     const SizedBox(height: 24),
 
                     Text(
-                      'Join Revive Church',
+                      l10n.joinReviveChurch,
                       style:
                           Theme.of(context).textTheme.headlineMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
@@ -151,7 +151,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     const SizedBox(height: 8),
 
                     Text(
-                      'Create your account to get started',
+                      l10n.createAccountToStart,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                             color: Colors.grey[600],
                           ),
@@ -165,7 +165,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                       textInputAction: TextInputAction.next,
                       textCapitalization: TextCapitalization.words,
                       decoration: InputDecoration(
-                        labelText: 'Full Name',
+                        labelText: l10n.fullName,
                         prefixIcon: const Icon(Icons.person_outline),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -175,10 +175,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your full name';
+                          return l10n.pleaseEnterFullName;
                         }
                         if (value.length < 2) {
-                          return 'Name must be at least 2 characters';
+                          return l10n.nameTooShort;
                         }
                         return null;
                       },
@@ -192,7 +192,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
-                        labelText: 'Email',
+                        labelText: l10n.email,
                         prefixIcon: const Icon(Icons.email_outlined),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -202,11 +202,11 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your email';
+                          return l10n.pleaseEnterEmail;
                         }
                         if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
                             .hasMatch(value)) {
-                          return 'Please enter a valid email';
+                          return l10n.pleaseEnterValidEmail;
                         }
                         return null;
                       },
@@ -220,7 +220,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                       obscureText: _obscurePassword,
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
-                        labelText: 'Password',
+                        labelText: l10n.password,
                         prefixIcon: const Icon(Icons.lock_outline),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -240,15 +240,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         filled: true,
                         fillColor: Colors.grey[50],
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a password';
-                        }
-                        if (value.length < 6) {
-                          return 'Password must be at least 6 characters';
-                        }
-                        return null;
-                      },
+                      validator: (value) => FormValidators.validatePassword(value),
                     ),
 
                     const SizedBox(height: 16),
@@ -260,7 +252,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                       textInputAction: TextInputAction.done,
                       onFieldSubmitted: (_) => _handleSignUp(),
                       decoration: InputDecoration(
-                        labelText: 'Confirm Password',
+                        labelText: l10n.confirmPassword,
                         prefixIcon: const Icon(Icons.lock_outline),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -281,15 +273,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         filled: true,
                         fillColor: Colors.grey[50],
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please confirm your password';
-                        }
-                        if (value != _passwordController.text) {
-                          return 'Passwords do not match';
-                        }
-                        return null;
-                      },
+                      validator: (value) => FormValidators.validatePasswordConfirm(
+                        value,
+                        _passwordController.text,
+                      ),
                     ),
 
                     const SizedBox(height: 16),
@@ -310,17 +297,17 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                             text: TextSpan(
                               style: Theme.of(context).textTheme.bodySmall,
                               children: [
-                                const TextSpan(text: 'I agree to the '),
+                                TextSpan(text: '${l10n.iAgreeToThe} '),
                                 TextSpan(
-                                  text: 'Terms of Service',
+                                  text: l10n.termsOfService,
                                   style: TextStyle(
                                     color: Theme.of(context).primaryColor,
                                     decoration: TextDecoration.underline,
                                   ),
                                 ),
-                                const TextSpan(text: ' and '),
+                                TextSpan(text: ' ${l10n.and} '),
                                 TextSpan(
-                                  text: 'Privacy Policy',
+                                  text: l10n.privacyPolicy,
                                   style: TextStyle(
                                     color: Theme.of(context).primaryColor,
                                     decoration: TextDecoration.underline,
@@ -357,13 +344,76 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Text(
-                                'Create Account',
-                                style: TextStyle(
+                            : Text(
+                                l10n.createAccount,
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Divider with "or"
+                    Row(
+                      children: [
+                        Expanded(child: Divider(color: Colors.grey[400])),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            l10n.or,
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
+                        ),
+                        Expanded(child: Divider(color: Colors.grey[400])),
+                      ],
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Google Sign In Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: OutlinedButton.icon(
+                        onPressed: authState.isLoading
+                            ? null
+                            : () => ref.read(authProvider.notifier).signInWithGoogle(),
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          side: BorderSide(color: Colors.grey[300]!),
+                          backgroundColor: Colors.white,
+                        ),
+                        icon: Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'G',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue[700],
+                              ),
+                            ),
+                          ),
+                        ),
+                        label: Text(
+                          l10n.continueWithGoogle,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black87,
+                          ),
+                        ),
                       ),
                     ),
 
@@ -374,14 +424,14 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Already have an account? ',
+                          '${l10n.alreadyHaveAccount} ',
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         TextButton(
                           onPressed: () => context.go('/login'),
-                          child: const Text(
-                            'Sign In',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                          child: Text(
+                            l10n.signIn,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
                       ],

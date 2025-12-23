@@ -296,7 +296,9 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
                               setState(() => _isProcessing = true);
 
                               try {
-                                if (team.requiresApplication) {
+                                // Connect Groups always use team_applications
+                                // Hangouts use direct join via hangout_joins
+                                if (team.type == TeamType.connectGroup) {
                                   if (hasApplied) {
                                     // Cancel application - Confirm first
                                     final confirmed =
@@ -352,7 +354,7 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
                                     }
                                   }
                                 } else {
-                                  // Open team - Join/Leave directly
+                                  // Hangout - Join/Leave directly via hangout_joins
                                   if (isMember) {
                                     // Leave team - Confirm first
                                     final confirmed =
@@ -421,7 +423,7 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         backgroundColor:
-                            (hasApplied && team.requiresApplication) || isMember
+                            (hasApplied && team.type == TeamType.connectGroup) || isMember
                                 ? Colors.orange
                                 : Theme.of(context).colorScheme.secondary,
                         foregroundColor: Colors.white,
@@ -438,13 +440,13 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
                                       !isMember &&
                                       !hasApplied
                                   ? 'Team Full'
-                                  : team.requiresApplication
+                                  : team.type == TeamType.connectGroup
                                       ? (hasApplied
-                                          ? 'Leave Team'
+                                          ? 'Cancel Application'
                                           : 'Apply to Join')
                                       : (isMember
-                                          ? 'Leave ${team.type == TeamType.connectGroup ? 'Group' : 'Hangout'}'
-                                          : 'Join This ${team.type == TeamType.connectGroup ? 'Group' : 'Hangout'}'),
+                                          ? 'Leave Hangout'
+                                          : 'Join This Hangout'),
                               style: const TextStyle(fontSize: 16),
                             ),
                     ),
@@ -471,7 +473,7 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
       backgroundColor = Colors.green.shade50;
       textColor = Colors.green.shade700;
       icon = Icons.check_circle;
-    } else if (hasApplied && team.requiresApplication) {
+    } else if (hasApplied && team.type == TeamType.connectGroup) {
       statusText = 'Application Pending';
       backgroundColor = Colors.orange.shade50;
       textColor = Colors.orange.shade700;
@@ -483,7 +485,7 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
       textColor = Colors.red.shade700;
       icon = Icons.cancel;
     } else {
-      statusText = team.requiresApplication ? 'Available to Apply' : 'Available to Join';
+      statusText = team.type == TeamType.connectGroup ? 'Available to Apply' : 'Available to Join';
       backgroundColor = Colors.blue.shade50;
       textColor = Colors.blue.shade700;
       icon = Icons.info_outline;

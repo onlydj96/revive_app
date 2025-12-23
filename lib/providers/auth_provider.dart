@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/auth_state.dart' as app_auth;
 import '../services/supabase_service.dart';
 import '../services/deep_link_service.dart';
+import '../services/push_notification_service.dart';
 import '../router/app_router.dart';
 import '../utils/logger.dart';
 
@@ -105,6 +106,9 @@ class AuthNotifier extends StateNotifier<app_auth.AuthState> {
           session: response.session,
         );
         _logger.debug('✅ [AUTH] Authentication successful');
+
+        // Register device token for push notifications
+        await PushNotificationService().registerTokenAfterLogin();
       } else {
         _logger.debug('❌ [AUTH] Sign in failed - no user or session');
         state = const app_auth.AuthState(
@@ -159,6 +163,9 @@ class AuthNotifier extends StateNotifier<app_auth.AuthState> {
             user: response.user,
             session: response.session,
           );
+
+          // Register device token for push notifications
+          await PushNotificationService().registerTokenAfterLogin();
         } else {
           // Email confirmation required
           state = const app_auth.AuthState(
@@ -188,6 +195,10 @@ class AuthNotifier extends StateNotifier<app_auth.AuthState> {
   Future<void> signOut() async {
     try {
       state = state.copyWith(status: app_auth.AuthStatus.loading);
+
+      // Unregister device token before signing out
+      await PushNotificationService().unregisterTokenOnLogout();
+
       await SupabaseService.signOut();
       state =
           const app_auth.AuthState(status: app_auth.AuthStatus.unauthenticated);
@@ -213,6 +224,81 @@ class AuthNotifier extends StateNotifier<app_auth.AuthState> {
       state = app_auth.AuthState(
         status: app_auth.AuthStatus.error,
         errorMessage: 'Failed to send reset email',
+      );
+    }
+  }
+
+  Future<bool> resendVerificationEmail(String email) async {
+    try {
+      state = state.copyWith(status: app_auth.AuthStatus.loading);
+      await SupabaseService.resendVerificationEmail(email);
+      state = state.copyWith(
+        status: app_auth.AuthStatus.unauthenticated,
+        errorMessage: 'Verification email resent successfully',
+      );
+      return true;
+    } on AuthException catch (e) {
+      _logger.warning('Failed to resend verification email: ${e.message}');
+      state = app_auth.AuthState(
+        status: app_auth.AuthStatus.error,
+        errorMessage: e.message,
+      );
+      return false;
+    } catch (e) {
+      _logger.error('Unexpected error resending verification email', e);
+      state = app_auth.AuthState(
+        status: app_auth.AuthStatus.error,
+        errorMessage: 'Failed to resend verification email',
+      );
+      return false;
+    }
+  }
+
+  Future<void> signInWithGoogle() async {
+    try {
+      state = state.copyWith(status: app_auth.AuthStatus.loading);
+
+      _logger.debug('🔐 [AUTH] Starting Google sign in...');
+
+      final response = await SupabaseService.signInWithGoogle();
+
+      _logger.debug('✅ [AUTH] Google sign in response received');
+
+      if (response.user != null && response.session != null) {
+        state = app_auth.AuthState(
+          status: app_auth.AuthStatus.authenticated,
+          user: response.user,
+          session: response.session,
+        );
+        _logger.debug('✅ [AUTH] Google authentication successful');
+
+        // Register device token for push notifications
+        await PushNotificationService().registerTokenAfterLogin();
+      } else {
+        _logger.debug('❌ [AUTH] Google sign in failed - no user or session');
+        state = const app_auth.AuthState(
+          status: app_auth.AuthStatus.error,
+          errorMessage: 'Google sign in failed',
+        );
+      }
+    } on AuthException catch (e) {
+      _logger.debug('❌ [AUTH] AuthException: ${e.message}');
+      // Don't show error for user cancellation
+      if (e.message.contains('cancelled')) {
+        state = const app_auth.AuthState(
+          status: app_auth.AuthStatus.unauthenticated,
+        );
+      } else {
+        state = app_auth.AuthState(
+          status: app_auth.AuthStatus.error,
+          errorMessage: e.message,
+        );
+      }
+    } catch (e) {
+      _logger.debug('❌ [AUTH] Unexpected error: $e');
+      state = app_auth.AuthState(
+        status: app_auth.AuthStatus.error,
+        errorMessage: 'Google sign in failed: ${e.toString()}',
       );
     }
   }
